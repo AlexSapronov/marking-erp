@@ -31,7 +31,7 @@ def _body(directory, name):
     return _read(directory / name)
 
 
-def check_capture(manifest: Path):
+def check_capture(manifest: Path, *, observe=None):
     data = decode_json(_read(manifest))
     if (not isinstance(data, dict) or type(data.get('format')) is not int
             or data['format'] != 1 or set(data) != {'format', 'window', 'page_size', 'pages'}):
@@ -54,6 +54,8 @@ def check_capture(manifest: Path):
         listing = _body(manifest.parent, page['listing'])
         details = _body(manifest.parent, page['details']) if page['details'] is not None else None
         result = result.accept(listing, details)
+        if observe is not None:
+            observe(page, listing, details)
         checked = result.pages[-1]
         evidence.append({'offset': request.offset, 'limit': request.limit,
                          'listing_sha256': checked.listing_sha256,

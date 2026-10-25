@@ -23,6 +23,7 @@ marking-erp = "marking_erp.cli:main"
 marking-erp-backup = "marking_erp.backup_cli:main"
 marking-erp-nk-check = "marking_erp.nk_read_cli:main"
 marking-erp-nk-pilot = "marking_erp.nk_pilot_cli:main"
+marking-erp-nk-review = "marking_erp.nk_review_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["marking_erp*"]
