@@ -118,6 +118,7 @@ def test_six_role_homes_and_tsd_restrictions(page,live_app,group):
     from playwright.sync_api import expect
     login(page,group);expect(page.locator('#group-badge')).to_have_text(GROUPS[group]);capture(page,'home-'+group)
     if group!='administrator':
+        expect(page.locator('#audit-link')).to_be_hidden()
         expect(page.locator('#system-link')).to_be_hidden()
         expect(page.locator('#users-link')).to_be_hidden()
         response=page.request.get(live_app['base']+'/api/users');assert response.status==403
@@ -369,3 +370,81 @@ def test_system_diagnostics_elevation_and_live_revocation(page, live_app, engine
     expect(page.locator('#system-link')).to_be_hidden()
     expect(page.locator('.system-check')).to_have_count(0)
     assert page.request.get(live_app['base']+'/api/system/status').status == 403
+
+
+def test_audit_filters_pagination_themes_mobile_and_network(page,live_app,engine):
+    from playwright.sync_api import expect
+    with engine.begin() as c:
+        for _ in range(30):auth.audit(c,None,'system.restored','backup',{'secret':'do-not-display-this'})
+        auth.audit(c,None,'future.<script>','private-entity')
+        auth.audit(c,None,'login.failed','private-throttle-key')
+    login(page)
+    page.locator('#audit-link').click()
+    rows=page.locator('#audit-results tbody tr')
+    expect(rows).to_have_count(25)
+    expect(page.locator('#audit-results')).to_contain_text('Неизвестный тип события')
+    assert 'private-' not in page.locator('#audit-results').inner_text()
+    assert 'do-not-display-this' not in page.locator('#audit-results').inner_text()
+    capture(page,'audit-light')
+    page.locator('#theme').click()
+    capture(page,'audit-dark')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page,'audit-mobile')
+    wrap=page.locator('#audit-results .table-wrap')
+    wrap.evaluate('el=>el.scrollLeft=el.scrollWidth')
+    assert wrap.evaluate('el=>el.scrollLeft')>0
+    capture(page,'audit-mobile-details')
+    wrap.evaluate('el=>el.scrollLeft=0')
+    page.get_by_label('Событие',exact=True).select_option('system.restored')
+    page.get_by_role('button',name='Применить',exact=True).click()
+    expect(rows).to_have_count(25)
+    expect(page.locator('#audit-results')).not_to_contain_text('Неизвестный тип события')
+    first=rows.first.get_attribute('data-event-id')
+    page.get_by_role('button',name='Далее',exact=True).click()
+    expect(rows).to_have_count(5)
+    expect(page.get_by_role('button',name='Далее',exact=True)).to_be_disabled()
+    page.get_by_role('button',name='Назад',exact=True).click()
+    expect(rows).to_have_count(25)
+    assert rows.first.get_attribute('data-event-id')==first
+    page.get_by_label('Событие',exact=True).select_option('user.created')
+    page.get_by_role('button',name='Применить',exact=True).click()
+    expect(rows).to_have_count(0)
+    expect(page.locator('#audit-results')).to_contain_text('Нет событий')
+    page.get_by_role('button',name='Сбросить',exact=True).click()
+    expect(rows).to_have_count(25)
+    page.context.set_offline(True)
+    page.get_by_role('button',name='Обновить журнал',exact=True).click()
+    expect(rows).to_have_count(0)
+    expect(page.locator('#notice')).to_contain_text('Не удалось получить ответ')
+    page.context.set_offline(False)
+    page.get_by_role('button',name='Обновить журнал',exact=True).click()
+    expect(rows).to_have_count(25)
+
+
+def test_audit_elevation_and_live_revocation(page,live_app,engine):
+    from playwright.sync_api import expect
+    login(page)
+    page.locator('#audit-link').click()
+    rows=page.locator('#audit-results tbody tr')
+    expect(rows.filter(has_text='Вход выполнен')).to_have_count(1)
+    initial_count=rows.count()
+    with engine.begin() as c:c.execute(text("UPDATE sessions SET elevated_at=now()-interval '6 minutes'"))
+    page.get_by_role('button',name='Обновить журнал').click()
+    expect(rows).to_have_count(0)
+    page.get_by_role('button',name='Подтвердить доступ',exact=True).click()
+    form=page.locator('#reauth-form')
+    form.locator('[name=password]').fill(PASSWORD)
+    form.locator('[name=otp]').fill(pyotp.TOTP(SECRET).at(time.time()+30))
+    form.locator('button[type=submit]').click()
+    expect(page.locator('#reauth-dialog')).to_be_hidden()
+    expect(rows).to_have_count(0)
+    page.get_by_role('button',name='Обновить журнал').click()
+    expect(rows).to_have_count(initial_count+1)
+    expect(rows.filter(has_text='Подтверждён административный доступ')).to_have_count(1)
+    with engine.begin() as c:
+        c.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='administrator' AND permission_id='audit.view'"))
+    page.evaluate("window.dispatchEvent(new Event('focus'))")
+    expect(page.locator('#audit-link')).to_be_hidden()
+    expect(rows).to_have_count(0)
+    assert page.request.get(live_app['base']+'/api/audit').status==403
