@@ -25,6 +25,11 @@ def upgrade():
     op.execute("CREATE TRIGGER configuration_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON configuration_changes FOR EACH STATEMENT EXECUTE FUNCTION reject_audit_change()")
     op.execute("""CREATE FUNCTION preserve_admin_grants() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN
+      IF TG_OP='TRUNCATE' THEN RAISE EXCEPTION 'administrator management access is mandatory'; END IF;
+      IF TG_OP='UPDATE' AND OLD.group_slug='administrator' AND OLD.permission_id='permissions.manage'
+         AND (NEW.group_slug<>OLD.group_slug OR NEW.permission_id<>OLD.permission_id) THEN
+        RAISE EXCEPTION 'administrator management access is mandatory';
+      END IF;
       IF (TG_OP='DELETE' AND OLD.group_slug='administrator' AND EXISTS(SELECT 1 FROM permissions WHERE id=OLD.permission_id AND id='permissions.manage')) THEN
         RAISE EXCEPTION 'administrator management access is mandatory';
       END IF;
@@ -34,10 +39,12 @@ def upgrade():
       IF TG_OP='DELETE' THEN RETURN OLD; END IF;
       RETURN NEW;
     END; $$""")
+    op.execute("CREATE TRIGGER administrator_grants_truncate BEFORE TRUNCATE ON group_grants FOR EACH STATEMENT EXECUTE FUNCTION preserve_admin_grants()")
     op.execute("CREATE TRIGGER administrator_grants BEFORE INSERT OR UPDATE OR DELETE ON group_grants FOR EACH ROW EXECUTE FUNCTION preserve_admin_grants()")
 
 
 def downgrade():
     op.execute('DROP TRIGGER administrator_grants ON group_grants')
+    op.execute('DROP TRIGGER administrator_grants_truncate ON group_grants')
     op.execute('DROP FUNCTION preserve_admin_grants()')
     for table in ('configuration_changes','policy_values','policy_revisions'):op.execute(f'DROP TABLE {table}')

@@ -18,7 +18,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
       const data=await api(route==='/groups'?'/api/groups':'/api/business-rules/'+(scope||state.session.organization_ids[0]||'system'));
       if(seq!==sequence||state.route!==route)return;
       model=data;changed=false;changes={};route==='/groups'?renderGroups():renderRules();
-    }catch(e){if(seq!==sequence)return;host.replaceChildren(heading('Настройки недоступны','Проверьте связь и полномочия.'),button('Повторить загрузку',()=>show(route)));safeError(e);}
+    }catch(e){if(seq!==sequence)return;if(route==='/rules'&&e.status===403)scope='';host.replaceChildren(heading('Настройки недоступны','Проверьте связь и полномочия.'),button(route==='/rules'&&e.status===403?'К настройкам своей организации':'Повторить загрузку',()=>show(route)));safeError(e);}
   }
   function tools(title,description,kind,entity){
     const host=$('page-content');host.replaceChildren(heading(title,description,[button('Обновить',()=>{if(canLeave())show(state.route);}),button('История изменений',()=>history(kind,entity))]));
@@ -87,7 +87,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
     try{const result=await api(path+'/preview',{method:'POST',body});if(seq!==sequence)return;$('notice').hidden=true;const host=$('configuration-content');host.replaceChildren(node('p',result.notice,'notice warning'));$('configuration-title').textContent='Предпросмотр изменений';
       const list=node('ul',undefined,'diff-list');for(const d of result.diff)list.append(node('li',d.id+': '+JSON.stringify(d.before)+' → '+(d.inherit?'Наследование ('+JSON.stringify(d.after)+')':JSON.stringify(d.after))));host.append(list,node('p','Причина: '+reason,'muted'));
       if(result.tsd_expansion)host.append(node('p','Профиль ТСД будет расширен.','notice warning'));
-      const save=button('Применить изменения',async()=>{save.disabled=true;try{await api(path,{method:'PUT',body});if(seq!==sequence)return;changed=false;closeDialog('configuration-dialog',true);notice('Настройки сохранены.');await show(state.route);}catch(e){if(seq===sequence)safeError(e);}finally{save.disabled=false;}},'primary section-gap');host.append(save);openDialog('configuration-dialog');
+      const save=button('Применить изменения',async()=>{save.disabled=true;$('configuration-dialog').dataset.saving='true';try{await api(path,{method:'PUT',body});if(seq!==sequence)return;changed=false;closeDialog('configuration-dialog',true);notice('Настройки сохранены.');await show(state.route);}catch(e){if(seq===sequence)safeError(e);}finally{save.disabled=false;delete $('configuration-dialog').dataset.saving;}},'primary section-gap');host.append(save);openDialog('configuration-dialog');
     }catch(e){if(seq===sequence)safeError(e);}finally{submit.disabled=false;}
   }
   async function history(kind,entity,before=null){

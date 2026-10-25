@@ -76,7 +76,10 @@ def test_group_invariants_dependencies_mfa_tsd_and_admin_lockout(policy_env,engi
         body['tsd_confirmation']='РАСШИРИТЬ ТСД'
         assert c.post('/api/groups/tsd/preview',json=body).json()['tsd_expansion'] is True
         assert c.put('/api/groups/tsd',json=body).status_code==200
-    with pytest.raises(DBAPIError),engine.begin() as c:c.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='administrator' AND permission_id='permissions.manage'"))
+    for sql in ["UPDATE group_grants SET scope='none' WHERE group_slug='administrator' AND permission_id='permissions.manage'",
+                "UPDATE group_grants SET group_slug='bm' WHERE group_slug='administrator' AND permission_id='permissions.manage'",
+                'TRUNCATE group_grants']:
+        with pytest.raises(DBAPIError),engine.begin() as c:c.execute(text(sql))
 
 
 def test_rule_inheritance_snapshots_reset_and_optimistic_conflict(policy_env,engine):

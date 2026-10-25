@@ -63,7 +63,8 @@ function resetDialog(dialog) {
 }
 function closeDialog(id,force=false) {
   const dialog=$(id),form=dialog.querySelector('form');
-  if(!force&&form?.dataset.busy==='true')return false;
+  if(!force&&(form?.dataset.busy==='true'||dialog.dataset.saving==='true'))return false;
+  if(force)delete dialog.dataset.saving;
   if(!force&&id==='user-dialog'&&form?.dataset.dirty==='true'&&!confirm('Закрыть окно без сохранения изменений?'))return false;
   if(dialog.open)dialog.close();resetDialog(dialog);return true;
 }
