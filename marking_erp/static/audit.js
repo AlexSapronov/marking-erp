@@ -16,7 +16,7 @@ export function createAudit({state,$,api,node,button,heading,report}){
     const actor=input('Исполнитель (UUID)','actor','text');actor.placeholder='Все исполнители';actor.maxLength=36;actor.pattern='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
     const since=input('С даты (ваш часовой пояс)','since','datetime-local'),until=input('По дату (ваш часовой пояс)','until','datetime-local');
     const submit=node('button','Применить');submit.type='submit';
-    const clear=button('Сбросить',()=>{form.reset();until.setCustomValidity('');filters={};cursors=[null];page=0;load();});form.append(submit,clear);host.append(form);
+    const clear=button('Сбросить',()=>{form.reset();until.setCustomValidity('');filters={};cursors=[null];page=0;load();});const filterActions=node('div',undefined,'actions audit-filter-actions');filterActions.append(submit,clear);form.append(filterActions);host.append(form);
     host.append(node('p','Показаны только метаданные. Причины, содержимое файлов, полные КМ и служебные данные скрыты. Пустой исполнитель означает системное событие или вход без установленного пользователя.','muted'));
     const content=node('section',undefined,'panel table-panel');content.id='audit-results';content.setAttribute('aria-live','polite');host.append(content);
     form.addEventListener('submit',event=>{
@@ -40,7 +40,8 @@ export function createAudit({state,$,api,node,button,heading,report}){
         content.replaceChildren();
         if(!data.events.length)content.append(node('p','Нет событий по выбранным условиям.','empty'));
         else{
-          const wrap=node('div',undefined,'table-wrap'),table=node('table',undefined,'audit-table');table.append(node('caption','События аудита','sr-only'));
+          content.append(node('p','Прокрутите таблицу вправо, чтобы увидеть исполнителя и объект.','audit-scroll-hint muted'));
+          const wrap=node('div',undefined,'table-wrap'),table=node('table',undefined,'audit-table');table.append(node('caption','События аудита','sr-only'));wrap.tabIndex=0;wrap.setAttribute('aria-label','Таблица событий аудита');
           const head=node('thead'),titles=node('tr');for(const title of ['№ / Время','Событие','Исполнитель (UUID)','Объект'])titles.append(node('th',title));head.append(titles);table.append(head);
           const body=node('tbody');
           for(const event of data.events){const row=node('tr');row.dataset.eventId=event.id;const stamp=node('td');stamp.append(node('strong','#'+event.id),node('small',new Date(event.created_at).toLocaleString('ru-RU')));row.append(stamp,node('td',event.label),node('td',event.actor_id||'—','hash-text'),node('td',event.entity||'Скрыт / не указан','hash-text'));body.append(row);}

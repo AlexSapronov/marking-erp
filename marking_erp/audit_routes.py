@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Query
 from sqlalchemy import text
 
 ACTION_LABELS = {
+    'rbac.initialized': 'Инициализированы группы и права',
     'administrator.bootstrapped': 'Создан первый администратор',
     'login.failed': 'Неудачный вход',
     'session.created': 'Вход выполнен',
