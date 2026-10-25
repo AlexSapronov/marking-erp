@@ -17,14 +17,14 @@ def main():
     try:
         if args.action=='verify':
             manifest=verify_backup(args.bundle);result={'valid':True,'schema_revision':manifest['schema_revision'],'file_count':len(manifest['files'])}
+        elif args.action=='restore':
+            admin=os.environ.get('ERP_RESTORE_ADMIN_URL')
+            if not admin:raise BackupError('Set ERP_RESTORE_ADMIN_URL privately, using a maintenance database and CREATE DATABASE privileges')
+            # Recovery needs no working source DSN or source server.
+            settings=Settings(database_url=admin)
+            result=restore_backup(settings,args.bundle,admin_url=admin,new_database=args.new_database,files_path=args.files_path)
         else:
-            settings=Settings()
-            if args.action=='create':
-                engine=database_engine(settings);result=create_backup(settings,engine,args.output)
-            else:
-                admin=os.environ.get('ERP_RESTORE_ADMIN_URL')
-                if not admin:raise BackupError('Set ERP_RESTORE_ADMIN_URL privately, using a maintenance database and CREATE DATABASE privileges')
-                result=restore_backup(settings,args.bundle,admin_url=admin,new_database=args.new_database,files_path=args.files_path)
+            settings=Settings();engine=database_engine(settings);result=create_backup(settings,engine,args.output)
         print(json.dumps(result,ensure_ascii=False))
     except BackupError as error:parser.exit(1,str(error)+'\n')
     finally:

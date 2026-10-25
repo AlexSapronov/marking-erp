@@ -121,6 +121,7 @@ def create_backup(settings,engine,output,*,db_schema='public',tools=None):
             # Exported transaction stays open until pg_dump and immutable files finish.
             with engine.connect().execution_options(isolation_level='REPEATABLE READ') as c,c.begin():
                 c.exec_driver_sql('SET TRANSACTION READ ONLY')
+                snapshot_at=c.execute(text('SELECT transaction_timestamp()')).scalar_one().astimezone(timezone.utc).isoformat()
                 c.exec_driver_sql('SET search_path TO '+c.dialect.identifier_preparer.quote(schema))
                 revisions=c.execute(text('SELECT version_num FROM alembic_version')).scalars().all()
                 if revisions!=[schema_head()]:raise BackupError('Backup requires the current schema revision')
@@ -131,12 +132,13 @@ def create_backup(settings,engine,output,*,db_schema='public',tools=None):
                 tools.run('pg_dump',['--format=custom','--no-owner','--no-acl','--schema='+schema,'--snapshot='+exported,'--file='+str(dump)],settings.database_url.get_secret_value())
                 with dump.open('rb') as f:dump_hash,dump_size=_digest_file(f)
                 if not 1<=dump_size<=MAX_DUMP:raise BackupError('Invalid database dump size')
-                manifest={'format':FORMAT,'created_at':datetime.now(timezone.utc).isoformat(),'build_sha':settings.build_sha,'schema_revision':schema_head(),'db_schema':schema,
+                manifest={'format':FORMAT,'snapshot_at':snapshot_at,'created_at':datetime.now(timezone.utc).isoformat(),'build_sha':settings.build_sha,'schema_revision':schema_head(),'db_schema':schema,
                     'server_version_num':server,'database':{'sha256':dump_hash,'size':dump_size},'mfa_key_required':bool(required),'mfa_key_sha256':_key_hash(settings) if required else None,'files':files}
                 with zipfile.ZipFile(destination,'w',compression=zipfile.ZIP_STORED,allowZip64=True) as archive:
                     archive.write(dump,'database.dump')
                     store=FileStore(settings.file_storage_path)
                     for item in files:archive.writestr('files/'+item['storage_key'],store.read(item))
+                    manifest['created_at']=c.execute(text('SELECT clock_timestamp()')).scalar_one().astimezone(timezone.utc).isoformat()
                     archive.writestr('manifest.json',json.dumps(manifest,ensure_ascii=False,separators=(',',':')).encode())
             destination.flush();os.fsync(destination.fileno())
         verify_backup(output);success=True
@@ -163,6 +165,8 @@ def _manifest(archive):
     if type(manifest['format']) is not int or type(manifest['mfa_key_required']) is not bool:raise BackupError('Invalid manifest types')
     if manifest['format']!=FORMAT or manifest['schema_revision']!=schema_head():raise BackupError('Unsupported backup schema/format; use the matching release')
     _identifier(manifest['db_schema'])
+    for key in ('snapshot_at','created_at'):
+        if datetime.fromisoformat(manifest[key]).tzinfo is None:raise BackupError('Backup timestamps must include timezone')
     if not isinstance(manifest['files'],list) or len(manifest['files'])>MAX_ITEMS:raise BackupError('Invalid file list')
     expected={'manifest.json','database.dump'};keys=set();ids=set()
     for item in manifest['files']:
@@ -200,7 +204,7 @@ def _connect_args(url):
     return args
 
 
-def _freeze(c,bundle_hash):
+def _freeze(c,bundle_hash,snapshot_at):
     c.execute(text('DELETE FROM sessions'))
     c.execute(text("UPDATE users SET auth_version=auth_version+1,mfa_last_counter=GREATEST(mfa_last_counter,floor(extract(epoch from clock_timestamp())/30)::bigint)"))
     c.execute(text('UPDATE signer_devices SET enabled=false'))
@@ -212,7 +216,7 @@ def _freeze(c,bundle_hash):
         c.execute(text('UPDATE external_operations SET state=:state,reason=:reason,fence=fence+1,lease_hash=NULL,lease_until=NULL,updated_at=clock_timestamp() WHERE id=:id'),{'id':row['id'],'state':state,'reason':'restore_requires_reconciliation'})
         c.execute(text('INSERT INTO operation_events(operation_id,state,reason) VALUES (:id,:state,:reason)'),{'id':row['id'],'state':state,'reason':'restore_requires_reconciliation'})
     from .auth import audit
-    audit(c,None,'system.restored','backup',{'bundle_sha256':bundle_hash,'external_dispatch_disabled':True})
+    audit(c,None,'system.restored','backup',{'bundle_sha256':bundle_hash,'snapshot_at':snapshot_at,'external_dispatch_disabled':True})
 
 
 def restore_backup(settings,bundle,*,admin_url,new_database,files_path,tools=None):
@@ -258,7 +262,7 @@ def _restore_verified(settings,bundle,manifest,*,admin_url,new_database,files_pa
             if c.execute(text('SELECT version_num FROM alembic_version')).scalar_one()!=schema_head() or _rows(c)!=manifest['files']:raise BackupError('Restored database/files do not match the manifest')
             if _validate_mfa(c,settings)!=manifest['mfa_key_required']:raise BackupError('Restored MFA metadata mismatch')
             bundle.seek(0);bundle_hash,_=_digest_file(bundle)
-            _freeze(c,bundle_hash)
+            _freeze(c,bundle_hash,manifest['snapshot_at'])
         return {'database':name,'file_count':len(manifest['files']),'files_path':str(root),'external_dispatch_disabled':True}
     except BackupError:raise
     except Exception:raise BackupError('Restore failed; existing databases were not modified') from None

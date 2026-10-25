@@ -52,7 +52,14 @@ def test_real_pg_dump_restore_files_auth_and_dispatch_quarantine(registry_env,qu
     bundle=tmp_path/'backup.zip';summary=create_backup(env[0],engine,bundle,db_schema=schema)
     assert summary['file_count']==2 and bundle.stat().st_mode&0o777==0o600
     manifest=verify_backup(bundle);assert manifest['mfa_key_required']
-    files=tmp_path/'restored-files';result=restore_backup(env[0],bundle,admin_url=admin,new_database=name,files_path=files)
+    files=tmp_path/'restored-files'
+    import subprocess,sys,json
+    process_env=dict(os.environ);process_env.pop('ERP_DATABASE_URL',None)
+    process_env['ERP_RESTORE_ADMIN_URL']=admin.render_as_string(hide_password=False)
+    process_env['ERP_MFA_ENCRYPTION_KEY']=env[0].mfa_encryption_key.get_secret_value()
+    process=subprocess.run([sys.executable,'-m','marking_erp.backup_cli','restore','--bundle',str(bundle),'--new-database',name,'--files-path',str(files)],env=process_env,capture_output=True,timeout=60)
+    assert process.returncode==0,process.stderr.decode()
+    result=json.loads(process.stdout)
     assert result['external_dispatch_disabled'] and files.exists()
     clone=clone_engine(admin.set(database=name),schema)
     try:

@@ -10,7 +10,7 @@ from marking_erp.migrate import schema_head
 
 def archive(path,*,data=b'PGDMPsynthetic-format-only',files=None,extra=None,manifest_change=None):
     files=files or {};items=[{'id':str(i),'storage_key':key,'size':len(value),'sha256':sha256(value).hexdigest(),'kind':'payload'} for i,(key,value) in enumerate(files.items())]
-    manifest={'format':1,'schema_revision':schema_head(),'db_schema':'public','database':{'size':len(data),'sha256':sha256(data).hexdigest()},'files':items,'mfa_key_required':False,'mfa_key_sha256':None}
+    manifest={'format':1,'snapshot_at':'2026-10-25T00:00:00+00:00','created_at':'2026-10-25T00:01:00+00:00','schema_revision':schema_head(),'db_schema':'public','database':{'size':len(data),'sha256':sha256(data).hexdigest()},'files':items,'mfa_key_required':False,'mfa_key_sha256':None}
     if manifest_change:manifest_change(manifest)
     with zipfile.ZipFile(path,'w') as z:
         z.writestr('database.dump',data)
