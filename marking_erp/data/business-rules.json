@@ -1,7 +1,7 @@
 [
   {
     "id": "nk.sync.interval_seconds",
-    "label": "Период фоновой актуализации",
+    "label": "Интервал синхронизации, секунды",
     "description": "Период фоновой актуализации",
     "type": "integer",
     "default": 900,
@@ -14,7 +14,7 @@
   },
   {
     "id": "nk.duplicates.similarity",
-    "label": "Порог похожести PN",
+    "label": "Порог схожести PN",
     "description": "Порог похожести PN; точные дубли всегда показываются",
     "type": "decimal",
     "default": 0.9,
@@ -27,7 +27,7 @@
   },
   {
     "id": "nk.duplicates.reason_required",
-    "label": "Причина подтверждения",
+    "label": "Причина подтверждения дубля",
     "description": "Причина подтверждения; факт подтверждения всегда в аудите",
     "type": "bool",
     "default": true,
@@ -38,7 +38,7 @@
   },
   {
     "id": "nk.bulk.batch_size",
-    "label": "Ограничивается дополнительно лимитом конкретного API",
+    "label": "Размер пакета НК",
     "description": "Ограничивается дополнительно лимитом конкретного API",
     "type": "integer",
     "default": 25,
@@ -51,7 +51,7 @@
   },
   {
     "id": "nk.drafts.hide_published_duplicates",
-    "label": "Только фильтр UI, синхронизация и данные сохраняются",
+    "label": "Скрывать опубликованные дубли",
     "description": "Только фильтр UI, синхронизация и данные сохраняются",
     "type": "bool",
     "default": true,
@@ -62,7 +62,7 @@
   },
   {
     "id": "bm.lines.merge",
-    "label": "Не объединять неоднозначные PN/GTIN",
+    "label": "Объединение строк накладной",
     "description": "Не объединять неоднозначные PN/GTIN",
     "type": "enum",
     "default": "same_pn_gtin_supplier",
@@ -77,7 +77,7 @@
   },
   {
     "id": "bm.issue.extra_confirmation",
-    "label": "Внутреннее дополнительное подтверждение заказа",
+    "label": "Дополнительное подтверждение эмиссии",
     "description": "Внутреннее дополнительное подтверждение заказа",
     "type": "bool",
     "default": true,
@@ -88,7 +88,7 @@
   },
   {
     "id": "bm.quantity.edit_until",
-    "label": "После подписи/отправки соответствующие данные неизменяемы",
+    "label": "Когда можно менять количество",
     "description": "После подписи/отправки соответствующие данные неизменяемы",
     "type": "enum",
     "default": "before_report_prepare",
@@ -103,7 +103,7 @@
   },
   {
     "id": "bm.atk.approval_required",
-    "label": "Внутреннее согласование до отправки",
+    "label": "Согласование АТК перед отправкой",
     "description": "Внутреннее согласование до отправки",
     "type": "bool",
     "default": false,
@@ -114,7 +114,7 @@
   },
   {
     "id": "archive.retention_months",
-    "label": "Минимум из ТЗ",
+    "label": "Срок хранения архива, месяцы",
     "description": "Минимум из ТЗ; не удалять связанные незавершённые операции",
     "type": "integer",
     "default": 6,
@@ -127,7 +127,7 @@
   },
   {
     "id": "warehouse.owner.policy",
-    "label": "Исключение требует permission и обоснования",
+    "label": "Проверка владельца КМ",
     "description": "Исключение требует permission и обоснования; требования ЦРПТ не отключаются",
     "type": "enum",
     "default": "strict",
@@ -141,7 +141,7 @@
   },
   {
     "id": "warehouse.missing.warning_threshold",
-    "label": "Только индикация",
+    "label": "Порог предупреждения о недостаче",
     "description": "Только индикация; не разрешает завершить неполную приёмку",
     "type": "integer",
     "default": 1,
@@ -154,7 +154,7 @@
   },
   {
     "id": "warehouse.duplicate.behavior",
-    "label": "Удаление отдельной командой и permission",
+    "label": "Повторное сканирование",
     "description": "Удаление отдельной командой и permission",
     "type": "enum",
     "default": "error_with_delete_action",
@@ -169,7 +169,7 @@
   },
   {
     "id": "warehouse.complete.confirm",
-    "label": "Подтверждение пользователя поверх обязательных серверных checks",
+    "label": "Подтверждать завершение",
     "description": "Подтверждение пользователя поверх обязательных серверных checks",
     "type": "bool",
     "default": true,
@@ -180,7 +180,7 @@
   },
   {
     "id": "warehouse.hide_completed",
-    "label": "Предустановленный фильтр списка",
+    "label": "Скрывать завершённые документы",
     "description": "Предустановленный фильтр списка",
     "type": "bool",
     "default": true,
@@ -191,7 +191,7 @@
   },
   {
     "id": "warehouse.devices.poll_seconds",
-    "label": "Актуализация центральных сканов",
+    "label": "Обновление сканов ТСД, секунды",
     "description": "Актуализация центральных сканов",
     "type": "integer",
     "default": 3,
@@ -204,7 +204,7 @@
   },
   {
     "id": "warehouse.check.timeout_seconds",
-    "label": "Ограничение читающей проверки",
+    "label": "Таймаут проверки КМ, секунды",
     "description": "Ограничение читающей проверки",
     "type": "integer",
     "default": 120,
@@ -217,7 +217,7 @@
   },
   {
     "id": "warehouse.external_fact_max_age_seconds",
-    "label": "Давность фактов",
+    "label": "Допустимый возраст внешних данных, секунды",
     "description": "Давность фактов; не даёт использовать неподтверждённые данные",
     "type": "integer",
     "default": 300,
@@ -230,7 +230,7 @@
   },
   {
     "id": "warehouse.status_profile",
-    "label": "Только проверенные профили по виду операции и товарной группе",
+    "label": "Профиль допустимых статусов",
     "description": "Только проверенные профили по виду операции и товарной группе",
     "type": "enum",
     "default": "approved_default",
@@ -244,7 +244,7 @@
   },
   {
     "id": "logistics.transfer.confirm",
-    "label": "Передача атомарна и всегда идемпотентна",
+    "label": "Подтверждать передачу на склад",
     "description": "Передача атомарна и всегда идемпотентна",
     "type": "bool",
     "default": true,
@@ -255,7 +255,7 @@
   },
   {
     "id": "logistics.receipt.required",
-    "label": "Для новых документов",
+    "label": "Обязательная приёмка на складе",
     "description": "Для новых документов; связанные уже переданные задания не исчезают",
     "type": "bool",
     "default": true,
@@ -266,7 +266,7 @@
   },
   {
     "id": "logistics.close.required_fields",
-    "label": "Не заменяет обязательные реквизиты внешнего контракта",
+    "label": "Реквизиты закрытия логистом",
     "description": "Не заменяет обязательные реквизиты внешнего контракта",
     "type": "set",
     "default": [
@@ -287,7 +287,7 @@
   },
   {
     "id": "split.label.format",
-    "label": "Другие форматы только после проверки renderer",
+    "label": "Формат этикетки разделения",
     "description": "Другие форматы только после проверки renderer",
     "type": "enum",
     "default": "58x40",
@@ -301,7 +301,7 @@
   },
   {
     "id": "split.application.extra_confirm",
-    "label": "Фактическое нанесение всё равно должно быть подтверждено перед отчётом",
+    "label": "Подтверждение нанесения при разделении",
     "description": "Фактическое нанесение всё равно должно быть подтверждено перед отчётом",
     "type": "bool",
     "default": true,
@@ -312,7 +312,7 @@
   },
   {
     "id": "labels.reprint.reason_required",
-    "label": "Аудит печати обязателен всегда",
+    "label": "Причина перепечати",
     "description": "Аудит печати обязателен всегда",
     "type": "bool",
     "default": true,
@@ -323,7 +323,7 @@
   },
   {
     "id": "labels.reprint.control_scan",
-    "label": "Контроль текущей сохранённой версии",
+    "label": "Контрольный скан при перепечати",
     "description": "Контроль текущей сохранённой версии",
     "type": "bool",
     "default": true,
@@ -334,7 +334,7 @@
   },
   {
     "id": "labels.reprint.max_copies",
-    "label": "Не снимает запрет неразрешённого дублирования",
+    "label": "Максимум экземпляров перепечати",
     "description": "Не снимает запрет неразрешённого дублирования",
     "type": "integer",
     "default": 1,
@@ -347,7 +347,7 @@
   },
   {
     "id": "labels.printer_profile",
-    "label": "Принтеры принадлежат разрешённой площадке",
+    "label": "Профиль принтера",
     "description": "Принтеры принадлежат разрешённой площадке",
     "type": "reference",
     "default": "browser_pdf",
@@ -361,7 +361,7 @@
   },
   {
     "id": "workflow.stop.confirm_number",
-    "label": "Подтверждение номера из ТЗ",
+    "label": "Подтверждение остановки номером",
     "description": "Подтверждение номера из ТЗ",
     "type": "constant",
     "default": true,
@@ -372,7 +372,7 @@
   },
   {
     "id": "bm.atk.tnved_digits",
-    "label": "Полный ТН ВЭД, пока новая политика не подтверждена",
+    "label": "Длина ТН ВЭД для АТК",
     "description": "Полный ТН ВЭД, пока новая политика не подтверждена",
     "type": "constant",
     "default": 10,
@@ -383,7 +383,7 @@
   },
   {
     "id": "bm.atk.supplier_isolation",
-    "label": "Нельзя смешивать поставщиков",
+    "label": "Один поставщик в АТК",
     "description": "Нельзя смешивать поставщиков",
     "type": "constant",
     "default": true,

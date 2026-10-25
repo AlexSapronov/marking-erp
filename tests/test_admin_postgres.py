@@ -83,7 +83,8 @@ def test_rule_inheritance_snapshots_reset_and_optimistic_conflict(policy_env,eng
     org=str(policy_env[1])
     with client(policy_env) as c:
         login(c,'administrator')
-        body=rule_body(c);assert c.post('/api/business-rules/system/preview',json=body).status_code==200
+        body=rule_body(c);preview=c.post('/api/business-rules/system/preview',json=body);assert preview.status_code==200
+        assert preview.json()['diff'][0]['before']==900 and preview.json()['diff'][0]['after']==1800
         assert c.put('/api/business-rules/system',json=body).status_code==200
         assert c.put('/api/business-rules/system',json=body).status_code==409
         body=rule_body(c,org,{'nk.sync.interval_seconds':2400})
@@ -97,6 +98,8 @@ def test_rule_inheritance_snapshots_reset_and_optimistic_conflict(policy_env,eng
         assert c.put('/api/business-rules/system',json=rule_body(c,changes={'nk.sync.interval_seconds':3600})).status_code==200
         assert c.put('/api/business-rules/'+org,json=stale).status_code==409
         history=c.get('/api/configuration/history?kind=rules&entity='+org).json()['history'];assert len(history)==2
+        assert history[0]['context']['resolved_before']['nk.sync.interval_seconds']==2400
+        assert history[0]['context']['resolved_after']['nk.sync.interval_seconds']==1800
         assert c.get('/api/configuration/history?kind=rules&entity='+org+'&before_id='+str(history[-1]['id'])).json()['history']==[]
 
 

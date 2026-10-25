@@ -34,10 +34,10 @@ class RulesChange(Body):
     reason: str=Field(min_length=8,max_length=1000)
 
 
-def record(c,actor,kind,entity,revision,reason,before,after):
-    c.execute(text('''INSERT INTO configuration_changes(kind,entity,revision,actor_id,reason,before_value,after_value)
-        VALUES (:kind,:entity,:revision,:actor,:reason,CAST(:before AS jsonb),CAST(:after AS jsonb))'''),
-        {'kind':kind,'entity':entity,'revision':revision,'actor':actor.id,'reason':reason.strip(),'before':json.dumps(before),'after':json.dumps(after)})
+def record(c,actor,kind,entity,revision,reason,before,after,context=None):
+    c.execute(text('''INSERT INTO configuration_changes(kind,entity,revision,actor_id,reason,before_value,after_value,context)
+        VALUES (:kind,:entity,:revision,:actor,:reason,CAST(:before AS jsonb),CAST(:after AS jsonb),CAST(:context AS jsonb))'''),
+        {'kind':kind,'entity':entity,'revision':revision,'actor':actor.id,'reason':reason.strip(),'before':json.dumps(before),'after':json.dumps(after),'context':json.dumps(context or {})})
     auth.audit(c,actor.id,'configuration.'+kind,entity,{'revision':revision,'reason':reason.strip()})
 
 
@@ -160,21 +160,24 @@ def install_admin(app,actor):
                 try:validate_value(defs[id],value)
                 except (ValueError,TypeError):raise HTTPException(422,'Недопустимое значение: '+id)
                 after[id]=value
-        diff=[{'id':k,'before':before.get(k),'after':after.get(k),'inherit':k not in after} for k in body.changes if before.get(k)!=after.get(k) or (k in before)!=(k in after)]
+        inherited={k:r['default'] for k,r in defs.items()}
+        if org:inherited.update(dict(c.execute(text("SELECT rule_id,value FROM policy_values WHERE scope_key='system'")).tuples().all()))
+        resolved_before={**inherited,**before};resolved_after={**inherited,**after}
+        diff=[{'id':k,'before':resolved_before[k],'after':resolved_after[k],'inherit':k not in after} for k in body.changes if before.get(k)!=after.get(k) or (k in before)!=(k in after)]
         if not diff:raise HTTPException(422,'Изменений нет')
-        return org,before,after,diff
+        return org,before,after,diff,{'system_revision':system,'scope_revision':revision,'resolved_before':resolved_before,'resolved_after':resolved_after}
 
     @app.post('/api/business-rules/{key}/preview')
     def rules_preview(key:str,body:RulesChange,current=dependency):
-        _,_,_,diff=review_rules(current,key,body)
+        _,_,_,diff,_=review_rules(current,key,body)
         return {'diff':diff,'notice':'Будущие команды используют новую версию. Уже подготовленные сохраняют прежний снимок.'}
 
     @app.put('/api/business-rules/{key}')
     def rules_save(key:str,body:RulesChange,current=dependency):
-        org,before,after,diff=review_rules(current,key,body);c=current.connection
+        org,before,after,diff,context=review_rules(current,key,body);c=current.connection
         c.execute(text('INSERT INTO policy_revisions(scope_key,organization_id) VALUES (:key,:org) ON CONFLICT DO NOTHING'),{'key':key,'org':org})
         c.execute(text('UPDATE policy_revisions SET revision=revision+1 WHERE scope_key=:key'),{'key':key})
         c.execute(text('DELETE FROM policy_values WHERE scope_key=:key'),{'key':key})
         if after:c.execute(text('INSERT INTO policy_values VALUES (:key,:id,CAST(:value AS jsonb))'),[{'key':key,'id':k,'value':json.dumps(v)} for k,v in after.items()])
-        record(c,current,'rules',key,body.revision+1,body.reason,before,after)
+        record(c,current,'rules',key,body.revision+1,body.reason,before,after,context)
         return {'revision':body.revision+1,'diff':diff}

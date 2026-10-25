@@ -1,5 +1,6 @@
 const scopeNames={none:'Запрет',own:'Свои',assigned:'Назначенные',all:'Все'};
 const kindNames={read:'Чтение',create:'Создание',edit:'Изменение',execute:'Выполнение'};
+const choiceNames={same_pn_gtin_supplier:'Совпадают PN, GTIN и поставщик',never:'Не объединять',before_emission:'До эмиссии',before_report_prepare:'До подготовки отчёта',strict:'Строгая проверка',error:'Ошибка',error_with_delete_action:'Ошибка с действием удаления',approved_default:'Базовый профиль (ожидает проверки)',browser_pdf:'PDF через браузер','58x40':'58 × 40 мм'};
 const categories={nk:'Национальный каталог',bm:'БМ',archive:'Архив',warehouse:'Склад',logistics:'Логистика',split:'Разделение',labels:'Этикетки',workflow:'Процессы'};
 export function createAdmin({state,$,api,node,button,heading,notice,report,openDialog,closeDialog}) {
   let changed=false,sequence=0,model=null,grants={},changes={},group='bm',scope='',query='',moduleFilter='';
@@ -26,7 +27,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
   function renderGroups(){
     const current=model.groups.find(g=>g.slug===group);grants=structuredClone(current.grants);
     const host=tools('Группы и права','Изменения действуют во всех организациях. Все сессии изменённой группы завершатся.','group',group);
-    const controls=node('div',undefined,'filters');controls.append(select('Группа',model.groups.map(g=>[g.slug,g.name]),group,value=>{if(canLeave()){group=value;changed=false;renderGroups();}else controls.querySelector('select').value=group;}));
+    const controls=node('div',undefined,'filters configuration-filters');controls.append(select('Группа',model.groups.map(g=>[g.slug,g.name]),group,value=>{if(canLeave()){group=value;changed=false;renderGroups();}else controls.querySelector('select').value=group;}));
     const search=node('label','Поиск действий'),input=node('input');input.setAttribute('aria-label','Поиск действий');input.value=query;input.placeholder='ID, описание или модуль';input.addEventListener('input',()=>{query=input.value;groupRows();});search.append(input);controls.append(search);
     controls.append(select('Модуль',[['','Все модули'],...[...new Set(model.catalog.map(p=>p.module))].map(m=>[m,m])],moduleFilter,value=>{moduleFilter=value;groupRows();}));host.append(controls);
     const bar=node('div',undefined,'actions section-gap');bar.append(button('Разрешить найденные',()=>bulk('all')),button('Запретить найденные',()=>bulk('none')),button('Только чтение',()=>bulk('read')),button('Базовый профиль',()=>{grants=Object.fromEntries(model.catalog.map(p=>[p.id,p.defaults[group]==='-'?'none':p.defaults[group]]));mark();groupRows();}));host.append(bar);
@@ -54,7 +55,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
   function deviation(){const banner=$('group-deviation');if(!banner)return;const p=model.catalog;const diffs=p.filter(x=>grants[x.id]!== (x.defaults[group]==='-'?'none':x.defaults[group]));banner.hidden=!diffs.length;banner.textContent=(group==='tsd'?'Отклонение от базового профиля ТСД. ':'Отклонение от базового профиля. ')+diffs.length+' действий. Изменения требуют причины и предпросмотра.';}
   function renderRules(){
     scope=model.scope;const host=tools('Бизнес-правила','Внутренняя политика для будущих команд. Уже подготовленные документы сохраняют свою версию. Бизнес-модули ещё не подключены.','rules',scope);
-    const controls=node('div',undefined,'filters');controls.append(select('Область настроек',[['system','Системные значения'],...state.session.organizations.map(o=>[o.id,o.name])],scope,value=>{if(canLeave()){scope=value;show('/rules');}else controls.querySelector('select').value=scope;}));
+    const controls=node('div',undefined,'filters configuration-filters');controls.append(select('Область настроек',[['system','Системные значения'],...state.session.organizations.map(o=>[o.id,o.name])],scope,value=>{if(canLeave()){scope=value;show('/rules');}else controls.querySelector('select').value=scope;}));
     const search=node('label','Поиск правил'),i=node('input');i.setAttribute('aria-label','Поиск правил');i.addEventListener('input',()=>ruleRows(i.value));search.append(i);controls.append(search);host.append(controls);
     const list=node('div');list.id='rule-list';host.append(list);ruleRows('');
     const footer=node('div',undefined,'policy-footer');footer.append(node('p',`Ревизия ${model.revision} · системная ${model.system_revision}. Пустое переопределение восстанавливает наследование.`,'field-help'),reasonForm());host.append(footer);
@@ -66,7 +67,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
       const row=node('div',undefined,'rule-row');row.append(node('h3',r.label),node('code',r.id),node('p',r.description,'muted'));const l=node('label','Значение');let input;
       const value=Object.hasOwn(changes,r.id)?changes[r.id]===null?r.inherited_value:changes[r.id]:r.value;
       if(r.type==='bool'){input=node('select');input.append(new Option('Да','true'),new Option('Нет','false'));input.value=String(value);}
-      else if(r.choices&&r.type!=='set'){input=node('select');for(const v of r.choices)input.append(new Option(v,v));input.value=value;}
+      else if(r.choices&&r.type!=='set'){input=node('select');for(const v of r.choices)input.append(new Option(choiceNames[v]||v,v));input.value=value;}
       else{input=node('input');input.type=['integer','decimal'].includes(r.type)?'number':'text';input.value=Array.isArray(value)?value.join(', '):String(value);if(r.min!==undefined){input.min=r.min;input.max=r.max;input.step=r.type==='decimal'?'0.01':'1';}}
       input.disabled=!r.mutable;input.setAttribute('aria-label',r.id);input.addEventListener('change',()=>{
         let v=input.value;if(r.type==='bool')v=v==='true';if(['integer','decimal'].includes(r.type))v=v===''?null:Number(v);if(r.type==='set')v=v.split(',').map(x=>x.trim());
@@ -79,11 +80,12 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
     }
   }
   async function preview(reason){
+    if(state.route==='/rules'&&[...$('rule-list').querySelectorAll('input,select')].some(i=>!i.checkValidity())){notice('Недопустимое значение. Проверьте тип и допустимый диапазон.','error');return;}
     const isGroup=state.route==='/groups',path=isGroup?'/api/groups/'+group:'/api/business-rules/'+scope;
     const body=isGroup?{revision:model.groups.find(g=>g.slug===group).revision,grants:structuredClone(grants),reason,tsd_confirmation:$('tsd-confirmation')?.value||''}:{revision:model.revision,system_revision:model.system_revision,changes:structuredClone(changes),reason};
     const seq=sequence;const submit=$('configuration-form').querySelector('button');submit.disabled=true;
-    try{const result=await api(path+'/preview',{method:'POST',body});if(seq!==sequence)return;const host=$('configuration-content');host.replaceChildren(node('p',result.notice,'notice warning'));$('configuration-title').textContent='Предпросмотр изменений';
-      const list=node('ul',undefined,'diff-list');for(const d of result.diff)list.append(node('li',d.id+': '+JSON.stringify(d.before)+' → '+(d.inherit?'Наследование':JSON.stringify(d.after))));host.append(list,node('p','Причина: '+reason,'muted'));
+    try{const result=await api(path+'/preview',{method:'POST',body});if(seq!==sequence)return;$('notice').hidden=true;const host=$('configuration-content');host.replaceChildren(node('p',result.notice,'notice warning'));$('configuration-title').textContent='Предпросмотр изменений';
+      const list=node('ul',undefined,'diff-list');for(const d of result.diff)list.append(node('li',d.id+': '+JSON.stringify(d.before)+' → '+(d.inherit?'Наследование ('+JSON.stringify(d.after)+')':JSON.stringify(d.after))));host.append(list,node('p','Причина: '+reason,'muted'));
       if(result.tsd_expansion)host.append(node('p','Профиль ТСД будет расширен.','notice warning'));
       const save=button('Применить изменения',async()=>{save.disabled=true;try{await api(path,{method:'PUT',body});if(seq!==sequence)return;changed=false;closeDialog('configuration-dialog',true);notice('Настройки сохранены.');await show(state.route);}catch(e){if(seq===sequence)safeError(e);}finally{save.disabled=false;}},'primary section-gap');host.append(save);openDialog('configuration-dialog');
     }catch(e){if(seq===sequence)safeError(e);}finally{submit.disabled=false;}
@@ -92,7 +94,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
     const seq=sequence;try{const result=await api('/api/configuration/history?'+new URLSearchParams({kind,entity,...(before?{before_id:before}:{})}));if(seq!==sequence)return;const host=$('configuration-content');if(!before){host.replaceChildren();$('configuration-title').textContent='История изменений';}
       if(!result.history.length)host.append(node('p','Изменений больше нет.','muted'));
       for(const item of result.history){const card=node('section',undefined,'history-entry');card.append(node('h3','Версия '+item.revision+' · '+item.actor_name),node('p',new Date(item.created_at).toLocaleString('ru-RU'),'field-help'),node('p',item.reason));
-        const list=node('ul',undefined,'diff-list');for(const id of new Set([...Object.keys(item.before_value),...Object.keys(item.after_value)]))if(JSON.stringify(item.before_value[id])!==JSON.stringify(item.after_value[id]))list.append(node('li',id+': '+JSON.stringify(item.before_value[id]??null)+' → '+JSON.stringify(item.after_value[id]??null)));card.append(list);host.append(card);}
+        const beforeValues=item.context?.resolved_before||item.before_value,afterValues=item.context?.resolved_after||item.after_value;const list=node('ul',undefined,'diff-list');for(const id of new Set([...Object.keys(item.before_value),...Object.keys(item.after_value)]))if(JSON.stringify(item.before_value[id])!==JSON.stringify(item.after_value[id]))list.append(node('li',id+': '+JSON.stringify(beforeValues[id]??null)+' → '+JSON.stringify(afterValues[id]??null)+(item.kind==='rules'&&!Object.hasOwn(item.after_value,id)?' (наследование)':'')));card.append(list);host.append(card);}
       host.querySelector('[data-more]')?.remove();if(result.history.length===25){const more=button('Ещё 25',()=>history(kind,entity,result.history.at(-1).id));more.dataset.more='';host.append(more);}openDialog('configuration-dialog');
     }catch(e){safeError(e);}
   }

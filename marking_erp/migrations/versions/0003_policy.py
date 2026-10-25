@@ -20,7 +20,7 @@ def upgrade():
         kind text NOT NULL CHECK(kind IN ('group','rules')),entity text NOT NULL,
         revision bigint NOT NULL CHECK(revision>1),actor_id uuid NOT NULL REFERENCES users(id),
         reason text NOT NULL CHECK(length(btrim(reason)) BETWEEN 8 AND 1000),
-        before_value jsonb NOT NULL,after_value jsonb NOT NULL,
+        before_value jsonb NOT NULL,after_value jsonb NOT NULL,context jsonb NOT NULL DEFAULT '{}',
         created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(kind,entity,revision))""")
     op.execute("CREATE TRIGGER configuration_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON configuration_changes FOR EACH STATEMENT EXECUTE FUNCTION reject_audit_change()")
     op.execute("""CREATE FUNCTION preserve_admin_grants() RETURNS trigger LANGUAGE plpgsql AS $$
