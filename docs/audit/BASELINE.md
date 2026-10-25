@@ -39,3 +39,8 @@ FAIL означает наблюдаемый дефект либо несоот�
 - [AlexSapronov/marking-bm](https://github.com/AlexSapronov/marking-bm/tree/ce77a1cf720ff62530988b091c29c2dc0ae69ed6)
 - [AlexSapronov/gis-trueapi](https://github.com/AlexSapronov/gis-trueapi/tree/503b87d422a07063d97da1e54f9a749c4b2e65cc)
 - [AlexSapronov/km-split](https://github.com/AlexSapronov/km-split/tree/847e4fbd95b046e5c0de3fabdbe23b88f8baf901)
+
+## Повторная сверка
+
+После слияния PR01 в marking-erp повторно получен main nk-manager:06f420f38b9ac100bd568f1238034fb1e601791d, изменений нет.
+Контроль blob SHA в локальных пробах сохранён. Новая инфраструктура ERP не является переносом старых SQLite.

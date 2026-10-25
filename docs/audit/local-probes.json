@@ -2,6 +2,13 @@
   "verified_python_sources": 103,
   "probes": [
     {
+      "finding": "S-004",
+      "observed": {
+        "source_ai30_in_report": 100,
+        "expected_source_ai30_in_report": null
+      }
+    },
+    {
       "finding": "W-001",
       "observed": {
         "anonymous_list_http": 200

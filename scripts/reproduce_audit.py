@@ -11,6 +11,15 @@ import subprocess
 import sys
 
 PROBES = {
+    "S-004": ("km-split", """
+from km_split.codes import division_entry,parse,GS,RS
+source='0104640638345218215DEMO000000000000000'+GS+'93dGVz'+GS+'30100'
+new='0104640638345218215SECOND0000000000000'+GS+'93abcd'+GS+'3030'
+entry=division_entry(new,source)
+source_in_report=parse(entry.split(RS)[1])
+print(json.dumps({'source_ai30_in_report':source_in_report.quantity,'expected_source_ai30_in_report':None}))
+assert source_in_report.quantity==100
+"""),
     "W-001": ("gis-trueapi", """
 import os, tempfile
 from pathlib import Path

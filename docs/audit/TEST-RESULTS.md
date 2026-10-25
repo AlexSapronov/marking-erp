@@ -27,3 +27,17 @@ receipt_results вернул ok=true, rows[0].remaining=7. Это наблюда
 `python scripts/reproduce_audit.py /path/to/source-snapshots` проверяет blob SHA Python-исходников и запускает три пробы в отдельных процессах с временными БД.
 Результаты: [local-probes.json](local-probes.json). W-001: anonymous list200; S-001: anonymous settings GET/POST200; W-002: ok=true при remaining7.
 Это воспроизведение существующих проблем, а не passing регрессии исправленной ERP. Продуктивные API не вызываются.
+
+## Повторный полный запуск25.10.2026
+
+Установлены uvicorn0.54.0, click8.5.0 и zxing-cpp3.1.1. Полные наборы запущены без исключения файлов.
+
+| Проект | Команда | Результат |
+|---|---|---|
+| gis-trueapi | python -m pytest -q tests --tb=short | 234 passed (предыдущий полный запуск на тех же исходниках) |
+| nk-manager | python -m pytest -q tests --tb=short | 104 passed |
+| marking-bm | python -m pytest -q tests --tb=short | 125 passed |
+| km-split | python -m pytest -q tests --tb=short | 64 passed |
+
+Всего527 passed. Ранее исключённые тесты запуска/безопасности/GS1/PDF теперь выполнены; browser suites и физическая печать не проверены.
+Source SHA не изменились. Полный набор не означает соответствия внешним контрактам: отдельная проба S-004 воспроизводит новый дефект.

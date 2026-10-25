@@ -1,0 +1,25 @@
+{
+  "retrieved_at": "2026-10-25",
+  "sources": [
+    {
+      "id": "S03",
+      "url": "https://docs.crpt.ru/gismt/True_API/",
+      "version": "747.0",
+      "published_at": "2026-10-21",
+      "bytes": 6259946,
+      "sha256": "f767c6ccdf4c90a53bdc5f488c34788795261857dcb130ace1d83526593b1efe",
+      "status": "downloaded; selected relevant sections reviewed",
+      "redistributed": false
+    },
+    {
+      "id": "S12",
+      "url": "https://docs.crpt.ru/gismt/Форматы_передаваемых_получаемых_КМ_КИ/",
+      "status": "official HTML selected radio DIVISIONMARK rows reviewed"
+    },
+    {
+      "id": "S13",
+      "url": "https://docs.crpt.ru/gismt/Инструкция_по_возникающим_ошибкам_СУЗ/",
+      "status": "official HTML error7846 reviewed"
+    }
+  ]
+}
