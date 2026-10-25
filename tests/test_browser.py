@@ -512,6 +512,8 @@ def test_documents_manual_prepare_archive_themes_mobile(page,live_app):
     page.get_by_label('Поставщик',exact=True).fill('Поставщик А')
     for name,value in [('PN','PN/А-1'),('GTIN','04640638349704'),('Штук в этикетке','10'),('Этикеток','3'),('ТН ВЭД','8542399000')]:
         page.get_by_label(name+', строка 1',exact=True).fill(value)
+    assert page.get_by_label('GTIN, строка 1',exact=True).evaluate('el=>el.scrollWidth<=el.clientWidth')
+    assert page.get_by_label('ТН ВЭД, строка 1',exact=True).evaluate('el=>el.scrollWidth<=el.clientWidth')
     capture(page,'documents-editor-light')
     page.get_by_role('button',name='Сохранить черновик',exact=True).click()
     expect(page.locator('#document-dialog')).to_be_hidden()
