@@ -193,7 +193,7 @@ class Actor:
             raise HTTPException(403, "Задание вам не назначено")
         if administrative or grant["administrative"]:
             if scope != "all" or not self.elevated_at or self.elevated_at < datetime.now(timezone.utc)-timedelta(minutes=5):
-                raise HTTPException(403, "Подтвердите пароль и новый код TOTP для административного действия")
+                raise HTTPException(403, {"code": "reauth_required", "message": "Подтвердите пароль и новый код TOTP для административного действия"})
         return scope
 
 

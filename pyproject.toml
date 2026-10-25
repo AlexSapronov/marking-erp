@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest==9.1.1", "httpx==0.28.1"]
+browser = ["playwright==1.55.0"]
 
 [project.scripts]
 marking-erp = "marking_erp.cli:main"
@@ -23,9 +24,9 @@ marking-erp = "marking_erp.cli:main"
 include = ["marking_erp*"]
 
 [tool.setuptools.package-data]
-marking_erp = ["data/*.json", "migrations/*.sql", "migrations/*.mako"]
+marking_erp = ["data/*.json", "migrations/*.sql", "migrations/*.mako", "static/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["postgres: requires a disposable PostgreSQL database"]
+markers = ["postgres: requires a disposable PostgreSQL database", "browser: requires PostgreSQL and installed Chromium"]
 
