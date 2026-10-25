@@ -70,15 +70,19 @@ class NkReadClient:
     def close(self):
         self._client.close()
 
-    def read_next(self, state: ReadPass) -> PageEvidence:
+    def read_next(self, state: ReadPass, *, observe=None) -> PageEvidence:
         # Serialize the entire pair; a failed detail read never advances state.
         with self._lock:
             request = state.next_request()
             listing = self._get('/v4/product-list', request.listing_params())
+            if observe is not None:
+                observe('/v4/product-list', listing)
             page = state.check_listing(listing)
             details = self._get('/v3/feed-product', {
                 'good_ids': ';'.join(str(good_id) for good_id in page.good_ids),
             }) if page.good_ids else None
+            if details is not None and observe is not None:
+                observe('/v3/feed-product', details)
             return PageEvidence(state.accept(listing, details), listing, details)
 
     def _quota(self, response):
