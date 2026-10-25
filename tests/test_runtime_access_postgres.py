@@ -82,3 +82,10 @@ def test_wrong_mfa_key_fails_without_logging_ciphertext_or_dsn(runtime):
     report = inspect_runtime(settings.model_copy(update={'mfa_encryption_key': SecretStr(Fernet.generate_key().decode())}), engine)
     assert not report['ready'] and not report['checks']['mfa_decrypt']
     assert 'postgresql' not in str(report)
+
+
+def test_runtime_cannot_run_grant_profile_as_an_administrative_command(runtime):
+    role, schema, engine, _ = runtime
+    with engine.begin() as c:
+        with pytest.raises(ValueError, match='runtime_grants_require_owner'):
+            apply_runtime_grants(c, role, schema)

@@ -15,16 +15,19 @@ def _identifier(value):
     return '"' + value + '"'
 
 
+def _owners(connection, schema):
+    return connection.execute(text('''SELECT datdba FROM pg_database WHERE datname=current_database()
+        UNION SELECT nspowner FROM pg_namespace WHERE nspname=:schema
+        UNION SELECT c.relowner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema
+        UNION SELECT p.proowner FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=:schema'''), {'schema': schema}).scalars().all()
+
+
 def role_is_restricted(connection, role, schema):
     flags = connection.execute(text('''SELECT rolsuper OR rolcreaterole OR rolcreatedb
         OR rolreplication OR rolbypassrls FROM pg_roles WHERE rolname=:role'''), {'role': role}).scalar_one_or_none()
     if flags is None or flags:
         return False
-    owners = connection.execute(text('''SELECT datdba FROM pg_database WHERE datname=current_database()
-        UNION SELECT nspowner FROM pg_namespace WHERE nspname=:schema
-        UNION SELECT c.relowner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema
-        UNION SELECT p.proowner FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=:schema'''), {'schema': schema}).scalars()
-    for owner in owners:
+    for owner in _owners(connection, schema):
         if connection.execute(text("SELECT pg_has_role(CAST(:role AS name),CAST(:owner AS oid),'MEMBER')"), {'role': role, 'owner': owner}).scalar_one():
             return False
     return not connection.execute(text("SELECT has_database_privilege(:role,current_database(),'CREATE') OR has_schema_privilege(:role,:schema,'CREATE')"), {'role': role, 'schema': schema}).scalar_one()
@@ -32,6 +35,9 @@ def role_is_restricted(connection, role, schema):
 
 def apply_runtime_grants(connection, role, schema='public'):
     role_sql, schema_sql = _identifier(role), _identifier(schema)
+    if not all(connection.execute(text("SELECT pg_has_role(current_user,CAST(:owner AS oid),'USAGE')"),
+                                  {'owner': owner}).scalar_one() for owner in _owners(connection, schema)):
+        raise ValueError('runtime_grants_require_owner')
     if connection.execute(text(f'SELECT version_num FROM {schema_sql}.alembic_version')).scalars().all() != [schema_head()]:
         raise ValueError('runtime_schema_revision')
     if not role_is_restricted(connection, role, schema):
