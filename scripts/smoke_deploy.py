@@ -52,7 +52,7 @@ def main():
     run('systemctl','daemon-reload');run('systemctl','start','marking-erp')
     try:
         for attempt in range(40):
-            result=subprocess.run(['curl','--silent','--fail','http://127.0.0.1:8000/health/ready'],capture_output=True,text=True)
+            result=subprocess.run(['curl','--silent','--fail','--connect-timeout','1','--max-time','2','http://127.0.0.1:8000/health/ready'],capture_output=True,text=True)
             if result.returncode==0:break
             time.sleep(.5)
         else:
@@ -67,8 +67,9 @@ def main():
         run('nginx','-t');run('systemctl','start','nginx');run('systemctl','reload','nginx')
         with tempfile.TemporaryDirectory() as root:
             cookie=Path(root)/'cookies'
-            def request(path,body=None,csrf=None):
-                command=['curl','--silent','--show-error','--fail-with-body','--noproxy','*','--resolve','erp.ci.test:443:127.0.0.1','--cacert',str(tls/'fullchain.pem'),'--cookie',str(cookie),'--cookie-jar',str(cookie),'https://erp.ci.test'+path]
+            def request(path,body=None,csrf=None,retry=False):
+                command=['curl','--silent','--show-error','--fail-with-body','--noproxy','*','--connect-timeout','3','--max-time','15','--resolve','erp.ci.test:443:127.0.0.1','--cacert',str(tls/'fullchain.pem'),'--cookie',str(cookie),'--cookie-jar',str(cookie),'https://erp.ci.test'+path]
+                if retry:command+=['--retry','5','--retry-connrefused','--retry-delay','1']
                 data=None
                 if body is not None:
                     command+=['--header','Origin: https://erp.ci.test','--header','X-Requested-With: marking-erp','--header','Content-Type: application/json','--data-binary','@-'];data=json.dumps(body)
@@ -76,7 +77,7 @@ def main():
                 response=subprocess.run(command,input=data,capture_output=True,text=True)
                 if response.returncode:raise RuntimeError('HTTPS smoke request failed for '+path)
                 return json.loads(response.stdout)
-            assert request('/health/ready')['build_sha']==os.environ['ERP_RELEASE_SHA']
+            assert request('/health/ready',retry=True)['build_sha']==os.environ['ERP_RELEASE_SHA']
             session=request('/api/session',{'username':'admin','password':password,'otp':pyotp.TOTP(secret).at(time.time()+30)})
             status=request('/api/system/status');assert status['technical_ready'] and not status['business_integrations_verified']
             invoice=request('/api/documents',{'request_id':str(uuid4()),'organization_id':session['organization_ids'][0],'number':'DEPLOY-SMOKE','document_date':'2026-10-26','supplier':'Synthetic supplier','lines':[{'pn':'Fixture','gtin':'04640638349704','tnved':'8542399000','quantity':10,'labels':3}]},session['csrf'])
