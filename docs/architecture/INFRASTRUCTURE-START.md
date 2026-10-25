@@ -8,6 +8,9 @@
 Python3.12+, подготовленная PostgreSQL16+, отдельная пустая БД и роль с правом создания таблиц/функций.
 Runtime-роль для дальнейшей эксплуатации должна быть отделена от миграционной роли; текущий срез предназначен для разработки.
 
+Для текущего инфраструктурного runtime подготовлен [профиль Ubuntu](UBUNTU-PILOT.md)
+с grant-runtime, read-only preflight, systemd credentials и TLS-прокси. Он не активирует внешние интеграции.
+
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e '.[test]'
