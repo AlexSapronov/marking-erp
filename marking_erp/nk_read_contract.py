@@ -99,8 +99,7 @@ class CheckedPage:
     details_sha256: str | None
 
 
-def check_page(request: PageRequest, listing_body: bytes,
-               details_body: bytes | None = None) -> CheckedPage:
+def check_listing(request: PageRequest, listing_body: bytes) -> CheckedPage:
     listing = _result(listing_body, 4)
     if not isinstance(listing, dict):
         raise ContractError('listing_shape')
@@ -125,6 +124,14 @@ def check_page(request: PageRequest, listing_body: bytes,
             or (end < listing['total'] and len(ids) != request.limit)
             or (not ids and (request.offset != 0 or listing['total'] != 0))):
         raise ContractError('listing_coverage')
+    return CheckedPage(request, listing['total'], tuple(ids),
+                       hashlib.sha256(listing_body).hexdigest(), None)
+
+
+def check_page(request: PageRequest, listing_body: bytes,
+               details_body: bytes | None = None) -> CheckedPage:
+    page = check_listing(request, listing_body)
+    ids = page.good_ids
     if ids:
         if details_body is None:
             raise ContractError('missing_details')
@@ -140,8 +147,7 @@ def check_page(request: PageRequest, listing_body: bytes,
             raise ContractError('details_membership')
     elif details_body is not None:
         raise ContractError('unexpected_details')
-    return CheckedPage(request, listing['total'], tuple(ids),
-                       hashlib.sha256(listing_body).hexdigest(),
+    return CheckedPage(request, page.total, ids, page.listing_sha256,
                        hashlib.sha256(details_body).hexdigest() if details_body is not None else None)
 
 
@@ -169,13 +175,18 @@ class ReadPass:
         return PageRequest(self.window, self.count, min(self.page_size, remaining))
 
     def accept(self, listing_body: bytes, details_body: bytes | None = None):
+        self.check_listing(listing_body)
         page = check_page(self.next_request(), listing_body, details_body)
+        return ReadPass(self.window, self.page_size, self.pages + (page,))
+
+    def check_listing(self, listing_body: bytes):
+        page = check_listing(self.next_request(), listing_body)
         if self.pages and page.total != self.pages[0].total:
             raise ContractError('total_changed_restart_pass')
         seen = {good_id for old in self.pages for good_id in old.good_ids}
         if seen.intersection(page.good_ids):
             raise ContractError('repeated_id_restart_pass')
-        return ReadPass(self.window, self.page_size, self.pages + (page,))
+        return page
 
     def summary(self):
         return {'coverage': 'bounded_pass' if self.finished else 'incomplete',
