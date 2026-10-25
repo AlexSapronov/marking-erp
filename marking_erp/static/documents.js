@@ -47,9 +47,9 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     if(can(permission)&&(operation==='restore'||can('documents.stop'))){const form=node('form',undefined,'document-transition section-gap');const [nl,number]=input('Подтвердите номер накладной'),[rl,reason]=input('Причина');number.required=true;reason.required=true;reason.minLength=8;reason.maxLength=1000;const submit=node('button',operation==='restore'?'Вернуть в черновики':'Документ не нужен — в архив');submit.type='submit';submit.className=operation==='archive'?'danger':'';form.append(nl,rl,submit);form.addEventListener('submit',e=>{e.preventDefault();change(doc,operation,{confirmation:number.value,reason:reason.value});});content.append(form);}
   }
   async function change(doc,action,extra){
-    const seq=editSeq,dialog=$('document-dialog');dialog.dataset.saving='true';dialog.querySelectorAll('button').forEach(b=>b.disabled=true);
+    const seq=editSeq,dialog=$('document-dialog'),buttons=[...$('document-content').querySelectorAll('button')].map(b=>[b,b.disabled]);dialog.dataset.saving='true';buttons.forEach(([b])=>b.disabled=true);
     try{await api('/api/documents/'+doc.id+'/'+action,{method:'POST',body:{revision:doc.revision,...extra}});if(seq!==editSeq)return;notice(action==='prepare'?'Состав проверен локально. Внешние операции не выполнялись.':action==='archive'?'Накладная в архиве.':'Накладная возвращена в черновики.');closeDialog('document-dialog',true);await show();}
-    catch(error){if(seq===editSeq)fail(error);}finally{delete dialog.dataset.saving;if(seq===editSeq)dialog.querySelectorAll('button').forEach(b=>b.disabled=false);}
+    catch(error){if(seq===editSeq)fail(error);}finally{delete dialog.dataset.saving;if(seq===editSeq)buttons.forEach(([b,disabled])=>b.disabled=disabled);}
   }
   function renderRows(host,rows,editable,onDirty=()=>{}){
     const section=node('section',undefined,'section-gap');host.append(section);let page=0;
@@ -67,11 +67,13 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     const dirty=()=>form.dataset.dirty='true';let rowsUI=renderRows(form,editor.rows,true,dirty);
     const importPanel=node('section',undefined,'document-import section-gap');const file=node('input');file.type='file';file.accept='.xlsx';const preview=button('Предпросмотр Excel',()=>previewFile()),mappingHost=node('div'),resultHost=node('div');
     if(can('marking.import.preview')){const template=node('a','Скачать шаблон Excel');template.href='/api/documents/template?organization_id='+encodeURIComponent(doc?.organization_id||org);template.setAttribute('download','invoice-template.xlsx');importPanel.append(template);importPanel.append(node('h3','Заменить состав из Excel'),label('Файл Excel',file),preview,mappingHost,resultHost);form.append(importPanel);}
+    let importSeq=0;file.addEventListener('change',()=>{importSeq++;preview.disabled=false;mappingHost.replaceChildren();resultHost.replaceChildren();});
     async function previewFile(params={}){
+      const importRequest=++importSeq;
       if(!file.files?.[0]){resultHost.replaceChildren(node('p','Выберите XLSX-файл.','error-message'));return;}
       if(file.files[0].size>10*1024*1024){resultHost.replaceChildren(node('p','Размер Excel превышает 10 МБ.','error-message'));return;}
       preview.disabled=true;resultHost.replaceChildren(node('p','Разбираем файл…'));const options=new URLSearchParams({organization_id:doc?.organization_id||org,...params});
-      try{const data=await api('/api/documents/import-preview?'+options,{method:'POST',raw:file.files[0]});if(seq!==editSeq)return;mappingHost.replaceChildren();resultHost.replaceChildren();
+      try{const data=await api('/api/documents/import-preview?'+options,{method:'POST',raw:file.files[0]});if(seq!==editSeq||importRequest!==importSeq)return;mappingHost.replaceChildren();resultHost.replaceChildren();
         if(data.requires_mapping){const sheets=node('select');for(const s of data.sheets)sheets.append(new Option(s.name,s.name));sheets.value=data.selected_sheet;const header=node('input');header.type='number';header.min=0;const columns=node('div',undefined,'document-mapping');let choices={};
           function sheetChanged(){const s=data.sheets.find(s=>s.name===sheets.value);header.value=s.suggested_header_row;columns.replaceChildren();choices={};for(const [key,title] of fields){const select=node('select');select.append(new Option('Выберите столбец',''));for(const col of s.columns)select.append(new Option(col.letter,col.index));select.value=s.suggested_mapping[key]??'';choices[key]=select;columns.append(label(title,select));}const sample=node('pre');sample.className='document-sample';sample.textContent=s.preview.slice(0,5).map(r=>`${r.row}: ${r.values.join(' | ')}`).join('\n');columns.append(sample);}
           sheets.addEventListener('change',sheetChanged);sheetChanged();mappingHost.append(label('Лист Excel',sheets),label('Строка заголовков (0 — без заголовков)',header),columns,button('Проверить сопоставление',()=>{const mapping={};for(const [key,select] of Object.entries(choices)){if(select.value===''){notice('Сопоставьте все пять полей.','warning');return;}mapping[key]=Number(select.value);}previewFile({sheet_name:sheets.value,header_row:header.value,mapping:JSON.stringify(mapping)});}));return;
@@ -79,13 +81,13 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
         for(const error of data.errors.slice(0,50))resultHost.append(node('p',`Строка ${error.row}: ${error.message}`,'error-message'));for(const warning of data.warnings.slice(0,30))resultHost.append(node('p',warning,'notice warning'));
         resultHost.append(node('p',`${data.lines.length} строк после разбора. Ошибок: ${data.errors.length}.`));renderRows(resultHost,data.lines,false);
         if(!data.errors.length&&can('marking.import.commit'))resultHost.append(button('Применить строки к черновику',()=>{if(seq!==editSeq)return;editor.rows.splice(0,editor.rows.length,...data.lines);editor.imported=true;rowsUI.redraw();dirty();notice('Строки перенесены в редактор. Сохраните накладную.');}));
-      }catch(error){if(seq===editSeq){resultHost.replaceChildren(node('p','Не удалось разобрать файл.','error-message'));report(error);}}finally{if(seq===editSeq)preview.disabled=false;}
+      }catch(error){if(seq===editSeq&&importRequest===importSeq){resultHost.replaceChildren(node('p','Не удалось разобрать файл.','error-message'));report(error);}}finally{if(seq===editSeq&&importRequest===importSeq)preview.disabled=false;}
     }
     const actions=node('div',undefined,'dialog-actions');const save=node('button','Сохранить черновик');save.type='submit';save.className='primary';actions.append(button('Отмена',()=>closeDialog('document-dialog')),save);form.append(actions);
-    form.addEventListener('submit',async e=>{e.preventDefault();if(form.dataset.busy==='true')return;form.dataset.busy='true';form.querySelectorAll('button').forEach(b=>b.disabled=true);
+    form.addEventListener('submit',async e=>{e.preventDefault();if(form.dataset.busy==='true')return;form.dataset.busy='true';const blocked=[...form.querySelectorAll('button')].map(b=>[b,b.disabled]);blocked.forEach(([b])=>b.disabled=true);
       const body={organization_id:doc?.organization_id||org,number:number.value,document_date:date.value,supplier:supplier.value,lines:editor.rows,imported:editor.imported,...(doc?{revision:doc.revision}:{request_id:editor.request_id})};
       try{const data=await api(doc?'/api/documents/'+doc.id:'/api/documents',{method:doc?'PUT':'POST',body});if(seq!==editSeq)return;closeDialog('document-dialog',true);notice('Накладная сохранена.'+(data.warnings?.length?' '+data.warnings.join('; '):''));await show();}
-      catch(error){if(seq===editSeq)fail(error);}finally{if(seq===editSeq){form.dataset.busy='false';form.querySelectorAll('button').forEach(b=>b.disabled=false);}}
+      catch(error){if(seq===editSeq)fail(error);}finally{if(seq===editSeq){form.dataset.busy='false';blocked.forEach(([b,disabled])=>b.disabled=disabled);}}
     });
   }
   return {show,reset,dirty:()=>$('document-form')?.dataset.dirty==='true'};

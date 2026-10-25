@@ -529,6 +529,7 @@ def test_documents_manual_prepare_archive_themes_mobile(page,live_app):
     expect(page.locator('#document-dialog')).to_be_hidden()
     expect(row).to_contain_text('Состав проверен локально')
     page.get_by_role('button',name='Открыть',exact=True).click()
+    expect(page.locator('#document-dialog [data-close]')).to_be_enabled()
     page.get_by_role('button',name='История накладной',exact=True).click()
     expect(page.locator('#document-history')).to_contain_text('Версия 2')
     page.get_by_label('Подтвердите номер накладной',exact=True).fill('INV-BROWSER-01')
