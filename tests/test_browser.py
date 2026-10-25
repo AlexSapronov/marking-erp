@@ -455,7 +455,7 @@ def test_profile_sessions_themes_mobile_and_network(page,live_app,engine):
     # A second valid login without a bearer/identifier in the list response.
     with engine.begin() as c:
         user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':live_app['users']['bm']}).mappings().one())
-        auth.create_session(c,dict(user,administrative=False))
+        auth.create_session(c,dict(user,administrative=False,mfa_verified=False))
     login(page,'bm')
     page.get_by_role('link',name='Мой профиль',exact=True).click()
     rows=page.locator('.own-session-row')
