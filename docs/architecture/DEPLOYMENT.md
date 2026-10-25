@@ -4,7 +4,7 @@
 
 
 Целевая схема: Ubuntu, PostgreSQL, Nginx HTTPS, FastAPI и worker как два systemd unit, user без sudo для runtime.
-Это проект deployment, готовых unit/migrations в этом PR нет.
+Это проект полного deployment. Добавлена начальная core-миграция; systemd units и полный production deployment пока не реализованы.
 Перед первым стартом: секреты с правами0600, чистая БД, versioned migrations, seed шести групп и первого администратора через одноразовую CLI-процедуру.
 Демо не подменяет live: mock-адаптеры только в тестах; production при отсутствии подключения показывает блокер.
 Readiness различает API/DB/migration/worker; интеграции и подписант — отдельные состояния. Диагностика показывает build SHA и schema version.

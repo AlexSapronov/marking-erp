@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marking-erp"
+version = "0.1.0"
+description = "Marking ERP infrastructure; business modules are not yet enabled"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.162.0", "uvicorn==0.54.0", "SQLAlchemy==2.1.6",
+  "alembic==1.20.1", "psycopg[binary]==3.3.6", "pydantic-settings==2.16.1",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1", "httpx==0.28.1"]
+
+[project.scripts]
+marking-erp = "marking_erp.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["marking_erp*"]
+
+[tool.setuptools.package-data]
+marking_erp = ["data/*.json", "migrations/*.sql", "migrations/*.mako"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["postgres: requires a disposable PostgreSQL database"]
+
