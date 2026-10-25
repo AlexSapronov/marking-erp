@@ -1,6 +1,8 @@
+import {createAdmin} from '/assets/admin.js';
 const $ = id => document.getElementById(id);
 const field = (form, name) => form.elements.namedItem(name);
 const state = {session:null,generation:0,route:'/',users:[],options:null,editing:null,credentials:null,query:'',group:'',status:'active',page:1};
+const admin=createAdmin({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
 const groupNames = {bm:'БМ',logistics:'Логист',warehouse:'Склад',tsd:'ТСД',specialist:'Специалист по маркировке',administrator:'Администратор'};
 const modules = [
   ['Национальный каталог','Карточки товаров и характеристики','nk.cards.view','▦'],
@@ -68,7 +70,7 @@ function closeDialog(id,force=false) {
 function openDialog(id) {const d=$(id);d.querySelectorAll('.error-message').forEach(n=>n.hidden=true);if(!d.open)d.showModal();d.querySelector('input:not([disabled])')?.focus();}
 function allDialogsClosed() {for(const d of document.querySelectorAll('dialog[open]'))if(!closeDialog(d.id))return false;return true;}
 function showLogin(message='') {
-  state.generation++;state.session=null;state.users=[];state.options=null;state.editing=null;state.credentials=null;
+  admin.reset();state.generation++;state.session=null;state.users=[];state.options=null;state.editing=null;state.credentials=null;
   document.querySelectorAll('dialog').forEach(d=>closeDialog(d.id,true));
   $('workspace').hidden=true;$('login-screen').hidden=false;$('boot').hidden=true;
   $('login-password').value='';$('login-otp').value='';$('login-error').textContent=message;$('login-error').hidden=!message;
@@ -81,6 +83,7 @@ function shell() {
   $('context-name').textContent=state.session.user.display_name;
   $('group-badge').textContent=state.session.group_name;
   $('users-link').hidden=!managesUsers();
+  $('groups-link').hidden=!has('permissions.manage');$('rules-link').hidden=!has('business_rules.manage');
   document.querySelectorAll('[data-nav]').forEach(link=>{if(link.closest('nav')){if(link.getAttribute('href')===state.route)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');}});
 }
 function heading(title,description,actions=[]) {
@@ -111,10 +114,11 @@ function profile() {
 }
 function forbidden() {const p=node('section',undefined,'panel empty');p.append(node('h2','Раздел недоступен'),node('p','У вашей группы нет разрешения на управление пользователями.'),button('На рабочее место',()=>navigate('/'),'section-gap'));$('page-content').replaceChildren(p);}
 function navigate(path,replace=false) {
-  if(!state.session||!allDialogsClosed())return;
-  state.route=['/','/profile','/users'].includes(path)?path:'/';
+  if(!state.session||!allDialogsClosed()||!admin.canLeave())return;
+  state.route=['/','/profile','/users','/groups','/rules'].includes(path)?path:'/';
   history[replace?'replaceState':'pushState']({},'',state.route);$('notice').hidden=true;shell();
-  document.title='Marking ERP · '+({'/':'Рабочее место','/profile':'Мой профиль','/users':'Пользователи'}[state.route]);
+  document.title='Marking ERP · '+({'/':'Рабочее место','/profile':'Мой профиль','/users':'Пользователи','/groups':'Группы и права','/rules':'Бизнес-правила'}[state.route]);
+  if(state.route==='/groups'||state.route==='/rules'){admin.show(state.route);return;}
   if(state.route==='/profile')profile();else if(state.route==='/users'){if(managesUsers())usersPage();else forbidden();}else home();
 }
 function usersPage() {
@@ -174,7 +178,7 @@ async function ask(title,message,label) {
 }
 async function refreshSession() {
   if(!state.session||document.visibilityState!=='visible')return;
-  try{const previous=managesUsers(),data=await api('/api/session');state.session=data;shell();if(previous&&!managesUsers()){for(const id of ['user-dialog','credentials-dialog','reauth-dialog'])closeDialog(id,true);if(state.route==='/users'){navigate('/',true);notice('Ваши права изменились. Управление пользователями недоступно.','warning');}}}
+  try{const previous=managesUsers(),data=await api('/api/session');state.session=data;shell();if((state.route==='/groups'&&!has('permissions.manage'))||(state.route==='/rules'&&!has('business_rules.manage'))){admin.reset();closeDialog('configuration-dialog',true);navigate('/',true);notice('Ваши права изменились. Раздел недоступен.','warning');return;}if(previous&&!managesUsers()){for(const id of ['user-dialog','credentials-dialog','reauth-dialog'])closeDialog(id,true);if(state.route==='/users'){navigate('/',true);notice('Ваши права изменились. Управление пользователями недоступно.','warning');}}}
   catch(e){if(e.code!=='stale')report(e);}
 }
 document.querySelectorAll('[data-nav]').forEach(link=>link.addEventListener('click',event=>{if(state.session){event.preventDefault();navigate(link.getAttribute('href'));}}));
@@ -214,6 +218,7 @@ $('password-form').addEventListener('submit',async event=>{
   event.preventDefault();const f=event.currentTarget;if(f.dataset.busy==='true')return;if(field(f,'new_password').value!==field(f,'confirm').value){report(new Error('Новые пароли не совпадают.'),'password-error');return;}
   const busyToken=busy(f,true);try{await api('/api/session/password',{method:'POST',body:{password:field(f,'password').value,new_password:field(f,'new_password').value,otp:field(f,'otp').value}});closeDialog('password-dialog',true);showLogin('Пароль изменён. Войдите снова.');}catch(e){report(e,'password-error');field(f,'password').value='';field(f,'otp').value='';}finally{busy(f,false,busyToken);}
 });
+window.addEventListener('beforeunload',event=>{if(admin.dirty()){event.preventDefault();event.returnValue='';}});
 window.addEventListener('popstate',()=>{if(state.session)navigate(location.pathname,true);});
 window.addEventListener('focus',refreshSession);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSession();});setInterval(refreshSession,30000);
 try{state.session=await api('/api/session');state.route=location.pathname;state.generation++;shell();navigate(location.pathname,true);}catch(e){showLogin(e.status===401?'':e.message);}

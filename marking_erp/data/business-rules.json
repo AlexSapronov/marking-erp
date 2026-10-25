@@ -1,0 +1,395 @@
+[
+  {
+    "id": "nk.sync.interval_seconds",
+    "label": "Период фоновой актуализации",
+    "description": "Период фоновой актуализации",
+    "type": "integer",
+    "default": 900,
+    "category": "nk",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 60.0,
+    "max": 86400.0
+  },
+  {
+    "id": "nk.duplicates.similarity",
+    "label": "Порог похожести PN",
+    "description": "Порог похожести PN; точные дубли всегда показываются",
+    "type": "decimal",
+    "default": 0.9,
+    "category": "nk",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 0.5,
+    "max": 1.0
+  },
+  {
+    "id": "nk.duplicates.reason_required",
+    "label": "Причина подтверждения",
+    "description": "Причина подтверждения; факт подтверждения всегда в аудите",
+    "type": "bool",
+    "default": true,
+    "category": "nk",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "nk.bulk.batch_size",
+    "label": "Ограничивается дополнительно лимитом конкретного API",
+    "description": "Ограничивается дополнительно лимитом конкретного API",
+    "type": "integer",
+    "default": 25,
+    "category": "nk",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 1.0,
+    "max": 100.0
+  },
+  {
+    "id": "nk.drafts.hide_published_duplicates",
+    "label": "Только фильтр UI, синхронизация и данные сохраняются",
+    "description": "Только фильтр UI, синхронизация и данные сохраняются",
+    "type": "bool",
+    "default": true,
+    "category": "nk",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "bm.lines.merge",
+    "label": "Не объединять неоднозначные PN/GTIN",
+    "description": "Не объединять неоднозначные PN/GTIN",
+    "type": "enum",
+    "default": "same_pn_gtin_supplier",
+    "category": "bm",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "choices": [
+      "same_pn_gtin_supplier",
+      "never"
+    ]
+  },
+  {
+    "id": "bm.issue.extra_confirmation",
+    "label": "Внутреннее дополнительное подтверждение заказа",
+    "description": "Внутреннее дополнительное подтверждение заказа",
+    "type": "bool",
+    "default": true,
+    "category": "bm",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "bm.quantity.edit_until",
+    "label": "После подписи/отправки соответствующие данные неизменяемы",
+    "description": "После подписи/отправки соответствующие данные неизменяемы",
+    "type": "enum",
+    "default": "before_report_prepare",
+    "category": "bm",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "choices": [
+      "before_emission",
+      "before_report_prepare"
+    ]
+  },
+  {
+    "id": "bm.atk.approval_required",
+    "label": "Внутреннее согласование до отправки",
+    "description": "Внутреннее согласование до отправки",
+    "type": "bool",
+    "default": false,
+    "category": "bm",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "archive.retention_months",
+    "label": "Минимум из ТЗ",
+    "description": "Минимум из ТЗ; не удалять связанные незавершённые операции",
+    "type": "integer",
+    "default": 6,
+    "category": "archive",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 6.0,
+    "max": 120.0
+  },
+  {
+    "id": "warehouse.owner.policy",
+    "label": "Исключение требует permission и обоснования",
+    "description": "Исключение требует permission и обоснования; требования ЦРПТ не отключаются",
+    "type": "enum",
+    "default": "strict",
+    "category": "warehouse",
+    "mutable": false,
+    "risk": "Исключения проверки владельца пока не реализованы; ослабление закрыто.",
+    "dependencies": [],
+    "choices": [
+      "strict"
+    ]
+  },
+  {
+    "id": "warehouse.missing.warning_threshold",
+    "label": "Только индикация",
+    "description": "Только индикация; не разрешает завершить неполную приёмку",
+    "type": "integer",
+    "default": 1,
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 0.0,
+    "max": 100000.0
+  },
+  {
+    "id": "warehouse.duplicate.behavior",
+    "label": "Удаление отдельной командой и permission",
+    "description": "Удаление отдельной командой и permission",
+    "type": "enum",
+    "default": "error_with_delete_action",
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "choices": [
+      "error",
+      "error_with_delete_action"
+    ]
+  },
+  {
+    "id": "warehouse.complete.confirm",
+    "label": "Подтверждение пользователя поверх обязательных серверных checks",
+    "description": "Подтверждение пользователя поверх обязательных серверных checks",
+    "type": "bool",
+    "default": true,
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "warehouse.hide_completed",
+    "label": "Предустановленный фильтр списка",
+    "description": "Предустановленный фильтр списка",
+    "type": "bool",
+    "default": true,
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "warehouse.devices.poll_seconds",
+    "label": "Актуализация центральных сканов",
+    "description": "Актуализация центральных сканов",
+    "type": "integer",
+    "default": 3,
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 1.0,
+    "max": 60.0
+  },
+  {
+    "id": "warehouse.check.timeout_seconds",
+    "label": "Ограничение читающей проверки",
+    "description": "Ограничение читающей проверки",
+    "type": "integer",
+    "default": 120,
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 10.0,
+    "max": 600.0
+  },
+  {
+    "id": "warehouse.external_fact_max_age_seconds",
+    "label": "Давность фактов",
+    "description": "Давность фактов; не даёт использовать неподтверждённые данные",
+    "type": "integer",
+    "default": 300,
+    "category": "warehouse",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 30.0,
+    "max": 3600.0
+  },
+  {
+    "id": "warehouse.status_profile",
+    "label": "Только проверенные профили по виду операции и товарной группе",
+    "description": "Только проверенные профили по виду операции и товарной группе",
+    "type": "enum",
+    "default": "approved_default",
+    "category": "warehouse",
+    "mutable": false,
+    "risk": "Профили True API пока не подтверждены; изменение закрыто до контрактной проверки.",
+    "dependencies": [],
+    "choices": [
+      "approved_default"
+    ]
+  },
+  {
+    "id": "logistics.transfer.confirm",
+    "label": "Передача атомарна и всегда идемпотентна",
+    "description": "Передача атомарна и всегда идемпотентна",
+    "type": "bool",
+    "default": true,
+    "category": "logistics",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "logistics.receipt.required",
+    "label": "Для новых документов",
+    "description": "Для новых документов; связанные уже переданные задания не исчезают",
+    "type": "bool",
+    "default": true,
+    "category": "logistics",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "logistics.close.required_fields",
+    "label": "Не заменяет обязательные реквизиты внешнего контракта",
+    "description": "Не заменяет обязательные реквизиты внешнего контракта",
+    "type": "set",
+    "default": [
+      "supplier",
+      "number",
+      "date"
+    ],
+    "category": "logistics",
+    "mutable": true,
+    "risk": "Согласованный обязательный набор реквизитов сохраняется; расширение требует регистрации новых полей.",
+    "dependencies": [],
+    "choices": [
+      "supplier",
+      "number",
+      "date"
+    ],
+    "min_items": 3
+  },
+  {
+    "id": "split.label.format",
+    "label": "Другие форматы только после проверки renderer",
+    "description": "Другие форматы только после проверки renderer",
+    "type": "enum",
+    "default": "58x40",
+    "category": "split",
+    "mutable": false,
+    "risk": "Доступен только проверяемый формат 58×40; renderer будет добавлен отдельным этапом.",
+    "dependencies": [],
+    "choices": [
+      "58x40"
+    ]
+  },
+  {
+    "id": "split.application.extra_confirm",
+    "label": "Фактическое нанесение всё равно должно быть подтверждено перед отчётом",
+    "description": "Фактическое нанесение всё равно должно быть подтверждено перед отчётом",
+    "type": "bool",
+    "default": true,
+    "category": "split",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "labels.reprint.reason_required",
+    "label": "Аудит печати обязателен всегда",
+    "description": "Аудит печати обязателен всегда",
+    "type": "bool",
+    "default": true,
+    "category": "labels",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "labels.reprint.control_scan",
+    "label": "Контроль текущей сохранённой версии",
+    "description": "Контроль текущей сохранённой версии",
+    "type": "bool",
+    "default": true,
+    "category": "labels",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "labels.reprint.max_copies",
+    "label": "Не снимает запрет неразрешённого дублирования",
+    "description": "Не снимает запрет неразрешённого дублирования",
+    "type": "integer",
+    "default": 1,
+    "category": "labels",
+    "mutable": true,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": [],
+    "min": 1.0,
+    "max": 10.0
+  },
+  {
+    "id": "labels.printer_profile",
+    "label": "Принтеры принадлежат разрешённой площадке",
+    "description": "Принтеры принадлежат разрешённой площадке",
+    "type": "reference",
+    "default": "browser_pdf",
+    "category": "labels",
+    "mutable": false,
+    "risk": "Другие профили принтеров будут доступны после реализации и проверки печати.",
+    "dependencies": [],
+    "choices": [
+      "browser_pdf"
+    ]
+  },
+  {
+    "id": "workflow.stop.confirm_number",
+    "label": "Подтверждение номера из ТЗ",
+    "description": "Подтверждение номера из ТЗ",
+    "type": "constant",
+    "default": true,
+    "category": "workflow",
+    "mutable": false,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "bm.atk.tnved_digits",
+    "label": "Полный ТН ВЭД, пока новая политика не подтверждена",
+    "description": "Полный ТН ВЭД, пока новая политика не подтверждена",
+    "type": "constant",
+    "default": 10,
+    "category": "bm",
+    "mutable": false,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  },
+  {
+    "id": "bm.atk.supplier_isolation",
+    "label": "Нельзя смешивать поставщиков",
+    "description": "Нельзя смешивать поставщиков",
+    "type": "constant",
+    "default": true,
+    "category": "bm",
+    "mutable": false,
+    "risk": "Влияет только на новые решения. Подготовленные и отправленные документы сохраняют прежний снимок правил.",
+    "dependencies": []
+  }
+]

@@ -3,7 +3,7 @@
 Дата: 25.10.2026. Проектное решение, если явно не указано иное.
 
 
-Значения ниже — предложения для первого seed, не настройки работающей ERP.
+Значения ниже зарегистрированы в каталоге внутренней политики. Редактор /rules сохраняет версии и переопределения организаций; бизнес-модули ещё не подключены. Ограничения текущего среза: CONFIGURATION.md.
 Область: system default → organization override → document snapshot. Для status profiles обязательна проверенная контрактная версия.
 Структура: id, label, description, type, default, validator, scope, dependencies, risk text, mutable, effective_version, actor/reason.
 
