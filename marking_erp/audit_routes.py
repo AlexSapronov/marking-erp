@@ -42,7 +42,7 @@ def public_event(row):
                     action == 'configuration.rules' and row['entity'] == 'system') or (
                     action == 'system.restored' and row['entity'] == 'backup'):
                 entity = row['entity']
-    return {'id': row['id'], 'created_at': row['created_at'], 'action': action,
+    return {'id': str(row['id']), 'created_at': row['created_at'], 'action': action,
             'label': ACTION_LABELS.get(action, 'Неизвестный тип события'),
             'actor_id': row['actor_id'], 'entity': entity}
 
@@ -77,5 +77,5 @@ def install_audit(app, actor):
             'SELECT id,created_at,action,actor_id,entity FROM audit_events' + where +
             ' ORDER BY id DESC LIMIT 26'), params).mappings().all()
         return {'events': [public_event(row) for row in rows[:25]],
-                'next_before_id': rows[24]['id'] if len(rows) > 25 else None,
+                'next_before_id': str(rows[24]['id']) if len(rows) > 25 else None,
                 'actions': ACTION_LABELS}

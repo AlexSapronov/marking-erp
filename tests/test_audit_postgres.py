@@ -55,7 +55,7 @@ def test_keyset_pagination_excludes_newer_insertions(global_env,engine):
         with engine.begin() as db:auth.audit(db,None,'system.restored','backup')
         second=c.get('/api/audit',params={**params,'before_id':first['next_before_id']}).json()
         third=c.get('/api/audit',params={**params,'before_id':second['next_before_id']}).json()
-        ids=[row['id'] for page in [first,second,third] for row in page['events']]
+        ids=[int(row['id']) for page in [first,second,third] for row in page['events']]
         assert len(ids)==len(set(ids))==60 and ids==sorted(ids,reverse=True)
         assert third['next_before_id'] is None
 
