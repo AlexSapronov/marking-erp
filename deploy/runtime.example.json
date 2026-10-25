@@ -1,0 +1,8 @@
+{
+  "database_url": "postgresql+psycopg://marking_erp_runtime:CHANGE_ME@127.0.0.1:5432/marking_erp",
+  "mfa_encryption_key": "GENERATE_ONCE_AND_STORE_PRIVATELY",
+  "public_url": "https://erp.internal.example",
+  "secure_cookie": true,
+  "file_storage_path": "/var/lib/marking-erp/files",
+  "build_sha": "REPLACE_WITH_THE_40_CHARACTER_RELEASE_COMMIT"
+}

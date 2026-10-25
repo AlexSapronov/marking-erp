@@ -29,6 +29,8 @@ def main():
     revoke=commands.add_parser('revoke-signer')
     revoke.add_argument('--device-id',required=True)
     commands.add_parser('recover-operations')
+    runtime = commands.add_parser('grant-runtime')
+    runtime.add_argument('--role', required=True)
     args = parser.parse_args()
     if args.action == "generate-mfa-key":
         print(Fernet.generate_key().decode())
@@ -73,6 +75,9 @@ def main():
             elif args.action=='recover-operations':
                 from .operations import recover_expired
                 print('recovered:',recover_expired(connection))
+            elif args.action=='grant-runtime':
+                from .runtime_access import apply_runtime_grants
+                apply_runtime_grants(connection,args.role)
             else:
                 from .auth import bootstrap_admin
                 bootstrap_admin(connection, settings, args.username, args.display_name, password, totp_secret, code, args.inn, args.organization_name)
