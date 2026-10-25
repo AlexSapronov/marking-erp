@@ -286,3 +286,33 @@ def test_operations_tsd_hidden_and_direct_access_denied(page,live_app):
     from playwright.sync_api import expect
     login(page,'tsd');expect(page.locator('#operations-link')).to_be_hidden()
     page.goto(live_app['base']+'/operations');expect(page.get_by_role('heading',name='Раздел недоступен',exact=True)).to_be_visible()
+
+
+def test_html_report_in_chromium_is_readable_and_does_not_execute_remote_fields(tmp_path, browser):
+    from playwright.sync_api import expect
+    from marking_erp.nk_pilot_review import review_pilot, write_review
+    from test_nk_pilot_review import card, capture as make_pilot
+    attack = '<img src="https://invalid.example/track" onerror="window.nkInjected=true">'
+    report = review_pilot(make_pilot(tmp_path, [card(good_attrs=[{'attr_id': 13914, 'attr_value': attack}]), card(2)]))
+    output = tmp_path / 'review'
+    write_review(report, output)
+    context = browser.new_context(viewport={'width': 1440, 'height': 900}, locale='ru-RU')
+    page = context.new_page()
+    requests = []
+    page.on('request', lambda request: requests.append(request.url))
+    try:
+        page.goto((output / 'review.html').as_uri())
+        expect(page.get_by_role('heading', name='Разбор пилота НК')).to_be_visible()
+        expect(page.locator('tbody tr')).to_have_count(2)
+        expect(page.locator('tbody tr').first.locator('td').nth(1)).to_have_text(attack)
+        assert page.evaluate('window.nkInjected === undefined')
+        assert not page.locator('img,script,iframe').count()
+        assert not any(url.startswith(('http:', 'https:')) for url in requests)
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        assert page.locator('tbody tr').first.locator('td').nth(2).evaluate(
+            'el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;}') == 1
+        screenshots = Path('test-results/ui')
+        screenshots.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(screenshots / 'nk-pilot-review.png'), full_page=True)
+    finally:
+        context.close()
