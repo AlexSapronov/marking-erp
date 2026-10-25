@@ -168,3 +168,26 @@ def test_server_data_is_text_and_network_failure_is_visible(page,engine):
     assert page.locator('img').count()==0
     page.context.set_offline(True);page.get_by_role('button',name='Обновить',exact=True).click();expect(page.locator('#notice')).to_contain_text('Не удалось получить ответ')
     page.context.set_offline(False);page.get_by_role('button',name='Обновить',exact=True).click();expect(page.locator('table')).to_be_visible()
+
+
+def test_credentials_enrollment_and_disabled_user(page,live_app,engine):
+    from playwright.sync_api import expect
+    login(page);page.locator('#users-link').click();expect(page.locator('table')).to_be_visible()
+    page.get_by_label('Поиск пользователей').fill('bm-user')
+    row=page.locator('tbody tr').filter(has_text='bm-user')
+    row.get_by_role('button',name='Пароль и TOTP',exact=True).click()
+    f=page.locator('#credentials-form');f.locator('[name=password]').fill('Reset-browser-password-2026');f.locator('[name=password_confirm]').fill('Reset-browser-password-2026')
+    f.locator('[name=replace_mfa]').check();page.locator('#generate-reset-totp').click()
+    secret=f.locator('[name=totp_secret]').input_value();assert len(secret)==32
+    f.locator('[name=totp_code]').fill(pyotp.TOTP(secret).now());capture(page,'credentials-mfa')
+    f.locator('button[type=submit]').click();expect(page.locator('#credentials-dialog')).to_be_hidden()
+    expect(page.locator('#notice')).to_contain_text('Доступ пользователя обновлён')
+    # Changes are committed in the actual database, including encryption and revision.
+    with engine.connect() as c:
+        user=c.execute(text("SELECT password_hash,mfa_ciphertext,auth_version FROM users WHERE username='bm-user'")).mappings().one()
+        assert auth.password_matches('Reset-browser-password-2026',user['password_hash'])
+        assert secret.encode() not in user['mfa_ciphertext'] and user['auth_version']==2
+    row.get_by_role('button',name='Изменить',exact=True).click();u=page.locator('#user-form');u.locator('[name=enabled]').uncheck();u.locator('button[type=submit]').click()
+    expect(page.locator('#confirm-dialog')).to_be_visible();page.locator('#confirm-ok').click()
+    expect(page.locator('#user-dialog')).to_be_hidden();page.get_by_label('Фильтр по состоянию').select_option('disabled');expect(row).to_contain_text('Отключён')
+    with engine.connect() as c:assert c.execute(text("SELECT enabled FROM users WHERE username='bm-user'")).scalar_one() is False
