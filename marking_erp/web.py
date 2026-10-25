@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from .config import Settings
 from .database import database_engine
 from .migrate import schema_head
+from .auth_routes import install_auth
 
 
 def create_app(settings=None, engine=None):
@@ -21,6 +23,31 @@ def create_app(settings=None, engine=None):
 
     app = FastAPI(title="Marking ERP infrastructure", docs_url=None, redoc_url=None,
                   openapi_url=None, lifespan=lifespan)
+
+    @app.middleware("http")
+    async def security(request: Request, call_next):
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            if request.headers.get("origin") != settings.public_url or request.headers.get("X-Requested-With") != "marking-erp":
+                return JSONResponse({"detail": "Недопустимый источник запроса"}, status_code=403)
+        response = await call_next(request)
+        response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                 "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
+                                 "Content-Security-Policy": "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"})
+        return response
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, error):
+        return JSONResponse({"detail": [{"loc": list(item["loc"]), "msg": item["msg"], "type": item["type"]} for item in error.errors()]}, status_code=422)
+
+    @app.exception_handler(ValueError)
+    async def invalid(request, error):
+        return JSONResponse({"detail": "Проверьте введённые данные"}, status_code=422)
+
+    @app.exception_handler(SQLAlchemyError)
+    async def database_error(request, error):
+        return JSONResponse({"detail": "База данных временно недоступна"}, status_code=503)
+
+    app.state.auth_dependency = install_auth(app, engine, settings)
 
     @app.get("/health/live")
     def live():

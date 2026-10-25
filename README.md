@@ -22,4 +22,6 @@
 
 Дополнительная проверка контрактов и снятых ограничений: [True API и формат разделения](docs/audit/TRUE-API-REVIEW.md).
 
-[Запуск PostgreSQL-инфраструктуры и проверки](docs/architecture/INFRASTRUCTURE-START.md): миграции, шесть групп, 81 permission и health endpoints. Личный вход и рабочие места — следующий срез.
+[Запуск PostgreSQL-инфраструктуры и проверки](docs/architecture/INFRASTRUCTURE-START.md): миграции, шесть групп, 81 permission и health endpoints. Личный вход и административный API реализованы; рабочие места — следующий срез.
+
+[Первый администратор, личный вход и управление сессиями](docs/architecture/AUTHENTICATION.md). Для административного доступа обязателен TOTP.
