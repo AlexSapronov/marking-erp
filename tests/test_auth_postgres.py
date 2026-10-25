@@ -249,3 +249,34 @@ def test_expired_session_and_organization_removal_apply_immediately(env,engine):
             connection.execute(text("UPDATE sessions SET expires_at=now()-interval '1 minute',created_at=now()-interval '1 hour'"))
         assert c.get("/api/session").status_code==401
 
+
+def test_administrator_cannot_abandon_only_managed_organization(env,engine):
+    _,org,other_org,users,_=env
+    with engine.begin() as c:
+        # The actor can see both organizations, but is the only admin of the first.
+        c.execute(text("INSERT INTO user_organizations VALUES (:user,:org)"), {"user":users["administrator"],"org":other_org})
+        other=uuid4()
+        c.execute(text("""INSERT INTO users(id,username,display_name,password_hash,group_slug,mfa_ciphertext)
+            VALUES (:id,'other-admin','Other',:hash,'administrator',:mfa)"""),
+            {"id":other,"hash":HASH,"mfa":auth.encrypt_mfa(TOTP_SECRET,env[0])})
+        c.execute(text("INSERT INTO user_organizations VALUES (:user,:org)"), {"user":other,"org":other_org})
+    with client(env) as c:
+        login(c,"administrator")
+        result=c.patch(f"/api/users/{users['administrator']}",json={"auth_version":1,"organization_ids":[str(other_org)]})
+        assert result.status_code==409,result.text
+
+
+def test_admin_cannot_list_edit_or_revoke_outside_user(env,engine):
+    outside=uuid4()
+    with engine.begin() as connection:
+        connection.execute(text("INSERT INTO users(id,username,display_name,password_hash,group_slug) VALUES (:id,'outside-user','Outside',:hash,'bm')"),
+                           {"id":outside,"hash":HASH})
+        connection.execute(text("INSERT INTO user_organizations VALUES (:id,:org)"),{"id":outside,"org":env[2]})
+    with client(env) as c:
+        login(c,"administrator")
+        visible=c.get("/api/users")
+        assert visible.status_code==200
+        assert str(outside) not in {u["id"] for u in visible.json()["users"]}
+        assert c.patch(f"/api/users/{outside}",json={"auth_version":1,"enabled":False}).status_code==403
+        assert c.post(f"/api/users/{outside}/revoke-sessions").status_code==403
+

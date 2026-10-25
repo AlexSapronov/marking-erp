@@ -247,6 +247,14 @@ def update_user(actor, user_id, *, revision, display_name=None, group=None, enab
     if (target_group == "administrator" or group_has_admin(c, target_group)) and not user["mfa_ciphertext"]:
         raise HTTPException(422, "Сначала настройте TOTP пользователя")
     org_ids = check_organization_scope(actor, organizations) if organizations is not None else None
+    if user["group_slug"] == "administrator" and user["enabled"]:
+        previous_orgs = set(c.execute(text("SELECT organization_id FROM user_organizations WHERE user_id=:id"), {"id": user_id}).scalars())
+        removed_orgs = previous_orgs if target_group != "administrator" or not target_enabled else previous_orgs - (org_ids if org_ids is not None else previous_orgs)
+        for org in removed_orgs:
+            remaining = c.execute(text("""SELECT EXISTS(SELECT 1 FROM users u JOIN user_organizations uo ON uo.user_id=u.id
+                WHERE u.id<>:id AND u.enabled AND u.group_slug='administrator' AND uo.organization_id=:org)"""), {"id": user_id, "org": org}).scalar()
+            if not remaining:
+                raise HTTPException(409, "Организация должна сохранить действующего администратора")
     c.execute(text("""UPDATE users SET display_name=:name,group_slug=:group,enabled=:enabled,auth_version=auth_version+1 WHERE id=:id"""),
               {"name": display_name.strip() if display_name is not None else user["display_name"], "group": target_group, "enabled": target_enabled, "id": user_id})
     if org_ids is not None:
