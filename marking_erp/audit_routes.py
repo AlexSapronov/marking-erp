@@ -10,6 +10,7 @@ ACTION_LABELS = {
     'login.failed': 'Неудачный вход',
     'session.created': 'Вход выполнен',
     'session.revoked': 'Выход из системы',
+    'sessions.revoked_others': 'Завершены другие входы',
     'sessions.revoked_all': 'Завершены собственные сессии',
     'session.reauthenticated': 'Подтверждён административный доступ',
     'user.password_changed': 'Изменён собственный пароль',
