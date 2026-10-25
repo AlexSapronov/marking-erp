@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import struct
 
 from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import text
@@ -30,12 +31,32 @@ def _object(pairs):
     return result
 
 
-def load_settings(path):
+def credential_acl_is_private(descriptor, uid):
+    """Linux POSIX ACL: root owner and only the service UID may read.
+
+    systemd >=254 may expose mode 0440 because group bits are the ACL mask,
+    while group::---. No extra user/group, write, execute or other access.
+    """
+    try:
+        value=os.getxattr(descriptor,'system.posix_acl_access')
+        if len(value)!=44 or struct.unpack_from('<I',value)[0]!=2:return False
+        entries=[struct.unpack_from('<HHI',value,n) for n in range(4,len(value),8)]
+        undefined=0xffffffff
+        expected={(1,4,undefined),(2,4,uid),(4,0,undefined),(16,4,undefined),(32,0,undefined)}
+        return len(entries)==len(set(entries)) and set(entries)==expected
+    except (OSError,ValueError,struct.error):
+        return False
+
+
+def load_settings(path, *, systemd_credential=False):
     try:
         descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(descriptor, 'rb') as stream:
             metadata = os.fstat(stream.fileno())
-            if (not stat.S_ISREG(metadata.st_mode) or metadata.st_mode & 0o077
+            private_mode=not metadata.st_mode & 0o077
+            private_acl=(systemd_credential and stat.S_IMODE(metadata.st_mode)==0o440
+                         and credential_acl_is_private(stream.fileno(),os.getuid()))
+            if (not stat.S_ISREG(metadata.st_mode) or not (private_mode or private_acl)
                     or metadata.st_uid not in (0, os.getuid())):
                 raise ServiceError('service_config_permissions')
             body = stream.read(65537)
@@ -104,7 +125,7 @@ def main():
             if not directory:
                 raise ServiceError('service_credentials_required')
             path = Path(directory) / 'erp-config'
-        settings = load_settings(path)
+        settings = load_settings(path, systemd_credential=args.config is None)
     except ServiceError as error:
         parser.exit(1, str(error) + '\n')
     engine = database_engine(settings)

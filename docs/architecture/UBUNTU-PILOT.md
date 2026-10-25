@@ -144,3 +144,10 @@ build_sha /health/ready должен совпадать с выбранным SH
 [PostgreSQL16 GRANT](https://www.postgresql.org/docs/16/sql-grant.html).
 Тесты проверяют прикладной запуск и роль на PostgreSQL16; запуск systemd/Nginx,
 сертификаты и сетевой доступ требуют проверки на целевой VM.
+
+
+Уточнение systemd ACL: начиная с systemd254, credential может иметь mode0440
+с root owner и именованным ACL чтения для UID сервиса при group::---/other::---.
+Загрузчик принимает этот точный read-only ACL только для CREDENTIALS_DIRECTORY;
+обычные JSON с групповым доступом по-прежнему отклоняются.
+[Объяснение разработчиков systemd](https://github.com/systemd/systemd/issues/29435).

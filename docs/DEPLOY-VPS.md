@@ -302,7 +302,9 @@ sudo systemctl reload nginx
 
 Ожидается `active (running)`. systemd передаёт runtime.json через LoadCredential;
 приложение работает непривилегированно на `127.0.0.1:8000`. Доступа к maintenance.json
-у сервиса нет. Если не стартует:
+у сервиса нет. На новых systemd файл переданного credential может отображаться
+как 0440 из-за маски ACL: приложение проверяет, что чтение разрешено только
+root и UID сервиса. Исходные JSON остаются root-only 0600; chmod 0640 не нужен. Если не стартует:
 
 ```bash
 sudo journalctl -u marking-erp -n 60 --no-pager
