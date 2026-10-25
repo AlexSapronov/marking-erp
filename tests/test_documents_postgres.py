@@ -150,8 +150,10 @@ def test_excel_preview_mapping_formula_errors_and_commit_permission(env,engine):
     with client(env) as c:
         login(c);url='/api/documents/import-preview?organization_id='+str(env[1])
         result=c.post(url,content=content).json();assert result['requires_mapping']
-        params={'sheet_name':'Товары','header_row':1,'mapping':'{"pn":0,"gtin":1,"quantity":2,"labels":3,"tnved":4}'}
-        result=c.post(url,params=params,content=content).json()
+        params={'organization_id':str(env[1]),'sheet_name':'Товары','header_row':1,'mapping':'{"pn":0,"gtin":1,"quantity":2,"labels":3,"tnved":4}'}
+        response=c.post(url,params=params,content=content)
+        assert response.status_code==200,response.text
+        result=response.json()
         assert not result['errors'] and result['lines'][0]['pn']=='PN/A-1' and result['external_calls'] is False
         with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='bm' AND permission_id='marking.import.commit'"))
         assert c.post('/api/documents',json=body(env,imported=True,lines=result['lines'])).status_code==403
