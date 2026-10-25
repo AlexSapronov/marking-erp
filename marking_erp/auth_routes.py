@@ -127,6 +127,24 @@ def install_auth(app, engine, settings):
         response.delete_cookie(settings.cookie_name, path="/", secure=settings.secure_cookie, httponly=True, samesite="strict")
         return response
 
+    @app.get("/api/session/sessions")
+    def own_sessions(current=Depends(actor, scope="function")):
+        rows = current.connection.execute(text("""SELECT created_at,expires_at,
+            token_hash=:hash AS is_current,count(*) OVER() AS total
+            FROM sessions WHERE user_id=:user AND auth_version=:version AND expires_at>now()
+            ORDER BY is_current DESC,created_at DESC,token_hash DESC LIMIT 20"""),
+            {"hash": auth.digest(current.token), "user": current.id,
+             "version": current.user['auth_version']}).mappings().all()
+        return {"total": rows[0]['total'] if rows else 0,
+                "sessions": [{key: row[key] for key in ('created_at','expires_at','is_current')} for row in rows]}
+
+    @app.post("/api/session/logout-others")
+    def logout_others(current=Depends(actor, scope="function")):
+        current.connection.execute(text("DELETE FROM sessions WHERE user_id=:id AND token_hash<>:hash"),
+                                   {"id": current.id, "hash": auth.digest(current.token)})
+        auth.audit(current.connection, current.id, "sessions.revoked_others", current.id)
+        return {"ok": True}
+
     @app.post("/api/session/reauth")
     def reauth(body: Reauth, request: Request, current=Depends(actor, scope="function")):
         user, failure = auth.authenticate(current.connection, settings, current.user["username"], body.password.get_secret_value(), body.otp, peer(request))

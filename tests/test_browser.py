@@ -448,3 +448,57 @@ def test_audit_elevation_and_live_revocation(page,live_app,engine):
     expect(page.locator('#audit-link')).to_be_hidden()
     expect(rows).to_have_count(0)
     assert page.request.get(live_app['base']+'/api/audit').status==403
+
+
+def test_profile_sessions_themes_mobile_and_network(page,live_app,engine):
+    from playwright.sync_api import expect
+    # A second valid login without a bearer/identifier in the list response.
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':live_app['users']['bm']}).mappings().one())
+        auth.create_session(c,dict(user,administrative=False))
+    login(page,'bm')
+    page.get_by_role('link',name='Мой профиль',exact=True).click()
+    rows=page.locator('.own-session-row')
+    expect(rows).to_have_count(2)
+    expect(rows.first).to_contain_text('Текущий вход')
+    capture(page,'profile-sessions-light')
+    page.locator('#theme').click()
+    capture(page,'profile-sessions-dark')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page,'profile-sessions-mobile')
+    page.context.set_offline(True)
+    page.get_by_role('button',name='Обновить входы',exact=True).click()
+    expect(rows).to_have_count(0)
+    expect(page.locator('#notice')).to_contain_text('Не удалось получить ответ')
+    expect(page.get_by_role('button',name='Завершить другие входы',exact=True)).to_be_disabled()
+    page.context.set_offline(False)
+    page.get_by_role('button',name='Обновить входы',exact=True).click()
+    expect(rows).to_have_count(2)
+
+
+def test_profile_revokes_other_context_but_preserves_current_and_foreign(page,live_app,browser):
+    from playwright.sync_api import expect
+    contexts=[browser.new_context(),browser.new_context()]
+    try:
+        second=contexts[0].new_page();second.goto(live_app['base']);login(second,'bm')
+        foreign=contexts[1].new_page();foreign.goto(live_app['base']);login(foreign,'warehouse')
+        login(page,'bm')
+        page.get_by_role('link',name='Мой профиль',exact=True).click()
+        rows=page.locator('.own-session-row');expect(rows).to_have_count(2)
+        page.get_by_role('button',name='Завершить другие входы',exact=True).click()
+        page.locator('#confirm-dialog').get_by_role('button',name='Отмена',exact=True).click()
+        assert second.request.get(live_app['base']+'/api/session').status==200
+        page.get_by_role('button',name='Завершить другие входы',exact=True).click()
+        page.locator('#confirm-ok').click()
+        expect(rows).to_have_count(1)
+        expect(rows.first).to_contain_text('Текущий вход')
+        expect(page.get_by_role('button',name='Завершить другие входы',exact=True)).to_be_disabled()
+        assert page.request.get(live_app['base']+'/api/session').status==200
+        assert second.request.get(live_app['base']+'/api/session').status==401
+        assert foreign.request.get(live_app['base']+'/api/session').status==200
+        second.evaluate("window.dispatchEvent(new Event('focus'))")
+        expect(second.locator('#login-screen')).to_be_visible()
+        expect(second.locator('#page-content')).to_be_empty()
+    finally:
+        for context in contexts:context.close()
