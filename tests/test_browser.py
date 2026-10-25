@@ -66,8 +66,15 @@ def live_app(engine,fresh_schema):
 
 def capture(page,name):
     output=Path('test-results/ui');output.mkdir(parents=True,exist_ok=True)
-    page.screenshot(path=str(output/(name+'.png')),full_page=True,
-                    mask=[page.locator('input[type=password]:visible,input[name=totp_secret]:visible,input[name=otp]:visible,input[name=totp_code]:visible')])
+    # CSP can block Playwright's injected overlay mask. Remove values before
+    # capture, then restore the same DOM controls without emitting input events.
+    secrets=page.locator('input[type=password],input[name=totp_secret],input[name=otp],input[name=totp_code]')
+    saved=secrets.evaluate_all('(inputs)=>inputs.map(i=>{const old={value:i.value,placeholder:i.placeholder};i.value="";i.placeholder="Скрыто";return old;})')
+    try:
+        assert secrets.evaluate_all('(inputs)=>inputs.every(i=>i.value==="")')
+        page.screenshot(path=str(output/(name+'.png')),full_page=True,animations='disabled')
+    finally:
+        secrets.evaluate_all('(inputs,saved)=>inputs.forEach((i,n)=>{i.value=saved[n].value;i.placeholder=saved[n].placeholder;})',saved)
     (output/(name+'.json')).write_text(json.dumps({'sha':os.environ.get('GITHUB_SHA','local'),'viewport':page.viewport_size,'url_path':page.url.split('/',3)[-1]},ensure_ascii=False))
 
 
