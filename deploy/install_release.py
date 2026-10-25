@@ -20,15 +20,16 @@ def verify_bundle(root):
     for path in root.rglob('*'):
         if path.is_symlink() or not (path.is_dir() or path.is_file()):raise InstallError('Links/special files are not allowed')
     manifest=json.loads((root/'MANIFEST.json').read_text())
-    if set(manifest)!= {'sha','files'} or not re.fullmatch('[a-f0-9]{40}',manifest['sha']):raise InstallError('Invalid manifest')
+    if not isinstance(manifest,dict) or set(manifest)!= {'sha','files'} or not isinstance(manifest['sha'],str) or not re.fullmatch('[a-f0-9]{40}',manifest['sha']):raise InstallError('Invalid manifest')
     if not isinstance(manifest['files'],dict) or not manifest['files']:raise InstallError('Empty manifest')
     actual={str(p.relative_to(root)) for p in root.rglob('*') if p.is_file() and p!=root/'MANIFEST.json'}
     if actual!=set(manifest['files']):raise InstallError('File set differs from manifest')
     for name,digest in manifest['files'].items():
         path=PurePosixPath(name)
-        if path.is_absolute() or '..' in path.parts or str(path)!=name or not re.fullmatch('[a-f0-9]{64}',digest):raise InstallError('Invalid manifest entry')
+        if path.is_absolute() or '..' in path.parts or str(path)!=name or not isinstance(digest,str) or not re.fullmatch('[a-f0-9]{64}',digest):raise InstallError('Invalid manifest entry')
         if hashlib.sha256((root/name).read_bytes()).hexdigest()!=digest:raise InstallError('Bundle checksum mismatch')
     release=json.loads((root/'release.json').read_text())
+    if not isinstance(release,dict):raise InstallError('Invalid release metadata')
     expected={'sha':manifest['sha'],'schema_revision':release.get('schema_revision'),'os':'ubuntu','version':'24.04','machine':'x86_64','python':'3.12'}
     if release!=expected or not isinstance(release['schema_revision'],str):raise InstallError('Unsupported release metadata')
     requirements=(root/'requirements.lock').read_text().splitlines()
@@ -57,7 +58,8 @@ def main():
             if p.stat().st_uid!=0 or p.stat().st_mode&0o022:raise InstallError('Release directories must be root-owned and not group/world writable')
         target=parent/release['sha']
         if target.exists():raise InstallError('Release already exists; nothing overwritten')
-        shutil.copytree(args.bundle,target);created=True
+        target.mkdir(mode=0o755);created=True
+        shutil.copytree(args.bundle,target,dirs_exist_ok=True)
         subprocess.run([sys.executable,'-m','venv',str(target/'venv')],check=True)
         python=target/'venv/bin/python'
         subprocess.run([str(python),'-m','pip','install','--no-index','--only-binary=:all:','--no-cache-dir','--find-links',str(target/'wheelhouse'),'--requirement',str(target/'requirements.lock')],check=True)
@@ -66,7 +68,7 @@ def main():
         subprocess.run([str(python),'-c',code,release['schema_revision']],check=True)
         print('Installed:',target)
         print('No database, services or current symlink were changed.')
-    except (ValueError,OSError,subprocess.CalledProcessError) as error:
+    except (ValueError,TypeError,KeyError,OSError,subprocess.CalledProcessError) as error:
         if created and target:shutil.rmtree(target)
         parser.exit(1,'Installation failed: '+(str(error) if isinstance(error,InstallError) else 'invalid bundle or failed offline installation')+'\n')
 
