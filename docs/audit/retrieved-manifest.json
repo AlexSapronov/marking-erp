@@ -1,0 +1,1664 @@
+[
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": ".env.example",
+    "blob_sha": "02f301806142c1c612397e2118fea67561402d8e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": ".github/workflows/prototype.yml",
+    "blob_sha": "3683b715eebe268798c40a8948c7d11d56422304"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": ".github/workflows/service.yml",
+    "blob_sha": "47d5b042162c988362c840941b5b22cb47593412"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": ".github/workflows/signer.yml",
+    "blob_sha": "29b00e144b3a2d4b0766300250e8346249f40c63"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": ".gitignore",
+    "blob_sha": "49fe1d8a70273c539db6ebe55aef4656015384ea"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "README.md",
+    "blob_sha": "9d97582a5cd2ffbc7b8bb2be1a2fd40d08e85615"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/ACCEPTANCE.md",
+    "blob_sha": "d00275a8719776b5ae571d7dfe1b8d7c91803db9"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/API-CAPABILITIES.md",
+    "blob_sha": "f738c37f2b845e1ea3edfb4d6d452cb02ec20428"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/ARCHITECTURE.md",
+    "blob_sha": "416a5fff4a3e6055f21b43b394c85d1378be0c9c"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/DESIGN-SYSTEM.md",
+    "blob_sha": "3c00a941e1d73efc736c8b11dedf549d27a0d2cc"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/IMPLEMENTATION.md",
+    "blob_sha": "bb08b99d9eaf4ce7c1d87a979ee1dd647bd0e496"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/LOCAL-RELEASE.md",
+    "blob_sha": "c9dd4899773629de423f36c507b3a750d2ccaaf2"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/NK-LIVE.md",
+    "blob_sha": "b4382c024cb055a3827ced055098dc3d3cdd9bd8"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/OPERATIONS.md",
+    "blob_sha": "464fd946ba0b22067112aa0ab32a1006830fb74e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/SCREENSHOTS.md",
+    "blob_sha": "37e14a08aed6586d87c2685267c14e5121649434"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/TASK.md",
+    "blob_sha": "68ccacc641fdbe599cabbb92f6f4c621e84f7603"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/TEMPLATES.md",
+    "blob_sha": "95d77340203ad08b9d05f409ee67b6bbd87031c8"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/UX-ACCEPTANCE.md",
+    "blob_sha": "1f771f9b08c029707b3fc367b7841416337ae50d"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/UX-SPEC.md",
+    "blob_sha": "1ee16de880adbaa79d0175ac9b988ad3416da8af"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/WSL.md",
+    "blob_sha": "17d79b0d9b641cd7336ea2934ad217c6e25f06df"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/browser-report.json",
+    "blob_sha": "8ecad62df42bc89e2f9ebc0d58737ab38de1bae9"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/bulk-creation-browser-report.json",
+    "blob_sha": "c9ec80bc78039858565a4e13136520fef27d8b80"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/category-browser-report.json",
+    "blob_sha": "99a936ea9212ef862fc6e489449a9df5ed7bf68a"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/draft-workflow-browser-report.json",
+    "blob_sha": "13f7d4d54bacffbb868f8c224af49bd678773619"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/live-browser-report.json",
+    "blob_sha": "204eef1f92c70d841bb4709d3c95a2da0fd26517"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/nk-browser-report.json",
+    "blob_sha": "103d21d0f6c8a887cd283b5bb002dcb828437fb5"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/normalization-browser-report.json",
+    "blob_sha": "56020576081e5d4493ac3d16e6f48ea27233a5e1"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/admin.png",
+    "blob_sha": "28dd77e6058c3502d71ed34a6878c043fe506c1c"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/batches.png",
+    "blob_sha": "ba8aed9eda8790269a34d392afc3c8f2577f687f"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/bulk-creation-preview.png",
+    "blob_sha": "6c590f143c21a598dedbc6deb568f47636d53299"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/bulk-creation-result.png",
+    "blob_sha": "09e8db05c92965cb79f19a5ffa031b149e5b956e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/bulk-template-preview.png",
+    "blob_sha": "b192ac72e94240bad9f942962614a49bcb8a6312"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/category-filter-dark.png",
+    "blob_sha": "f9292dc463109d1777bed4b601678ec225b8de90"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/category-filter-light.png",
+    "blob_sha": "a3954162d75b75daee52a1c98d5ad57ed4242980"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/creation-wizard.png",
+    "blob_sha": "9b1b62ffa35f98c8668a5a49e0a2c6553aeebf05"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/draft-workspace.png",
+    "blob_sha": "255ee1f61a84a023684fd5e14844572f88b4c919"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/drawer-1366x768.png",
+    "blob_sha": "a8ba622c4be3fbd7d9daecb44f8439c208631241"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/drawer-1440x900.png",
+    "blob_sha": "09b22e6b5476485b74ca29d9f6156cc61f351455"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/drawer-1920x1080.png",
+    "blob_sha": "d746c480c62f29d2dea264571ea8e4224eae7c71"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/drawer-390x844.png",
+    "blob_sha": "bde33e2441a2757e75b65e819f925f5e6809aed0"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/drawer-dark-1366x768.png",
+    "blob_sha": "761a4e087fb51b49c6b08c48590e6ac55c84cc5b"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/duplicate-review.png",
+    "blob_sha": "7040376300e0fa259c0df7a52c5bd8462abbe082"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/excel-confirmation.png",
+    "blob_sha": "30ea460c44edb85228b7265f0d69585e4b572371"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-1440x900.png",
+    "blob_sha": "961373918b3e3ac52ec17e70a3d134987a01795e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-1920x1080.png",
+    "blob_sha": "8f053f04cbb857f112bc4e4139591591c087c787"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-390x844.png",
+    "blob_sha": "c0748ddfad5d7f052577ff261578ad88622e8d9f"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-admin.png",
+    "blob_sha": "e1741e4f898333c1c710a8e1c2b99ca71c448239"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-dark.png",
+    "blob_sha": "2df350e6a4a3eeb20a0eb6523cb79351946aaff6"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-editor.png",
+    "blob_sha": "d69b394ff18656f95b2676e588d1865ec73b8ed3"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/live-registry.png",
+    "blob_sha": "f8c30b5db5bf37214a5b77b757b6596f1cb2bee0"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/nk-connection.png",
+    "blob_sha": "cb6f48b95e63f176e42dc05878395e2f92a1a2ac"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/nk-operations.png",
+    "blob_sha": "6ebdbe6cccdf707c405eee760d83d3ed01bb6570"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/normalization-preview.png",
+    "blob_sha": "935fa24126c66144e675b9cf305994bbd82e3fda"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/normalization-result.png",
+    "blob_sha": "98d586b24ff9195f0fb814ff1fc7622f368965d3"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-1366-at-125-percent-space.png",
+    "blob_sha": "b0a86e0d314753d007072c465f5d21d40f1af7fd"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-1366x768.png",
+    "blob_sha": "bc89623be72f0c431d21be444f7af0a04a49d8b9"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-1440x900.png",
+    "blob_sha": "17ff0e2f45b9db74a50ae90cde4dbf969af4eb12"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-1920x1080.png",
+    "blob_sha": "d5898df5dfd2c2cd54d55b9175c05eb87fc3f586"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-390x844.png",
+    "blob_sha": "90df633fa8f8f766074520a524e51b0c429c012b"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-dark-1366x768.png",
+    "blob_sha": "6e000457cceb878b01b52498be42b4862a97ddc8"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-dark-1440x900.png",
+    "blob_sha": "496814df594ba4c3dc975477dc9f1ddce6f5ad5d"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-dark-1920x1080.png",
+    "blob_sha": "61150a73c7a789089de27f18716d042d93d6341b"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/registry-dark-390x844.png",
+    "blob_sha": "7fdb3131fe4ab7a9b88fee9197f2c25c4be99fae"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/revision-conflict.png",
+    "blob_sha": "ac34794b42db9b7f9030861fea60ed65ec283e4a"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/template-diff-dark.png",
+    "blob_sha": "bc14092d93db05a08c955153a9915beaa364f9e2"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/template-diff.png",
+    "blob_sha": "d1ca8bccd200dc149f852d4774110259a9dd431b"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/template-preview.png",
+    "blob_sha": "bcc16bd68cc0ed90f38a1bc534b6eddfc096df6b"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/screenshots/template-result.png",
+    "blob_sha": "16e52f5909fde89ec04de1e494ba783616cb2d24"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "docs/template-browser-report.json",
+    "blob_sha": "04d5911e81f18b33eb91a1117a1d6739623f29ef"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "main.py",
+    "blob_sha": "332999432fbcb05ed2d336b66905404a53f7d989"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/__init__.py",
+    "blob_sha": "1a139757699e3f264ca004e414e2445392b5b0fe"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/bulk_creation.py",
+    "blob_sha": "4acf4cd43999e8fb429457129da52cdba846d0b6"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/creation.py",
+    "blob_sha": "b7b8431d1cfdee8da766ac57395f1a78bb7d1922"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/draft_workflow.py",
+    "blob_sha": "9aeac0928175acda050e5960dc557fbf312bc6b8"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/excel.py",
+    "blob_sha": "a369f310ba2a9736baede3bdfb3e1898f905badc"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/fields.py",
+    "blob_sha": "37d0b62a88db132d7125814b598ea3a3f9d242be"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/nk.py",
+    "blob_sha": "553af12cbe26bfc9069678e9a43a5c170642adbf"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/normalization.py",
+    "blob_sha": "4067fdd1924a2d21bc73b8f279c164f432569f8d"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/normalization_service.py",
+    "blob_sha": "533b1b611e7a3e18ac3f5ba44b70cb9f6eefec34"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/presets.py",
+    "blob_sha": "df641b1a60c71d8a735f6a94e91a82a8169dc27c"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/service.py",
+    "blob_sha": "223b4433b736f977c669abb15b02f87eae7f4bf1"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "nk_manager/store.py",
+    "blob_sha": "ad2b0bd39e87f906fb80f0f5eaed8cb40ca3cddb"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "package-lock.json",
+    "blob_sha": "ef591274980c1f0a77a0d8e5c46b994ac801d575"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "package.json",
+    "blob_sha": "b42db448dc6057ab1ac2464f5f987784e3fda4b4"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8504408300.json",
+    "blob_sha": "fd460f2c7ac173959aedddb2ed04cb265dbfce79"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8504409100.json",
+    "blob_sha": "a39c35287bff4c71b9416fe79f8896899470a33e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8536490000.json",
+    "blob_sha": "a93674de9cef49725cd539328f6ea6c60569370c"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8536699008.json",
+    "blob_sha": "540ad99342d30ee22f00ea86f4dcae9716b7a8cd"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8536901000.json",
+    "blob_sha": "381caba3207373326c86f8805d927c6b5e77b490"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8536908500.json",
+    "blob_sha": "59e60889c84f67988a0fc0c11e1945ffa439b00f"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8539519009.json",
+    "blob_sha": "e650682697c9a2b9a074eb6fe575381f65e16f25"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8541410002.json",
+    "blob_sha": "444961d00195a2377f2cf2f0dc693aaffeb102bf"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8541410004.json",
+    "blob_sha": "c11612e58e810a9d50b1fabc8cd9ebe53538197f"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8541410006.json",
+    "blob_sha": "001e0f7128465395f36a6d021fcebbf9fe94fd91"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/8541490000.json",
+    "blob_sha": "6d1ff77d5ebb7d6348643ef2cfa1e43c7199e527"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/README.md",
+    "blob_sha": "c6116bd90b715d89e784ab07b242d31bee7b2702"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/manifest.json",
+    "blob_sha": "458b14fbe252729f8234914f0acd0e2efec4a545"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/product-kinds.json",
+    "blob_sha": "5cc4d32f478fccd9d7c4ee0ce5af30926b61c632"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "presets/published-fields.json",
+    "blob_sha": "cfb5759f27e5185a40eb0fc477512e9e859a2235"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "prototype/app.js",
+    "blob_sha": "8a650150ffafceca6b2b4ebe0299e6e59e1b271f"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "prototype/index.html",
+    "blob_sha": "4079932c7a83c4e90693e102e9dc641344475027"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "prototype/palette.css",
+    "blob_sha": "3ca8887813f277a595cd1acaede0e54126250892"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "prototype/preview.html",
+    "blob_sha": "898b06b3e8e41c920c836a77f7fe7793b905cdc7"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "prototype/style.css",
+    "blob_sha": "7e897d7b61adfff7d179fc23664640b5248efc94"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "prototype/theme.js",
+    "blob_sha": "2b61ee7701832bf70c18f7f241dc19ae9605a403"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "requirements-dev.txt",
+    "blob_sha": "cf9ab19a501e7c8e3d05d90b9740dfb5e0399c3d"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "requirements-lock.txt",
+    "blob_sha": "0126b2989de639ae912d61cff18d3c1f87123e2a"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "scripts/backup.py",
+    "blob_sha": "6e41772c87221bb7a752e92f8f1def5fd3756f29"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "scripts/build_preview.py",
+    "blob_sha": "b13b56585deef7987b39c99d3465cb634b0d74e5"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "scripts/build_product_kinds.py",
+    "blob_sha": "868c92088e963d77c67b82f8085b21b52b67747d"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "scripts/run_wsl.py",
+    "blob_sha": "b1985b6d69d4e25366adcb4fed80fe5a43ec25e5"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "scripts/setup.py",
+    "blob_sha": "e6186e4759ce16184c69eb37af2b6b77e2dfbbe0"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "signer/Sign-Payload.vbs",
+    "blob_sha": "550e4bdfd60b9d31d20b86a05a039a2dc5c7fd04"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "signer/Start-Signer.ps1",
+    "blob_sha": "548143d1622f32106d5c82d7a844f26a12afd218"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/__init__.py",
+    "blob_sha": "ed1e62e6cab1b529ca59b101975b4abdde287fbe"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/browser-smoke.cjs",
+    "blob_sha": "27e6c080d17b66e1885ef9c17666efeca9308a82"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/bulk-creation-browser.cjs",
+    "blob_sha": "2e72c37d9b91a26c87fe1d4e6b7239bdc3077c4d"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/bulk_browser_server.py",
+    "blob_sha": "fe9e56c649aeb2218dc103a7919ad4d70ef32dc5"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/category-browser.cjs",
+    "blob_sha": "1d68b6b0f0a1502331035595e2df8bf59bfcabda"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/creation-ui.cjs",
+    "blob_sha": "3bcdf56c06611e4fad4bd60153260dbbf4d81b04"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/draft-workflow-browser.cjs",
+    "blob_sha": "ed68746ce0e3b53cb388e46a73452441314012e8"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/draft_browser_server.py",
+    "blob_sha": "8dbe5c7e657f0618cecdc6aaf4c7a5dd2a91ecf9"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/field-visibility.cjs",
+    "blob_sha": "c30ccfa1a88274662daa640216f0f214dfd14fc2"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/live-browser.cjs",
+    "blob_sha": "93e5b041760547e29bb3dffac368297ea30acb67"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/nk-browser.cjs",
+    "blob_sha": "bc7466f565cc0fa45fdf5f75c6d4dd3383352193"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/nk_browser_server.py",
+    "blob_sha": "ee609851fbeb7bfb34da27ee8b89cacac47a2051"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/normalization-browser.cjs",
+    "blob_sha": "4b44bd52cf50ce7a5570cac710da313210861f0c"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/normalization_browser_server.py",
+    "blob_sha": "42adb14a277207f75b2f90cc785fbb7e35f9cf2e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/signer-connection.ps1",
+    "blob_sha": "90a63b80ca7ceb0c8164ab54b7f4fd6a6644d2d9"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/template-browser.cjs",
+    "blob_sha": "26ffeba709028c58d8a103dd4b0caa762273d2c1"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/template_browser_server.py",
+    "blob_sha": "280c2fa12ca6cc6e12a87882393b2dea8568fb66"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_bulk_creation.py",
+    "blob_sha": "e7a0a595b052f92159fb68bd7558920fb10089c8"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_creation.py",
+    "blob_sha": "bb103c243b69de62af4561da8c1b849f50da4823"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_draft_workflow.py",
+    "blob_sha": "99486f6a9f53aecaa07fbfedf35d04a2952bfdc9"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_fields.py",
+    "blob_sha": "ea7bb4b8099acb7d67f1d9e5b8cb7ad168da3a8b"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_launcher.py",
+    "blob_sha": "405ba735364c8546c897e9b7c53ef0934a900229"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_nk.py",
+    "blob_sha": "d637e8ac6e6cabbeffe1a6db0cf10f6f2f63eb10"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_normalization.py",
+    "blob_sha": "1c9b8133dd32de98c5dd36607566a940f5123378"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_presets.py",
+    "blob_sha": "103e8ae8729514ba05132ab918f7ce5d99132531"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_service.py",
+    "blob_sha": "9b388cc1bc1c6c2ce23f031c72fcc059d02fb76f"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "tests/test_template_workflow.py",
+    "blob_sha": "150bddedc61e5ad78f5e92be54fdbab46e9c71f0"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/bulk-creation.js",
+    "blob_sha": "4fb801b83633437514dc9d009a4e8a32253ac01e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/category-filter.js",
+    "blob_sha": "fb506f22b00aef2dba399712ad2eb74f25959761"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/creation.js",
+    "blob_sha": "91ed916923fda8cd0b9f1f642f6615094fef36b4"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/draft-workspace.js",
+    "blob_sha": "840dc839af1ab8e438902f3b32a9d883e8015ae0"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/index.html",
+    "blob_sha": "15852372a099ccb13ddd359ee3d0a7a409423f4e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/live.css",
+    "blob_sha": "f00dc0997e078b5ee36a43b94c1574cddf3ac10e"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/live.js",
+    "blob_sha": "c226262caf4612e907746f5a1f399e3923a43198"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/nk.js",
+    "blob_sha": "d1b58b203f2566a53366715cbabe773a5d53b6e0"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/normalization-flow.js",
+    "blob_sha": "9b72d4b5b1ee8a2490a52d1a0361f31ecac22836"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/palette.css",
+    "blob_sha": "3ca8887813f277a595cd1acaede0e54126250892"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/style.css",
+    "blob_sha": "7e897d7b61adfff7d179fc23664640b5248efc94"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/template-flow.js",
+    "blob_sha": "59870da297f7fda2c6e675c505dd93396c9c3f92"
+  },
+  {
+    "repository": "AlexSapronov/nk-manager",
+    "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+    "path": "web/theme.js",
+    "blob_sha": "2b61ee7701832bf70c18f7f241dc19ae9605a403"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": ".github/workflows/ci.yml",
+    "blob_sha": "88bc392fa59f3c7e051f7510ba8cac08661a77ea"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "README.md",
+    "blob_sha": "ecbf779ad1ac04a30c0ebb5d221a1591dfa80e7f"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/ACCEPTANCE.md",
+    "blob_sha": "7f851a1e74465547ea0250c20333d952d2a676c7"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/ADMIN.md",
+    "blob_sha": "cea276d21280cf559960e62895c3831f2bab8a72"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/ARCHITECTURE.md",
+    "blob_sha": "5eaf6553f7fa7f27e52ce7fb625fb1949aadea6d"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/IMPLEMENTATION.md",
+    "blob_sha": "190ccec8e5d7e57b201f59d1c9eb6447fd36e573"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/INTEGRATIONS.md",
+    "blob_sha": "af5fb8c9cd8fd94e8af0a790473720a2fd0a0e65"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/LOGISTICS.md",
+    "blob_sha": "ab22d7394cf8f4347ceaa345dd2b4f1f197dab3b"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/REVIEW-2026-10-24.md",
+    "blob_sha": "d0938a16b7114c68d6bcaf9bd99b2e16139e8e69"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/SIGNER.md",
+    "blob_sha": "13b6d8d709c3086b570ba00a345f6eaf0eab00f5"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/USER.md",
+    "blob_sha": "b0351434be27137425c27247f3f179a78e05b5d7"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "docs/WSL.md",
+    "blob_sha": "c1feab225b0b0e4459ab07c17937836e40f17742"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "main.py",
+    "blob_sha": "4a07c2642eb706397055594fa575a856e5f28ce9"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/__init__.py",
+    "blob_sha": "7968eb22671f3a7013d689369414d7b8f78c0e04"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/auth.py",
+    "blob_sha": "a1646ae02d1dfd740c3cc9cf2465ac2e55db34de"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/codes.py",
+    "blob_sha": "2a4e2b557fb270de314456c906f896939fe5e01e"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/config.py",
+    "blob_sha": "4901a79831979135b27c79479d8bdb8c85007e52"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/db.py",
+    "blob_sha": "f68811c2ac76981a17fd161641156fdb43f0dfc0"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/excel.py",
+    "blob_sha": "3da173c984c5ffb2bc18f9d8ad9fd0e08beead5b"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/gateway.py",
+    "blob_sha": "368dad3d1a22e75c706d26895385abaf6b2fb504"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/labels.py",
+    "blob_sha": "88f131096b048cc02a88f30db8c94ff8a81cd761"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/service.py",
+    "blob_sha": "00d1c765984edc59d2cea4b48e7774f835d2b503"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "marking_bm/worker.py",
+    "blob_sha": "cc9a0b090406a89d44a3c91d3369527ed1f93aad"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "pytest.ini",
+    "blob_sha": "c7b23ecb1408be49fb2fa8ef77ffa48640681e34"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "requirements-dev.txt",
+    "blob_sha": "afc06d03528ac90c90da2e990f06e5c257b67117"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "requirements-lock.txt",
+    "blob_sha": "b975f7d0cfa356d91e85e708f5653b52522d1157"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "requirements.txt",
+    "blob_sha": "c769637ce854759faa8a4cb391474411054dfe38"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "scripts/backup.py",
+    "blob_sha": "b16c236f210d634d792ef634887bcff514f43f52"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "scripts/diagnose_atk.py",
+    "blob_sha": "f2dd4e4a2f2bb47f783a269ee34f1f4bfc0b238a"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "scripts/password_hash.py",
+    "blob_sha": "815f67b7803b5ed2b22eccce349977742faee8e0"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "scripts/reprint_labels.py",
+    "blob_sha": "fb4c0edef19d6013ae9c307698611c1aad937ed7"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "scripts/run_wsl_local.py",
+    "blob_sha": "5dcb3e8fded2643ebcd5b51d10f52bfec66e7368"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "scripts/setup_wsl_local.py",
+    "blob_sha": "d3a6063c0f6659909b8a9476dfd12cef70a7cead"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "signer/Sign-Payload.vbs",
+    "blob_sha": "550e4bdfd60b9d31d20b86a05a039a2dc5c7fd04"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "signer/Start-Signer.ps1",
+    "blob_sha": "e06acbef375caf79aac3d2156f226e4ead269ec4"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "signer/Test-Cades-VBScript.vbs",
+    "blob_sha": "c1508c286d6caa21d589b618e1f398f7e1d4ae17"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "static/app.js",
+    "blob_sha": "a497990244c3a09ef7a37d89aa5c568abc357a31"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "static/index.html",
+    "blob_sha": "30cecfd9b53e6f9db1ce59413c2ced334e9ec972"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "static/style.css",
+    "blob_sha": "0ee5743e544f41f821862bd699d001b9cc653393"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "static/theme.js",
+    "blob_sha": "972dcbe947144c931fa241684d90348ba3a87a30"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "static/workspace.js",
+    "blob_sha": "08673b011b241e5b4f954af684a873689cd1bbe7"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/browser_smoke.py",
+    "blob_sha": "6317655a6894d3325e1110d6d45d152ae9af7697"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/conftest.py",
+    "blob_sha": "75a12877de0af2bc7122448aea74c3fecb00ff0d"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/test_excel_import.py",
+    "blob_sha": "8730efe4644d191ae5f2377a4d8ee4d19df57b57"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/test_logistics.py",
+    "blob_sha": "bdaf6d447856f225dea0db79466e233f5e8d6053"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/test_review_regressions.py",
+    "blob_sha": "121d0a4571b6f429f829966934c211ac69c64fa0"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/test_security_labels.py",
+    "blob_sha": "78bf0a46275de1809d8d51322daf3b4307022291"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/test_stop_archive.py",
+    "blob_sha": "5903579a1320133692d1fb269a895611c5b0ad66"
+  },
+  {
+    "repository": "AlexSapronov/marking-bm",
+    "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+    "path": "tests/test_workflow.py",
+    "blob_sha": "e79527607bf4b3b897a74b869601834b3c9da010"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": ".github/workflows/ci.yml",
+    "blob_sha": "9164ad7144608cc8359e60bab6888095fcb02112"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "README.md",
+    "blob_sha": "d4121d570b01e684b3f8be518d7fa5fa06f11a48"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "admin_auth.py",
+    "blob_sha": "d4ff8f37403515884b8957a975bcf44cbe1e702a"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "app_settings.py",
+    "blob_sha": "380225583a97aecb87777b1172033f6290bd8f5c"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "buildinfo.py",
+    "blob_sha": "cc4695b00aa474d29174065846975a18da9befbc"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "config.py",
+    "blob_sha": "a5a2b4b4de7ad401f7f6ea31fa366765a43ae877"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "datamatrix.py",
+    "blob_sha": "58998a0278a887b645f84242c2618e076da468b9"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "main.py",
+    "blob_sha": "21bcc01717cc8602153e052f1504a144bd03e9d8"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "mockclient.py",
+    "blob_sha": "1df7256e100f40210a4dd22670ffb983ff442aed"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "models.py",
+    "blob_sha": "2db2d43be4389f44f06b9e9f8de83c6b1c13b62e"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "organizations.py",
+    "blob_sha": "10eafb35668106e1912b090544b572525ee619da"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "pytest.ini",
+    "blob_sha": "27d3ce298caeab05d5a3dcde36f1ea13b5114019"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "refresh_trueapi_token.ps1",
+    "blob_sha": "d07b4bbfa56a8345abee9d398816f5fe5f14c2a6"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "requirements-lock.txt",
+    "blob_sha": "02d9c4bfdd2c71504d52edcd5f8876d5dfd2637a"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "requirements.txt",
+    "blob_sha": "296b78fe932fb5e8b65056abd8d621e484eb5d0b"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "schemas.py",
+    "blob_sha": "cd39de6c8dc91f305eba2b43990c67c4a5ece7af"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "service.py",
+    "blob_sha": "e504f0b20dadf12a8ca19e5c061c776823990a37"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/admin-settings.js",
+    "blob_sha": "f415744de9b0ffb77fc806ee340e92dfec2aa89f"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/app.js",
+    "blob_sha": "862f6fd7e9bd8fb3b0fe13c6b8d85fe526be5e5f"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/scanner-focus.js",
+    "blob_sha": "1439d4c6d32fe85cf579e6e1fbf8ee13e077065b"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/style.css",
+    "blob_sha": "689cace61c7e0fdbb20edbb87e81b15a23184582"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/theme.js",
+    "blob_sha": "2e668f90ba715a8e61588d06eb0a887d3d23136f"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/warehouse.css",
+    "blob_sha": "ccbca45a3d90cbb79aca2930d34a1a796e91b280"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "static/warehouse.js",
+    "blob_sha": "a09a4dee6c7b4d2aa2b466aba197a3a431287512"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "templates/_mode_nav.html",
+    "blob_sha": "f7d3f44af127a54770ccaba9831ba2b22a175a9b"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "templates/index.html",
+    "blob_sha": "9298c315f3b15d1900e29cb44ad95209d55d63d4"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "templates/warehouse.html",
+    "blob_sha": "8d67da99992f022eaabf2a286e45d62c67413bf4"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/browser_warehouse.py",
+    "blob_sha": "161d92cf1c3245419e1a110b5c77fdfb4f8e0d0c"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_buildinfo.py",
+    "blob_sha": "b858a4c636297c3ca6bbee16f738b70264f3f79f"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_datamatrix.py",
+    "blob_sha": "168d696f3614e3e45fb1dda2e692696d2afd168f"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_regressions.py",
+    "blob_sha": "a192acd66ec33a89d0e5fb86ecc9f6e26f02c902"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_service.py",
+    "blob_sha": "7cb95f8e8a8041746aef21cf4daf677722f3f4a2"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_status_api.py",
+    "blob_sha": "b3328433530987523f922aa804e14f0479bae97c"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_tokens.py",
+    "blob_sha": "02cd910343519b6eeba7f512d7692b6170125919"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_trueapi.py",
+    "blob_sha": "82361641f4fd70ea5cdd5f5a72b57ca495a64973"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_verdict.py",
+    "blob_sha": "7dbc3409c526be211b6fc7c6e1a285844a3ac453"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tests/test_warehouse.py",
+    "blob_sha": "18ea7b8e77f092c26984bc175570b37ffc8d2664"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "tokens.py",
+    "blob_sha": "fcd83396ff2f571e2c37dfe63b803a2e4381bd33"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "trueapi.py",
+    "blob_sha": "541c79af68526a59879780bafef5420c07e86993"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "warehouse_excel.py",
+    "blob_sha": "40a2eab5b432b67ec417f4050158f1805448d9bb"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "warehouse_issues.py",
+    "blob_sha": "1c692931570f0a59628c1233fd82ddd038a9dbd8"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "warehouse_routes.py",
+    "blob_sha": "33f6ea0dce438763b0e2ecd3d9bb7e8788f37f74"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "warehouse_service.py",
+    "blob_sha": "e7f30cdafcd2a2d9920b4537a3f2119ef66f45d1"
+  },
+  {
+    "repository": "AlexSapronov/gis-trueapi",
+    "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+    "path": "warehouse_store.py",
+    "blob_sha": "c865e402cbf66a2101aed29bd2c90eaa46872717"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": ".github/workflows/ci.yml",
+    "blob_sha": "664806d79a1ba8aad712f3269c7db9f7b7c5957e"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "README.md",
+    "blob_sha": "e1688e307af380326323f1721b4462c091faea3e"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/__init__.py",
+    "blob_sha": "f09882abe3b5fde86833760ce50321c02d47baa6"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/clients.py",
+    "blob_sha": "c14702222c458c60f7b4797664b305b11e6bbba3"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/codes.py",
+    "blob_sha": "f73855cc5378c0d77046f03127daedadb4674c03"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/config.py",
+    "blob_sha": "ef1cf9b669e8445a12d7d59d7ebde3a43366d3e2"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/db.py",
+    "blob_sha": "5ad1c59a34e4fea1ac2e8c1f2d78818d09f03d6c"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/labels.py",
+    "blob_sha": "0abd9791ac8b71f7c7381f0a3666b9c50cb044d0"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "km_split/service.py",
+    "blob_sha": "3bfe85a62161e542fa947e2487c9ba9333ce334c"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "main.py",
+    "blob_sha": "ad51e08d068fd8b54708f52e0711d5b5444b2e09"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "organizations.example.json",
+    "blob_sha": "cfd2a6185307b8f94bef81e934852bc4168297ce"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "pytest.ini",
+    "blob_sha": "8f32afa405356603b1d645297184d041babf6d1e"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "requirements-dev.txt",
+    "blob_sha": "1562a5decdcfa78e9c329fd492eaf68a5c078078"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "requirements.txt",
+    "blob_sha": "d8514bc3744ae58b1bf5cb7913373f2f0a6f7bd5"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "scripts/sign-job.ps1",
+    "blob_sha": "7d1750b87592832b650d20d210e0748d9d7b9193"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/admin.html",
+    "blob_sha": "8d5dcfc742d8cc369c73aff71d8f0a36b04d2973"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/admin.js",
+    "blob_sha": "0719a16bb90a6154e70706b1418d9a382963c4a7"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/app.js",
+    "blob_sha": "e76e6aeae77d948948832f74a66621329115f1fc"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/index.html",
+    "blob_sha": "c0ca2b7e4602efdc0ae4eea137428f2a910136f8"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/settings.css",
+    "blob_sha": "886472ff63ae9061dc5951b71792451a3ba1191c"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/style.css",
+    "blob_sha": "6e11455912bda9ae5ad015eab69ec2cd27297663"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "static/theme.js",
+    "blob_sha": "928d24e47ef93ca24d785a0164b3ae0e05a00a45"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/__init__.py",
+    "blob_sha": "07b08277a885fe6b656673fcb75c69a6cc72ede4"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/browser_live.py",
+    "blob_sha": "eb3156c763814decdae3d96208fca2392b8e1c86"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/browser_smoke.py",
+    "blob_sha": "eeb4cfb5f500b0e2a3f48c93fac409b132c5d94e"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/live_fixture.py",
+    "blob_sha": "afbaac71a79fba9f86fbc41724a6f838771048de"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/test_live_acceptance.py",
+    "blob_sha": "139e2b5ce86f7a2536248303709cf050c9ef0c68"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/test_remote_errors.py",
+    "blob_sha": "9cce9482668a9e3789cc594c424dd4c8e3d13319"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/test_setup.py",
+    "blob_sha": "881bd6719c39bc60e450ba943ab6ec8364d3d9a2"
+  },
+  {
+    "repository": "AlexSapronov/km-split",
+    "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+    "path": "tests/test_workflow.py",
+    "blob_sha": "79921302d4d372f751d3f25cea4e6c52de3f8328"
+  }
+]

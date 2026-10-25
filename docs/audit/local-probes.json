@@ -1,0 +1,25 @@
+{
+  "verified_python_sources": 103,
+  "probes": [
+    {
+      "finding": "W-001",
+      "observed": {
+        "anonymous_list_http": 200
+      }
+    },
+    {
+      "finding": "W-002",
+      "observed": {
+        "ok": true,
+        "remaining": 7
+      }
+    },
+    {
+      "finding": "S-001",
+      "observed": {
+        "anonymous_settings_read_http": 200,
+        "anonymous_settings_write_http": 200
+      }
+    }
+  ]
+}
