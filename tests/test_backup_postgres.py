@@ -20,7 +20,7 @@ from marking_erp.web import create_app
 pytestmark=[pytest.mark.postgres,pytest.mark.usefixtures('fresh_schema')]
 
 @pytest.fixture(autouse=True)
-def actual_source_dsn(env):
+def actual_source_dsn(fresh_schema,env):
     from pydantic import SecretStr
     env[0].database_url=SecretStr(os.environ['ERP_TEST_DATABASE_URL'])
 
@@ -116,3 +116,14 @@ def test_existing_database_directory_and_wrong_mfa_key_are_never_overwritten(reg
     from cryptography.fernet import Fernet
     wrong=env[0].model_copy(update={'mfa_encryption_key':Settings(database_url=env[0].database_url,mfa_encryption_key=Fernet.generate_key().decode()).mfa_encryption_key})
     with pytest.raises(BackupError):restore_backup(wrong,bundle,admin_url=admin,new_database=name+'x',files_path=tmp_path/'wrong-key')
+
+
+def test_backup_refuses_a_configured_key_that_cannot_decrypt_mfa(registry_env,engine,tmp_path):
+    from cryptography.fernet import Fernet
+    from pydantic import SecretStr
+    env,*_=registry_env
+    with engine.connect() as c:schema=c.execute(text('SELECT current_schema()')).scalar_one()
+    wrong=env[0].model_copy(update={'mfa_encryption_key':SecretStr(Fernet.generate_key().decode())})
+    output=tmp_path/'wrong-key-backup.zip'
+    with pytest.raises(BackupError):create_backup(wrong,engine,output,db_schema=schema)
+    assert not output.exists()

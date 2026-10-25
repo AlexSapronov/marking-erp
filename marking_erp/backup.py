@@ -42,6 +42,18 @@ def _key_hash(settings):
     return sha256(settings.mfa_encryption_key.get_secret_value().encode()).hexdigest() if settings.mfa_encryption_key else None
 
 
+def _validate_mfa(c,settings):
+    ciphertexts=c.execute(text('SELECT mfa_ciphertext FROM users WHERE mfa_ciphertext IS NOT NULL')).scalars().all()
+    if ciphertexts:
+        if not settings.mfa_encryption_key:raise BackupError('The original MFA encryption key is required separately')
+        from cryptography.fernet import Fernet,InvalidToken
+        fernet=Fernet(settings.mfa_encryption_key.get_secret_value().encode())
+        try:
+            for value in ciphertexts:fernet.decrypt(bytes(value))
+        except InvalidToken:raise BackupError('MFA encryption key does not match stored data') from None
+    return bool(ciphertexts)
+
+
 class PostgresTools:
     def __init__(self,bin_dir=None,timeout=900):
         if not 1<=timeout<=7200:raise BackupError('Invalid tool timeout')
@@ -112,7 +124,7 @@ def create_backup(settings,engine,output,*,db_schema='public',tools=None):
                 c.exec_driver_sql('SET search_path TO '+c.dialect.identifier_preparer.quote(schema))
                 revisions=c.execute(text('SELECT version_num FROM alembic_version')).scalars().all()
                 if revisions!=[schema_head()]:raise BackupError('Backup requires the current schema revision')
-                files=_rows(c);required=c.execute(text('SELECT EXISTS(SELECT 1 FROM users WHERE mfa_ciphertext IS NOT NULL)')).scalar_one()
+                files=_rows(c);required=_validate_mfa(c,settings)
                 if required and not settings.mfa_encryption_key:raise BackupError('Configure the MFA encryption key and save it separately')
                 exported=c.execute(text('SELECT pg_export_snapshot()')).scalar_one()
                 server=c.execute(text('SHOW server_version_num')).scalar_one()
@@ -148,6 +160,7 @@ def _manifest(archive):
     if len(names)!=len(set(names)) or 'manifest.json' not in names or 'database.dump' not in names:raise BackupError('Invalid backup members')
     if archive.getinfo('manifest.json').file_size>MAX_MANIFEST:raise BackupError('Manifest too large')
     manifest=json.loads(archive.read('manifest.json'),object_pairs_hook=_unique_json)
+    if type(manifest['format']) is not int or type(manifest['mfa_key_required']) is not bool:raise BackupError('Invalid manifest types')
     if manifest['format']!=FORMAT or manifest['schema_revision']!=schema_head():raise BackupError('Unsupported backup schema/format; use the matching release')
     _identifier(manifest['db_schema'])
     if not isinstance(manifest['files'],list) or len(manifest['files'])>MAX_ITEMS:raise BackupError('Invalid file list')
@@ -203,8 +216,17 @@ def _freeze(c,bundle_hash):
 
 
 def restore_backup(settings,bundle,*,admin_url,new_database,files_path,tools=None):
+    try:fd=os.open(bundle,os.O_RDONLY|os.O_NOFOLLOW)
+    except OSError:raise BackupError('Backup must be an accessible regular file') from None
+    with os.fdopen(fd,'rb') as source:
+        if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):raise BackupError('Backup must be a regular file')
+        manifest=verify_backup(source)
+        return _restore_verified(settings,source,manifest,admin_url=admin_url,new_database=new_database,files_path=files_path,tools=tools)
+
+
+def _restore_verified(settings,bundle,manifest,*,admin_url,new_database,files_path,tools=None):
     """Never overwrite an existing DB or directory; only clean up resources created here."""
-    manifest=verify_backup(bundle);name=_identifier(new_database);root=Path(files_path);tools=tools or PostgresTools(os.environ.get('ERP_PG_BIN_DIR'))
+    name=_identifier(new_database);root=Path(files_path);tools=tools or PostgresTools(os.environ.get('ERP_PG_BIN_DIR'))
     if not root.is_absolute() or root.exists() or root.is_symlink():raise BackupError('Restore files path must be a new absolute directory')
     for parent in root.parents:
         if parent.is_symlink():raise BackupError('Restore directory cannot traverse symlinks')
@@ -234,7 +256,8 @@ def restore_backup(settings,bundle,*,admin_url,new_database,files_path,tools=Non
         with engine.begin() as c:
             c.exec_driver_sql('SET search_path TO '+c.dialect.identifier_preparer.quote(manifest['db_schema']))
             if c.execute(text('SELECT version_num FROM alembic_version')).scalar_one()!=schema_head() or _rows(c)!=manifest['files']:raise BackupError('Restored database/files do not match the manifest')
-            with Path(bundle).open('rb') as f:bundle_hash,_=_digest_file(f)
+            if _validate_mfa(c,settings)!=manifest['mfa_key_required']:raise BackupError('Restored MFA metadata mismatch')
+            bundle.seek(0);bundle_hash,_=_digest_file(bundle)
             _freeze(c,bundle_hash)
         return {'database':name,'file_count':len(manifest['files']),'files_path':str(root),'external_dispatch_disabled':True}
     except BackupError:raise
