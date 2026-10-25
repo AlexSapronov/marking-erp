@@ -33,7 +33,7 @@ ERP_TEST_DATABASE_URL='<DSN тестовой БД>' .venv/bin/python -m pytest -
 Без тестовой БД локальные PostgreSQL-тесты пропускаются с явным сообщением; в CI отсутствие DSN считается ошибкой.
 GitHub Actions поднимает PostgreSQL16 и проверяет clean install, повторный/конкурентный seed, constraints,
 неизменяемый аудит, запрет административных прав специалисту, schema drift и downgrade/upgrade.
-Полный production backup/restore пока не реализован и не заменяется тестом downgrade.
+Согласованная копия и изолированный restore описаны в BACKUP-RESTORE.md; downgrade их не заменяет. Расписание, offsite/PITR и производственное переключение остаются задачами ИТ.
 
 Миграция поставляется внутри Python-пакета; обычная wheel-установка сохраняет SQL и seed resources.
 PostgreSQL принимает только шесть системных групп; пользователь принадлежит одной группе, организации задаются отдельными связями.
