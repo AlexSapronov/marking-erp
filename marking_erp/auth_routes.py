@@ -66,7 +66,12 @@ def install_auth(app, engine, settings):
             yield current
 
     def details(current):
+        organizations = current.connection.execute(text("""SELECT o.id,o.inn,o.name FROM organizations o
+            JOIN user_organizations uo ON uo.organization_id=o.id WHERE uo.user_id=:id AND o.enabled ORDER BY o.name"""), {"id": current.id}).mappings().all()
+        administrative = current.user["group_slug"] == "administrator" or auth.group_has_admin(current.connection, current.user["group_slug"])
         return {"user": auth.public_user(current.user), "organization_ids": sorted(map(str, current.organizations())),
+                "organizations": [dict(row) for row in organizations], "group_name": GROUPS[current.user["group_slug"]],
+                "administrative_access": administrative, "mfa_required": administrative or bool(current.user["mfa_ciphertext"]),
                 "permissions": current.grants(), "csrf": auth.csrf_token(current.token)}
 
     def peer(request):
@@ -134,11 +139,19 @@ def install_auth(app, engine, settings):
     def users(current=Depends(actor, scope="function")):
         current.require("users.manage", administrative=True)
         allowed = list(current.organizations())
-        result = current.connection.execute(text("""SELECT u.id,u.username,u.display_name,u.group_slug,u.enabled,u.auth_version
+        result = current.connection.execute(text("""SELECT u.id,u.username,u.display_name,u.group_slug,u.enabled,u.auth_version,
+            u.mfa_ciphertext IS NOT NULL AS mfa_enabled,
+            ARRAY(SELECT x.organization_id FROM user_organizations x WHERE x.user_id=u.id ORDER BY x.organization_id) AS organization_ids
             FROM users u WHERE EXISTS(SELECT 1 FROM user_organizations x WHERE x.user_id=u.id)
             AND NOT EXISTS(SELECT 1 FROM user_organizations x WHERE x.user_id=u.id AND NOT (x.organization_id=ANY(CAST(:orgs AS uuid[]))))
             ORDER BY u.username"""), {"orgs": allowed}).mappings().all()
         return {"users": [dict(row) for row in result]}
+
+    @app.get("/api/users/options")
+    def user_options(current=Depends(actor, scope="function")):
+        current.require("users.manage", administrative=True)
+        return {"groups": [{"slug": slug, "name": name, "requires_mfa": slug == "administrator" or auth.group_has_admin(current.connection, slug)}
+                           for slug, name in GROUPS.items()]}
 
     @app.post("/api/session/password")
     def change_password(body: PasswordChange, request: Request, current=Depends(actor, scope="function")):

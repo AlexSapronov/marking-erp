@@ -6,6 +6,12 @@ from sqlalchemy import create_engine
 from marking_erp.config import Settings
 from marking_erp.migrate import migration_config
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item,call):
+    outcome=yield
+    report=outcome.get_result()
+    setattr(item,'rep_'+report.when,report)
+
 @pytest.fixture(scope="module")
 def engine():
     url = os.environ.get("ERP_TEST_DATABASE_URL")

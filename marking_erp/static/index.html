@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marking ERP · Вход</title>
+<script src="/assets/theme.js"></script><link rel="stylesheet" href="/assets/app.css">
+<script type="module" src="/assets/app.js"></script>
+</head><body>
+<a class="skip-link" href="#content">К содержимому</a>
+<button class="theme-button" id="theme" type="button" aria-label="Переключить тему">◐</button>
+<div id="boot" class="boot" role="status">Подключаем рабочее место…</div>
+<section id="login-screen" class="login-layout" hidden>
+  <div class="login-story"><a class="brand" href="/" aria-label="Marking ERP"><span class="brand-mark">M</span><span>Marking<span class="brand-erp">ERP</span></span></a>
+    <div class="story-copy"><p class="eyebrow">ОДНА КОМАНДА · ОДНА СИСТЕМА</p><h1>Каждый этап<br>на своём месте.</h1><p>Общее рабочее пространство для управления маркировкой.</p>
+      <div class="story-process" aria-label="Направления работы"><span>Каталог</span><span>Маркировка</span><span>Склад</span></div>
+    </div><p class="story-footer">Marking ERP · Корпоративная система</p>
+  </div>
+  <div class="login-content"><div class="login-box"><p class="eyebrow">РАБОЧЕЕ МЕСТО</p><h2>Войти в систему</h2><p class="muted">Используйте личную учётную запись.</p>
+    <form id="login-form"><fieldset><label>Логин<input id="login-name" name="username" autocomplete="username" maxlength="80" required></label>
+      <label>Пароль<input id="login-password" name="password" type="password" autocomplete="current-password" maxlength="1024" required></label>
+      <label>Код аутентификатора <span class="optional">при необходимости</span><input id="login-otp" name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="6 цифр"></label>
+      <p class="field-help">Для административного доступа введите код TOTP.</p>
+      <p id="login-error" class="error-message" role="alert" hidden></p><button class="primary full" type="submit">Войти</button>
+    </fieldset></form><p class="login-help">Если нет учётной записи, обратитесь к администратору.</p>
+  </div></div>
+</section>
+<div id="workspace" class="workspace" hidden>
+  <aside class="sidebar"><a class="brand" href="/" data-nav><span class="brand-mark">M</span><span>Marking<span class="brand-erp">ERP</span></span></a>
+    <p class="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</p><nav aria-label="Главное меню"><a href="/" data-nav>Рабочее место</a><a href="/profile" data-nav>Мой профиль</a><a href="/users" data-nav id="users-link" hidden>Пользователи</a></nav>
+    <div class="sidebar-footer"><span class="status-dot"></span>Личная сессия</div>
+  </aside>
+  <div class="work-area"><header class="topbar"><div class="context"><span id="context-label" class="muted"></span><strong id="context-name"></strong></div>
+    <div class="topbar-actions"><span id="group-badge" class="badge"></span><button id="logout" class="quiet" type="button">Выйти</button></div>
+  </header><main id="content" tabindex="-1"><div id="notice" class="notice" role="status" aria-live="polite" hidden></div><div id="page-content"></div></main>
+  <footer class="work-footer">Marking ERP <span>Данные доступны в пределах ваших полномочий</span></footer></div>
+</div>
+<dialog id="user-dialog" class="drawer" aria-labelledby="user-title"><form id="user-form">
+  <div class="dialog-heading"><div><p class="eyebrow">УЧЁТНАЯ ЗАПИСЬ</p><h2 id="user-title">Новый пользователь</h2></div><button type="button" data-close="user-dialog" aria-label="Закрыть">✕</button></div>
+  <fieldset><div class="form-grid"><label>Имя сотрудника<input name="display_name" maxlength="120" required></label><label>Логин<input name="username" autocomplete="off" maxlength="80" minlength="3" required></label></div>
+    <label>Группа<select name="group_slug" required></select></label><p id="group-help" class="field-help"></p>
+    <label class="check-row" id="enabled-row"><input name="enabled" type="checkbox">Учётная запись включена</label>
+    <div id="user-password-fields" class="form-grid"><label>Начальный пароль<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024"></label><label>Повторите пароль<input name="password_confirm" type="password" autocomplete="new-password" maxlength="1024"></label></div>
+    <fieldset class="organizations"><legend>Доступные организации</legend><div id="user-organizations"></div></fieldset>
+    <section id="user-mfa-fields" class="mfa-box" hidden><h3>TOTP нового пользователя</h3><p class="field-help">Добавьте ключ в приложение-аутентификатор пользователя и подтвердите код.</p>
+      <label>Секрет TOTP<input name="totp_secret" type="password" autocomplete="off" maxlength="128"></label><button id="generate-user-totp" type="button" class="quiet">Создать и показать ключ</button>
+      <label>Код нового пользователя<input name="totp_code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="off"></label>
+    </section><p id="edit-mfa-help" class="field-help" hidden>Для административной группы сначала настройте TOTP через действие «Пароль и TOTP».</p>
+    <p id="user-error" class="error-message" role="alert" hidden></p>
+  </fieldset><div class="dialog-actions"><button type="button" data-close="user-dialog">Отмена</button><button type="submit" class="primary">Сохранить</button></div>
+</form></dialog>
+<dialog id="credentials-dialog" aria-labelledby="credentials-title"><form id="credentials-form">
+  <div class="dialog-heading"><div><p class="eyebrow">ДОСТУП К СИСТЕМЕ</p><h2 id="credentials-title">Пароль и TOTP</h2></div><button type="button" data-close="credentials-dialog" aria-label="Закрыть">✕</button></div>
+  <fieldset><p id="credentials-target" class="muted"></p><label>Новый пароль<input name="password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>
+    <label>Повторите пароль<input name="password_confirm" type="password" autocomplete="new-password" maxlength="1024" required></label>
+    <label class="check-row"><input type="checkbox" name="replace_mfa">Настроить или заменить TOTP</label>
+    <section id="credentials-mfa" class="mfa-box" hidden><label>Новый секрет TOTP<input name="totp_secret" type="password" autocomplete="off" maxlength="128"></label><button id="generate-reset-totp" type="button" class="quiet">Создать и показать ключ</button>
+      <label>Код из аутентификатора пользователя<input name="totp_code" inputmode="numeric" autocomplete="off" maxlength="6" pattern="[0-9]{6}"></label></section>
+    <p class="field-help">После сохранения все сессии пользователя завершатся.</p><p id="credentials-error" class="error-message" role="alert" hidden></p>
+  </fieldset><div class="dialog-actions"><button type="button" data-close="credentials-dialog">Отмена</button><button class="primary" type="submit">Обновить доступ</button></div>
+</form></dialog>
+<dialog id="reauth-dialog" aria-labelledby="reauth-title"><form id="reauth-form"><div class="dialog-heading"><h2 id="reauth-title">Подтвердить доступ</h2><button type="button" data-close="reauth-dialog" aria-label="Закрыть">✕</button></div>
+  <fieldset><p class="muted">Для административного действия подтвердите свою учётную запись.</p><label>Ваш пароль<input name="password" type="password" autocomplete="current-password" maxlength="1024" required></label>
+    <label>Новый код TOTP<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label><p id="reauth-error" class="error-message" role="alert" hidden></p>
+  </fieldset><div class="dialog-actions"><button type="button" data-close="reauth-dialog">Отмена</button><button class="primary" type="submit">Подтвердить</button></div>
+</form></dialog>
+<dialog id="password-dialog" aria-labelledby="password-title"><form id="password-form"><div class="dialog-heading"><h2 id="password-title">Сменить пароль</h2><button type="button" data-close="password-dialog" aria-label="Закрыть">✕</button></div>
+  <fieldset><label>Текущий пароль<input name="password" type="password" autocomplete="current-password" maxlength="1024" required></label><label>Новый пароль<input name="new_password" type="password" autocomplete="new-password" minlength="12" maxlength="1024" required></label>
+    <label>Повторите новый пароль<input name="confirm" type="password" autocomplete="new-password" maxlength="1024" required></label><label id="own-otp-label">Новый код TOTP<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label>
+    <p class="field-help">После смены пароля потребуется войти заново на всех устройствах.</p><p id="password-error" class="error-message" role="alert" hidden></p>
+  </fieldset><div class="dialog-actions"><button type="button" data-close="password-dialog">Отмена</button><button class="primary" type="submit">Сменить пароль</button></div>
+</form></dialog>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-message" class="muted"></p><div class="dialog-actions"><button value="cancel">Отмена</button><button value="ok" id="confirm-ok" class="danger">Подтвердить</button></div></form></dialog>
+<noscript>Для работы Marking ERP включите JavaScript.</noscript>
+</body></html>
