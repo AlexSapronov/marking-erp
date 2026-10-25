@@ -93,7 +93,7 @@ def claim(c,worker_id,*,lease_seconds=60):
     reason=authorization(c,op)
     signature=None
     if op['requires_signature']:
-        signature=c.execute(text("SELECT j.signature,j.signature_sha256 FROM signer_jobs j JOIN signer_devices d ON d.id=j.device_id WHERE j.operation_id=:id AND j.state='verified' AND d.enabled AND d.organization_id=:org AND d.certificate_sha256=j.certificate_sha256"),{'id':op['id'],'org':op['organization_id']}).mappings().first()
+        signature=c.execute(text("SELECT j.signature,j.signature_sha256 FROM signer_jobs j JOIN signer_devices d ON d.id=j.device_id WHERE j.operation_id=:id AND j.state='verified' AND d.enabled AND d.organization_id=:org AND d.certificate_sha256=j.certificate_sha256 AND :kind=ANY(d.allowed_kinds)"),{'id':op['id'],'org':op['organization_id'],'kind':op['kind']}).mappings().first()
         if not signature or sha256(bytes(signature['signature'])).hexdigest()!=signature['signature_sha256']:reason='signature_not_verified'
     if reason:transition(c,op['id'],'blocked',reason);return None
     lease=secrets.token_urlsafe(32);attempt=uuid4()

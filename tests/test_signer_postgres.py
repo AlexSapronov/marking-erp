@@ -97,3 +97,18 @@ def test_stopped_target_or_revoked_device_blocks_signing(signer_env,engine):
         c.execute(text('UPDATE signer_devices SET enabled=false WHERE id=:id'),{'id':id})
     with client(queue[0]) as c:assert c.post('/api/signer/claim',headers={'Authorization':'Bearer '+token}).status_code==401
     with engine.connect() as c:assert c.execute(text('SELECT token_hash FROM signer_devices WHERE id=:id'),{'id':id}).scalar_one()!=token
+
+
+def test_revoked_allowlist_prevents_old_job_receipt_and_verified_dispatch(signer_env,engine,certificate):
+    queue,op,id,token=signer_env
+    with client(queue[0]) as c:
+        job=claim(c,token)
+        with engine.begin() as db:db.execute(text("UPDATE signer_devices SET allowed_kinds=ARRAY[]::text[] WHERE id=:id"),{'id':id})
+        response=c.post('/api/signer/result',json=result(job,certificate[1](PAYLOAD)),headers={'Authorization':'Bearer '+token})
+        assert response.json()['accepted'] is False
+        with engine.begin() as db:db.execute(text("UPDATE signer_devices SET allowed_kinds=ARRAY['fixture.signed'] WHERE id=:id"),{'id':id})
+        assert c.post('/api/signer/result',json=result(job,certificate[1](PAYLOAD)),headers={'Authorization':'Bearer '+token}).json()['accepted'] is True
+    with engine.begin() as db:
+        assert signer.verify_received(db,job['job_id'],verifier=certificate[2],verification_ref='synthetic verification') is True
+        db.execute(text("UPDATE signer_devices SET allowed_kinds=ARRAY[]::text[] WHERE id=:id"),{'id':id})
+        assert ops.claim(db,'worker') is None and state(db,op['id'])=='blocked'

@@ -76,7 +76,7 @@ def receive(c,device,body):
     if not job:raise HTTPException(404,'Задание не найдено')
     op=c.execute(text('SELECT * FROM external_operations WHERE id=:id FOR UPDATE'),{'id':job['operation_id']}).mappings().one()
     valid=job['device_id']==device['id'] and job['state']=='leased' and job['fence']==body.fence and job['live'] and hmac.compare_digest(job['lease_hash'] or '',sha256(body.lease.encode()).hexdigest())
-    valid=bool(valid and body.payload_sha256==op['payload_sha256'] and body.certificate_sha256==job['certificate_sha256'] and job['certificate_sha256']==device['certificate_sha256'] and op['state']=='awaiting_signature' and authorization(c,op) is None)
+    valid=bool(valid and op['kind'] in device['allowed_kinds'] and body.payload_sha256==op['payload_sha256'] and body.certificate_sha256==job['certificate_sha256'] and job['certificate_sha256']==device['certificate_sha256'] and op['state']=='awaiting_signature' and authorization(c,op) is None)
     c.execute(text('INSERT INTO signer_receipts(job_id,device_id,fence,signature,sha256,applied) VALUES (:job,:device,:fence,:signature,:sha,:valid)'),{'job':job['id'],'device':device['id'],'fence':body.fence,'signature':signature,'sha':sha256(signature).hexdigest(),'valid':valid})
     if valid:c.execute(text("UPDATE signer_jobs SET state='received',signature=:signature,signature_sha256=:sha,lease_hash=NULL,lease_until=NULL WHERE id=:id"),{'signature':signature,'sha':sha256(signature).hexdigest(),'id':job['id']})
     # Even a correctly structured CMS stays unverified and cannot be dispatched.
@@ -95,7 +95,9 @@ def verify_received(c,job_id,*,verifier=None,verification_ref=''):
     op=c.execute(text('SELECT * FROM external_operations WHERE id=:id FOR UPDATE'),{'id':job['operation_id']}).mappings().one()
     if verifier is None:return False
     if not verification_ref.strip():raise ValueError('Verified evidence reference is required')
-    valid=not authorization(c,op) and op['state']=='awaiting_signature' and sha256(bytes(job['signature'])).hexdigest()==job['signature_sha256']
+    device=c.execute(text('SELECT * FROM signer_devices WHERE id=:id'),{'id':job['device_id']}).mappings().first()
+    device_valid=bool(device and device['enabled'] and device['organization_id']==op['organization_id'] and device['certificate_sha256']==job['certificate_sha256'] and op['kind'] in device['allowed_kinds'])
+    valid=device_valid and not authorization(c,op) and op['state']=='awaiting_signature' and sha256(bytes(job['signature'])).hexdigest()==job['signature_sha256']
     if valid:
         try:valid=verifier(bytes(op['payload']),bytes(job['signature']),job['certificate_sha256']) is True
         except Exception:valid=False
