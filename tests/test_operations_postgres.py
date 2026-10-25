@@ -26,6 +26,12 @@ def prepare(c,queue_env,kind='fixture.write',key='one',payload=PAYLOAD):
     return ops.prepare(c,organization_id=env[1],actor_id=env[3]['bm'],kind=kind,target_id=target,target_revision=1,idempotency_key=key,payload=payload)
 
 
+def separate_target(c,queue):
+    env,_=queue;target=uuid4()
+    c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,1)'),{'id':target,'org':env[1],'owner':env[3]['bm']})
+    return env,target
+
+
 def outcome(ticket,classification='submitted',raw=b'fixture receipt',external='fixture-id'):
     return ops.Result(raw,classification,ticket['payload_sha256'],str(ticket['organization_id']),external)
 
@@ -39,6 +45,7 @@ def test_command_bytes_idempotency_snapshot_and_immutable_intent(queue_env,engin
         assert one['id']==two['id'] and bytes(one['payload'])==PAYLOAD and one['payload_sha256']==sha256(PAYLOAD).hexdigest()
         assert one['policy_snapshot']['values']['archive.retention_months']==6
         with pytest.raises(ops.CommandConflict):prepare(c,queue_env,payload=PAYLOAD+b' ')
+        with pytest.raises(ops.CommandConflict):prepare(c,queue_env,key='fresh-key')
     with pytest.raises(DBAPIError),engine.begin() as c:c.execute(text("UPDATE external_operations SET payload='different'::bytea WHERE id=:id"),{'id':one['id']})
     with pytest.raises(DBAPIError),engine.begin() as c:c.execute(text('DELETE FROM external_operations'))
 
@@ -52,7 +59,7 @@ def test_two_workers_claim_once_and_io_has_no_open_transaction(queue_env,engine)
     ticket=next(t for t in tickets if t)
     with engine.begin() as c:assert ops.finish(c,ticket,outcome(ticket)) is True
     with engine.connect() as c:assert state(c,op['id'])=='submitted'
-    with engine.begin() as c:other=prepare(c,queue_env,key='second')
+    with engine.begin() as c:other=prepare(c,separate_target(c,queue_env),key='second')
     called=[]
     def adapter(ticket):
         # A fresh connection sees the committed claim before external IO begins.
@@ -110,11 +117,11 @@ def test_receipt_not_completion_and_reconcile_is_bound_to_exact_command(queue_en
 def test_cancel_and_missing_adapter_cannot_dispatch(queue_env,engine):
     with engine.begin() as c:
         op=prepare(c,queue_env);ops.cancel_before_dispatch(c,op['id']);assert state(c,op['id'])=='cancelled_before_dispatch'
-        op2=prepare(c,queue_env,key='second')
+        op2=prepare(c,separate_target(c,queue_env),key='second')
     assert ops.dispatch_once(engine,'unconfigured',{}) is False
     with engine.begin() as c:
         assert state(c,op2['id'])=='blocked'
-        op3=prepare(c,queue_env,key='third');ticket=ops.claim(c,'running')
+        op3=prepare(c,separate_target(c,queue_env),key='third');ticket=ops.claim(c,'running')
         with pytest.raises(ops.CommandConflict):ops.cancel_before_dispatch(c,op3['id'])
 
 
@@ -131,3 +138,15 @@ def test_queue_api_scope_no_payload_leak_and_no_public_retry(queue_env,engine):
     with client(env) as c:
         login(c,'tsd');assert c.get('/api/operations?organization_id='+str(env[1])).status_code==403
         assert c.post('/api/operations/'+str(op['id'])+'/retry',json={}).status_code==404
+
+
+def test_unknown_mutation_cannot_be_requeued_in_database_and_retry_after_is_read_only(queue_env,engine):
+    with engine.begin() as c:
+        op=prepare(c,queue_env);ticket=ops.claim(c,'one');ops.transport_failure(c,ticket)
+    with pytest.raises(DBAPIError),engine.begin() as c:c.execute(text("UPDATE external_operations SET state='queued' WHERE id=:id"),{'id':op['id']})
+    with engine.begin() as c:read=prepare(c,queue_env,'fixture.read',key='read-delay')
+    def delayed(ticket):raise ops.RetryAfter(120)
+    assert ops.dispatch_once(engine,'reader',{('fixture.read','fixture-v1'):delayed})
+    with engine.connect() as c:
+        assert state(c,read['id'])=='queued'
+        assert c.execute(text('SELECT available_at>clock_timestamp()+interval \'110 seconds\' FROM external_operations WHERE id=:id'),{'id':read['id']}).scalar_one()

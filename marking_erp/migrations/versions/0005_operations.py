@@ -23,8 +23,16 @@ def upgrade():
         reason text NOT NULL DEFAULT '',external_id text,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),
         available_at timestamptz NOT NULL DEFAULT now(),fence bigint NOT NULL DEFAULT 0,lease_hash char(64),lease_until timestamptz,worker_id text,
         UNIQUE(organization_id,kind,idempotency_key),UNIQUE(id,organization_id),FOREIGN KEY(target_id,organization_id) REFERENCES operation_targets(id,organization_id))''')
+    op.execute("CREATE UNIQUE INDEX mutation_target_once ON external_operations(organization_id,kind,target_id,target_revision) WHERE semantic='mutation'")
     op.execute('''CREATE FUNCTION preserve_operation_command() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN
+      IF OLD.semantic='mutation' AND OLD.state='unknown' AND NEW.state IN ('queued','dispatching') THEN
+        RAISE EXCEPTION 'unknown mutation cannot be retried';
+      END IF;
+      IF NEW.fence<OLD.fence THEN RAISE EXCEPTION 'fence cannot decrease'; END IF;
+      IF OLD.state IN ('confirmed','rejected','cancelled_before_dispatch') AND NEW.state<>OLD.state THEN
+        RAISE EXCEPTION 'terminal operation cannot restart';
+      END IF;
       IF (to_jsonb(NEW)-ARRAY['state','reason','external_id','updated_at','available_at','fence','lease_hash','lease_until','worker_id'])
          IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['state','reason','external_id','updated_at','available_at','fence','lease_hash','lease_until','worker_id']) THEN
         RAISE EXCEPTION 'prepared command is immutable';

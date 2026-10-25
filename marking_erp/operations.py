@@ -15,6 +15,13 @@ MAX_BYTES=1048576
 class CommandConflict(ValueError):pass
 
 
+class RetryAfter(Exception):
+    def __init__(self,seconds):
+        if type(seconds) is not int or not 1<=seconds<=3600:raise ValueError('Invalid Retry-After')
+        self.seconds=seconds
+        super().__init__('Remote service requested a delay')
+
+
 def event(c,id,state,reason=''):
     c.execute(text('INSERT INTO operation_events(operation_id,state,reason) VALUES (:id,:state,:reason)'),{'id':id,'state':state,'reason':reason})
 
@@ -51,6 +58,7 @@ def prepare(c,*,organization_id,actor_id,kind,target_id,target_revision,idempote
     if existing:
         if existing['intent_sha256']!=intent:raise CommandConflict('Idempotency key belongs to a different command')
         return dict(existing)
+    if contract['semantic']=='mutation' and c.execute(text("SELECT 1 FROM external_operations WHERE organization_id=:org AND kind=:kind AND target_id=:target AND target_revision=:revision AND semantic='mutation'"),{'org':organization_id,'kind':kind,'target':target_id,'revision':target_revision}).scalar():raise CommandConflict('Source revision already has this mutation; a new key cannot bypass it')
     target=c.execute(text('SELECT * FROM operation_targets WHERE id=:id FOR SHARE'),{'id':target_id}).mappings().first()
     if not target or target['organization_id']!=organization_id:raise ValueError('Unknown target organization')
     id=uuid4();state='awaiting_signature' if contract['requires_signature'] else 'queued'
@@ -172,6 +180,8 @@ def dispatch_once(engine,worker_id,adapters):
                 c.execute(text('UPDATE external_operations SET lease_hash=NULL,lease_until=NULL WHERE id=:id'),{'id':ticket['id']})
         return False
     try:result=adapter(ticket)
+    except RetryAfter as error:
+        with engine.begin() as c:transport_failure(c,ticket,retry_after=error.seconds)
     except Exception:
         with engine.begin() as c:transport_failure(c,ticket)
     else:
