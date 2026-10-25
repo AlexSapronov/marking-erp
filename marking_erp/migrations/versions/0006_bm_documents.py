@@ -20,7 +20,7 @@ def upgrade():
     op.execute('CREATE INDEX bm_document_list ON bm_documents(organization_id,state,id)')
     op.execute('''CREATE TABLE bm_document_versions(
         document_id uuid NOT NULL,organization_id uuid NOT NULL,revision bigint NOT NULL CHECK(revision>=1),
-        actor_id uuid NOT NULL REFERENCES users(id),action text NOT NULL CHECK(action IN ('created','edited','prepared','archived','restored')),
+        actor_id uuid NOT NULL REFERENCES users(id),actor_name text NOT NULL CHECK(length(actor_name) BETWEEN 1 AND 120),action text NOT NULL CHECK(action IN ('created','edited','prepared','archived','restored')),
         reason text NOT NULL,snapshot jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY(document_id,revision),FOREIGN KEY(document_id,organization_id) REFERENCES bm_documents(id,organization_id))''')
     op.execute('CREATE TRIGGER bm_versions_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON bm_document_versions FOR EACH STATEMENT EXECUTE FUNCTION reject_audit_change()')

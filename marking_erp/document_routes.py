@@ -101,8 +101,8 @@ def install_documents(app,actor):
 
     def record(current,doc,action,reason=''):
         value={k:doc[k] for k in ('id','organization_id','owner_id','number','document_date','supplier','revision','state','lines','policy_snapshot')}
-        current.connection.execute(text('''INSERT INTO bm_document_versions(document_id,organization_id,revision,actor_id,action,reason,snapshot)
-            VALUES (:id,:org,:revision,:actor,:action,:reason,CAST(:snapshot AS jsonb))'''),{'id':doc['id'],'org':doc['organization_id'],'revision':doc['revision'],'actor':current.id,'action':action,'reason':reason,'snapshot':json.dumps(value,default=str)})
+        current.connection.execute(text('''INSERT INTO bm_document_versions(document_id,organization_id,revision,actor_id,actor_name,action,reason,snapshot)
+            VALUES (:id,:org,:revision,:actor,:actor_name,:action,:reason,CAST(:snapshot AS jsonb))'''),{'id':doc['id'],'org':doc['organization_id'],'revision':doc['revision'],'actor':current.id,'actor_name':current.user['display_name'],'action':action,'reason':reason,'snapshot':json.dumps(value,default=str)})
         auth.audit(current.connection,current.id,'document.'+action,doc['id'],{'revision':doc['revision']})
 
     def save(current,doc,action,reason=''):
@@ -224,6 +224,6 @@ def install_documents(app,actor):
     @app.get('/api/documents/{id}/history')
     def history(id:UUID,current=dep):
         doc=get(current,id);require(current,'audit.operational.view',doc)
-        rows=current.connection.execute(text('''SELECT revision,action,reason,actor_id,created_at FROM bm_document_versions
+        rows=current.connection.execute(text('''SELECT revision,action,reason,actor_id,actor_name,created_at FROM bm_document_versions
             WHERE document_id=:id ORDER BY revision DESC LIMIT 100'''),{'id':id}).mappings().all()
         return {'history':[dict(r) for r in rows]}
