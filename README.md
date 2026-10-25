@@ -31,3 +31,5 @@
 [Редактор групп и бизнес-правил](docs/architecture/CONFIGURATION.md): предпросмотр, версии, история и защита инвариантов.
 
 [Реестр КМ и общие данные](docs/architecture/REGISTRY-FOUNDATION.md): неизменяемые байты, provenance, защищённые файлы и проверяемый PDF renderer.
+
+[Очередь операций и протокол подписанта](docs/architecture/DURABLE-OPERATIONS.md): сохранённые команды, lease/fence, unknown и отдельная machine identity. Продуктивные адаптеры и валидатор ГОСТ ещё не подключены.

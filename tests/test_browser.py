@@ -263,3 +263,26 @@ def test_registry_tsd_direct_access_and_empty_real_database(page,live_app):
     login(page,'tsd');expect(page.locator('#codes-link')).to_be_hidden()
     assert page.request.get(live_app['base']+'/api/codes?organization_id='+str(live_app['org'])).status==403
     page.goto(live_app['base']+'/codes');expect(page.get_by_role('heading',name='Раздел недоступен',exact=True)).to_be_visible()
+
+
+def test_operations_unknown_history_and_no_retry_controls(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp import operations as ops
+    target=uuid4()
+    with engine.begin() as c:
+        c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,1)'),{'id':target,'org':live_app['org'],'owner':live_app['users']['bm']})
+        c.execute(text("INSERT INTO operation_contracts(kind,permission_id,version,semantic,requires_signature,approved,evidence_ref) VALUES ('fixture.write','marking.codes.issue','fixture-v1','mutation',false,true,'synthetic test only')"))
+        op=ops.prepare(c,organization_id=live_app['org'],actor_id=live_app['users']['bm'],kind='fixture.write',target_id=target,target_revision=1,idempotency_key='browser-command',payload='{"данные":"fixture"}'.encode())
+        ticket=ops.claim(c,'browser-worker');ops.transport_failure(c,ticket)
+    login(page,'bm');page.locator('#operations-link').click();expect(page.locator('#operations-table')).to_contain_text('Результат неизвестен')
+    expect(page.get_by_role('button',name='Повторить отправку',exact=True)).to_have_count(0);capture(page,'operations-light')
+    page.get_by_label('Состояние операции',exact=True).select_option('unknown');expect(page.locator('tbody tr')).to_have_count(1)
+    page.get_by_role('button',name='Подробнее',exact=True).click();expect(page.locator('#operation-dialog')).to_be_visible();expect(page.locator('#operation-content')).to_contain_text('Нет достоверного ответа');capture(page,'operations-history')
+    page.locator('#operation-dialog [data-close]').click();page.locator('#theme').click();page.set_viewport_size({'width':320,'height':740});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'operations-320-dark')
+    assert page.request.get(live_app['base']+'/api/operations/'+str(op['id'])).json()['operation']['state']=='unknown'
+
+
+def test_operations_tsd_hidden_and_direct_access_denied(page,live_app):
+    from playwright.sync_api import expect
+    login(page,'tsd');expect(page.locator('#operations-link')).to_be_hidden()
+    page.goto(live_app['base']+'/operations');expect(page.get_by_role('heading',name='Раздел недоступен',exact=True)).to_be_visible()

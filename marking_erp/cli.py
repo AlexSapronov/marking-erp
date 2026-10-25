@@ -21,6 +21,14 @@ def main():
     bootstrap.add_argument("--display-name", required=True)
     bootstrap.add_argument("--inn", required=True)
     bootstrap.add_argument("--organization-name", required=True)
+    signer_parser=commands.add_parser('register-signer')
+    signer_parser.add_argument('--organization-id',required=True)
+    signer_parser.add_argument('--name',required=True)
+    signer_parser.add_argument('--certificate-sha256',required=True)
+    signer_parser.add_argument('--kind',action='append',required=True)
+    revoke=commands.add_parser('revoke-signer')
+    revoke.add_argument('--device-id',required=True)
+    commands.add_parser('recover-operations')
     args = parser.parse_args()
     if args.action == "generate-mfa-key":
         print(Fernet.generate_key().decode())
@@ -48,10 +56,30 @@ def main():
                 command.upgrade(config, "head")
             elif args.action == "seed":
                 print("initialized" if seed_defaults(connection) else "already_initialized")
+            elif args.action=='register-signer':
+                from uuid import UUID
+                from .signer import provision
+                from .auth import audit
+                id,token=provision(connection,UUID(args.organization_id),args.name,args.certificate_sha256,args.kind)
+                audit(connection,None,'signer.provisioned',id,{'organization_id':args.organization_id})
+                # Print only after successful database commit below.
+            elif args.action=='revoke-signer':
+                from uuid import UUID
+                from sqlalchemy import text
+                from .auth import audit
+                connection.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
+                connection.execute(text('UPDATE signer_devices SET enabled=false WHERE id=:id'),{'id':UUID(args.device_id)})
+                audit(connection,None,'signer.revoked',args.device_id)
+            elif args.action=='recover-operations':
+                from .operations import recover_expired
+                print('recovered:',recover_expired(connection))
             else:
                 from .auth import bootstrap_admin
                 bootstrap_admin(connection, settings, args.username, args.display_name, password, totp_secret, code, args.inn, args.organization_name)
                 print("Администратор создан. Для входа используйте следующий код TOTP.")
+        if args.action=='register-signer':
+            print('Device:',id)
+            print('Bearer token (save privately; shown once):',token)
     except (SQLAlchemyError, ValueError):
         parser.exit(1, "Database operation failed; inspect schema/configuration without sharing credentials.\n")
     finally:

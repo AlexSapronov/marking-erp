@@ -1,0 +1,33 @@
+const states={awaiting_signature:'Ожидает подписи',queued:'В очереди',dispatching:'Отправляется',submitted:'Принято внешней системой',confirmed:'Подтверждено',rejected:'Отклонено',blocked:'Заблокировано',unknown:'Результат неизвестен',cancelled_before_dispatch:'Отменено до отправки'};
+const reasons={lease_expired:'Обработчик не завершил операцию вовремя',transport_error:'Нет достоверного ответа',contract_unavailable:'Контракт не подтверждён или изменён',target_stopped:'Источник остановлен',target_revision_changed:'Версия источника изменилась',actor_disabled:'Учётная запись отключена',permission_revoked:'Права инициатора отозваны',payload_corrupted:'Не совпадает контрольная сумма',signature_not_verified:'Подпись не проверена',signature_invalid_or_stale:'Подпись недействительна или данные изменились',adapter_unavailable:'Адаптер не подключён',evidence_mismatch:'Ответ не соответствует операции',read_only_reconciliation:'Подтверждено сверкой',signature_verified:'Подпись проверена',target_cancelled:'Источник отменён'};
+export function createOperations({state,$,api,node,button,heading,report,openDialog}){
+  let generation=0,organization='',filter='',cursor=null,previous=[];
+  function reset(){generation++;organization='';filter='';cursor=null;previous=[];}
+  async function show(){
+    const host=$('page-content');if(!state.session.permissions['operations.view']){host.replaceChildren(heading('Раздел недоступен','Нет разрешения на просмотр операций.'));return;}
+    host.replaceChildren(heading('Операции','Сохранённые команды, состояния и история обработки.'));
+    host.append(node('p','Продуктивные адаптеры и проверка ГОСТ-подписи ещё не подключены. Неизвестный результат требует сверки; автоматическая повторная отправка запрещена.','notice warning'));
+    if(!state.session.organizations.length){host.append(node('p','Организации не назначены.','empty'));return;}
+    if(!state.session.organization_ids.includes(organization))organization=state.session.organization_ids[0];
+    const controls=node('div',undefined,'filters registry-filters'),org=node('label','Организация'),s=node('select');s.setAttribute('aria-label','Организация операций');for(const o of state.session.organizations)s.append(new Option(o.name,o.id));s.value=organization;s.addEventListener('change',()=>{organization=s.value;cursor=null;previous=[];load();});org.append(s);
+    const status=node('label','Состояние'),f=node('select');f.setAttribute('aria-label','Состояние операции');f.append(new Option('Все состояния',''));for(const [key,label] of Object.entries(states))f.append(new Option(label,key));f.value=filter;f.addEventListener('change',()=>{filter=f.value;cursor=null;previous=[];load();});status.append(f);controls.append(org,status,button('Обновить',load));host.append(controls);
+    const table=node('div',undefined,'panel table-panel');table.id='operations-table';host.append(table);await load();
+  }
+  async function load(){
+    const seq=++generation,host=$('operations-table');if(!host)return;host.replaceChildren(node('p','Загружаем операции…','empty'));
+    try{const data=await api('/api/operations?'+new URLSearchParams({organization_id:organization,state:filter,...(cursor?{before_id:cursor}:{})}));if(seq!==generation||state.route!=='/operations')return;host.replaceChildren();
+      if(!data.operations.length)host.append(node('p','Операций по выбранным условиям пока нет.','empty'));
+      else{const wrap=node('div',undefined,'table-wrap'),table=node('table'),head=node('thead'),tr=node('tr');for(const label of ['Операция','Состояние','Обновлено','Действие'])tr.append(node('th',label));head.append(tr);table.append(head);const body=node('tbody');
+        for(const op of data.operations){const row=node('tr'),name=node('td');name.append(node('strong',op.kind),node('small',op.id));row.append(name);const status=node('td');status.append(node('span',states[op.state]||op.state,'badge '+(['unknown','blocked','rejected'].includes(op.state)?'conflict':'')));if(op.reason)status.append(node('small',reasons[op.reason]||op.reason));if(op.signature_state==='received')status.append(node('small','Подпись получена, проверка ещё не выполнена'));row.append(status,node('td',new Date(op.updated_at).toLocaleString('ru-RU')));const action=node('td');action.append(button('Подробнее',()=>detail(op.id)));row.append(action);body.append(row);}
+        table.append(body);wrap.append(table);host.append(wrap);}
+      const footer=node('div',undefined,'table-footer'),back=button('Назад',()=>{cursor=previous.pop()??null;load();}),next=button('Далее',()=>{previous.push(cursor);cursor=data.next_cursor;load();});back.disabled=!previous.length;next.disabled=!data.next_cursor;footer.append(node('span','Показано: '+data.operations.length),back,next);host.append(footer);
+    }catch(e){if(seq!==generation)return;host.replaceChildren(node('p','Очередь недоступна.','empty'));report(e);}
+  }
+  async function detail(id){const seq=generation;try{const data=await api('/api/operations/'+id);if(seq!==generation||state.route!=='/operations')return;const host=$('operation-content'),op=data.operation;host.replaceChildren(node('p',op.id,'hash-text'),node('h3',states[op.state]||op.state),node('p',data.notice,'notice warning'));
+    const dl=node('dl',undefined,'profile-list');for(const [key,value] of [['Тип',op.kind],['Версия контракта',op.contract_version],['Версия источника',op.target_revision],['Внешний ID',op.external_id||'Нет'],['SHA256 команды',op.payload_sha256]]){dl.append(node('dt',key));dl.append(node('dd',String(value)));}host.append(dl);
+    if(data.signature)host.append(node('p',data.signature.state==='received'?'Подпись получена, но криптографическая проверка ещё не выполнена.':data.signature.state==='verified'?'Подпись проверена валидатором.':'Задание подписанта: '+data.signature.state,'notice warning'));
+    host.append(node('h3','История'));for(const event of data.events){const section=node('section',undefined,'history-entry');section.append(node('strong',states[event.state]||event.state),node('p',new Date(event.created_at).toLocaleString('ru-RU'),'field-help'),node('p',reasons[event.reason]||event.reason));host.append(section);}
+    host.append(node('h3','Квитанции и ответы'));if(!data.receipts.length)host.append(node('p','Ответов пока нет.','field-help'));for(const receipt of data.receipts){const item=node('section',undefined,'history-entry');item.append(node('p',(receipt.applied?'Ответ учтён':'Сохранено как позднее свидетельство')+' · '+(receipt.phase==='reconcile'?'Сверка':'Отправка')),node('p','SHA256: '+receipt.sha256,'hash-text'));host.append(item);}openDialog('operation-dialog');
+    }catch(e){if(seq===generation)report(e);}}
+  return {show,reset};
+}

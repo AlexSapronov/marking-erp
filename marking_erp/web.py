@@ -10,6 +10,8 @@ from .migrate import schema_head
 from .auth_routes import install_auth
 from .admin_routes import install_admin
 from .registry_routes import install_registry
+from .signer import install_signer
+from .operation_routes import install_operations
 from importlib.resources import files
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -31,7 +33,7 @@ def create_app(settings=None, engine=None):
 
     @app.middleware("http")
     async def security(request: Request, call_next):
-        if request.method not in ("GET", "HEAD", "OPTIONS"):
+        if request.method not in ("GET", "HEAD", "OPTIONS") and request.url.path not in ("/api/signer/claim", "/api/signer/result"):
             if request.headers.get("origin") != settings.public_url or request.headers.get("X-Requested-With") != "marking-erp":
                 return JSONResponse({"detail": "Недопустимый источник запроса"}, status_code=403)
         response = await call_next(request)
@@ -55,6 +57,8 @@ def create_app(settings=None, engine=None):
     app.state.auth_dependency = install_auth(app, engine, settings)
     install_admin(app, app.state.auth_dependency)
     install_registry(app, app.state.auth_dependency, settings)
+    install_signer(app,engine)
+    install_operations(app,app.state.auth_dependency)
     static = files("marking_erp").joinpath("static")
     app.mount("/assets", StaticFiles(directory=str(static)), name="assets")
 
@@ -65,6 +69,7 @@ def create_app(settings=None, engine=None):
     @app.get("/groups")
     @app.get("/rules")
     @app.get("/codes")
+    @app.get("/operations")
     def shell():
         # Public shell contains no account data. All data/actions require the API session.
         return FileResponse(str(static.joinpath("index.html")))
