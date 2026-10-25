@@ -14,9 +14,9 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
     if(!allowed()){host.replaceChildren(heading('Раздел недоступен','У вашей группы нет разрешения на этот раздел.'));return;}
     host.replaceChildren(node('p','Загружаем настройки…','empty'));
     try{
-      model=await api(route==='/groups'?'/api/groups':'/api/business-rules/'+(scope||state.session.organization_ids[0]||'system'));
+      const data=await api(route==='/groups'?'/api/groups':'/api/business-rules/'+(scope||state.session.organization_ids[0]||'system'));
       if(seq!==sequence||state.route!==route)return;
-      changed=false;changes={};route==='/groups'?renderGroups():renderRules();
+      model=data;changed=false;changes={};route==='/groups'?renderGroups():renderRules();
     }catch(e){if(seq!==sequence)return;host.replaceChildren(heading('Настройки недоступны','Проверьте связь и полномочия.'),button('Повторить загрузку',()=>show(route)));safeError(e);}
   }
   function tools(title,description,kind,entity){
@@ -81,15 +81,15 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
   async function preview(reason){
     const isGroup=state.route==='/groups',path=isGroup?'/api/groups/'+group:'/api/business-rules/'+scope;
     const body=isGroup?{revision:model.groups.find(g=>g.slug===group).revision,grants:structuredClone(grants),reason,tsd_confirmation:$('tsd-confirmation')?.value||''}:{revision:model.revision,system_revision:model.system_revision,changes:structuredClone(changes),reason};
-    const submit=$('configuration-form').querySelector('button');submit.disabled=true;
-    try{const result=await api(path+'/preview',{method:'POST',body});const host=$('configuration-content');host.replaceChildren(node('p',result.notice,'notice warning'));$('configuration-title').textContent='Предпросмотр изменений';
+    const seq=sequence;const submit=$('configuration-form').querySelector('button');submit.disabled=true;
+    try{const result=await api(path+'/preview',{method:'POST',body});if(seq!==sequence)return;const host=$('configuration-content');host.replaceChildren(node('p',result.notice,'notice warning'));$('configuration-title').textContent='Предпросмотр изменений';
       const list=node('ul',undefined,'diff-list');for(const d of result.diff)list.append(node('li',d.id+': '+JSON.stringify(d.before)+' → '+(d.inherit?'Наследование':JSON.stringify(d.after))));host.append(list,node('p','Причина: '+reason,'muted'));
       if(result.tsd_expansion)host.append(node('p','Профиль ТСД будет расширен.','notice warning'));
-      const save=button('Применить изменения',async()=>{save.disabled=true;try{await api(path,{method:'PUT',body});changed=false;closeDialog('configuration-dialog',true);notice('Настройки сохранены.');await show(state.route);}catch(e){safeError(e);}finally{save.disabled=false;}},'primary section-gap');host.append(save);openDialog('configuration-dialog');
-    }catch(e){safeError(e);}finally{submit.disabled=false;}
+      const save=button('Применить изменения',async()=>{save.disabled=true;try{await api(path,{method:'PUT',body});if(seq!==sequence)return;changed=false;closeDialog('configuration-dialog',true);notice('Настройки сохранены.');await show(state.route);}catch(e){if(seq===sequence)safeError(e);}finally{save.disabled=false;}},'primary section-gap');host.append(save);openDialog('configuration-dialog');
+    }catch(e){if(seq===sequence)safeError(e);}finally{submit.disabled=false;}
   }
   async function history(kind,entity,before=null){
-    try{const result=await api('/api/configuration/history?'+new URLSearchParams({kind,entity,...(before?{before_id:before}:{})}));const host=$('configuration-content');if(!before){host.replaceChildren();$('configuration-title').textContent='История изменений';}
+    const seq=sequence;try{const result=await api('/api/configuration/history?'+new URLSearchParams({kind,entity,...(before?{before_id:before}:{})}));if(seq!==sequence)return;const host=$('configuration-content');if(!before){host.replaceChildren();$('configuration-title').textContent='История изменений';}
       if(!result.history.length)host.append(node('p','Изменений больше нет.','muted'));
       for(const item of result.history){const card=node('section',undefined,'history-entry');card.append(node('h3','Версия '+item.revision+' · '+item.actor_name),node('p',new Date(item.created_at).toLocaleString('ru-RU'),'field-help'),node('p',item.reason));
         const list=node('ul',undefined,'diff-list');for(const id of new Set([...Object.keys(item.before_value),...Object.keys(item.after_value)]))if(JSON.stringify(item.before_value[id])!==JSON.stringify(item.after_value[id]))list.append(node('li',id+': '+JSON.stringify(item.before_value[id]??null)+' → '+JSON.stringify(item.after_value[id]??null)));card.append(list);host.append(card);}
@@ -97,12 +97,12 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
     }catch(e){safeError(e);}
   }
   async function accessCheck(){
-    try{const users=(await api('/api/users')).users,host=$('configuration-content');host.replaceChildren();$('configuration-title').textContent='Проверка доступа пользователя';
+    const seq=sequence;try{const users=(await api('/api/users')).users;if(seq!==sequence)return;const host=$('configuration-content');host.replaceChildren();$('configuration-title').textContent='Проверка доступа пользователя';
       const f=node('form');let user=users[0]?.id,permission=model.catalog[0].id,org=state.session.organization_ids[0];if(!user)return;
       f.append(select('Пользователь',users.map(u=>[u.id,u.display_name+' · '+u.username]),user,v=>user=v),select('Действие',model.catalog.map(p=>[p.id,p.id]),permission,v=>permission=v),select('Организация',state.session.organizations.map(o=>[o.id,o.name]),org,v=>org=v));
       const owner=node('label','Собственный документ'),o=node('input');o.type='checkbox';owner.append(o);const assigned=node('label','Задание назначено'),a=node('input');a.type='checkbox';assigned.append(a);const result=node('div');const submit=node('button','Проверить','primary');submit.type='submit';f.append(owner,assigned,submit,result);
       f.addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;try{const r=await api('/api/groups/check-access',{method:'POST',body:{user_id:user,permission,organization_id:org,owner_id:o.checked?user:null,assigned:a.checked}});result.replaceChildren(node('p',(r.allowed?'Разрешено: ':'Запрещено: ')+r.message,'notice '+(r.allowed?'success':'error')),node('p',r.notice,'field-help'));}catch(e){safeError(e);}finally{submit.disabled=false;}});host.append(f);openDialog('configuration-dialog');
     }catch(e){safeError(e);}
   }
-  return {show,reset,canLeave,dirty:()=>changed};
+  return {show,reset,sessionReset:()=>{reset();group='bm';scope='';query='';moduleFilter='';},canLeave,dirty:()=>changed};
 }

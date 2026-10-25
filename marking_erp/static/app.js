@@ -70,7 +70,7 @@ function closeDialog(id,force=false) {
 function openDialog(id) {const d=$(id);d.querySelectorAll('.error-message').forEach(n=>n.hidden=true);if(!d.open)d.showModal();d.querySelector('input:not([disabled])')?.focus();}
 function allDialogsClosed() {for(const d of document.querySelectorAll('dialog[open]'))if(!closeDialog(d.id))return false;return true;}
 function showLogin(message='') {
-  admin.reset();state.generation++;state.session=null;state.users=[];state.options=null;state.editing=null;state.credentials=null;
+  admin.sessionReset();$('page-content').replaceChildren();$('configuration-content').replaceChildren();state.generation++;state.session=null;state.users=[];state.options=null;state.editing=null;state.credentials=null;
   document.querySelectorAll('dialog').forEach(d=>closeDialog(d.id,true));
   $('workspace').hidden=true;$('login-screen').hidden=false;$('boot').hidden=true;
   $('login-password').value='';$('login-otp').value='';$('login-error').textContent=message;$('login-error').hidden=!message;
@@ -115,7 +115,7 @@ function profile() {
 function forbidden() {const p=node('section',undefined,'panel empty');p.append(node('h2','Раздел недоступен'),node('p','У вашей группы нет разрешения на управление пользователями.'),button('На рабочее место',()=>navigate('/'),'section-gap'));$('page-content').replaceChildren(p);}
 function navigate(path,replace=false) {
   if(!state.session||!allDialogsClosed()||!admin.canLeave())return;
-  state.route=['/','/profile','/users','/groups','/rules'].includes(path)?path:'/';
+  admin.reset();state.route=['/','/profile','/users','/groups','/rules'].includes(path)?path:'/';
   history[replace?'replaceState':'pushState']({},'',state.route);$('notice').hidden=true;shell();
   document.title='Marking ERP · '+({'/':'Рабочее место','/profile':'Мой профиль','/users':'Пользователи','/groups':'Группы и права','/rules':'Бизнес-правила'}[state.route]);
   if(state.route==='/groups'||state.route==='/rules'){admin.show(state.route);return;}

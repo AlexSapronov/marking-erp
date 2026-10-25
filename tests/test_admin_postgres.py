@@ -122,3 +122,14 @@ def test_context_simulation_does_not_cross_organizations(policy_env):
         result=c.post('/api/groups/check-access',json=body);assert result.status_code==200 and result.json()['allowed'] is True
         body['owner_id']=str(uuid4());assert c.post('/api/groups/check-access',json=body).json()['allowed'] is False
         body['organization_id']=str(policy_env[2]);assert c.post('/api/groups/check-access',json=body).json()['allowed'] is False
+
+
+def test_server_checks_read_dependency_after_direct_database_revoke(policy_env,engine):
+    from marking_erp import auth
+    from datetime import datetime,timezone
+    with engine.begin() as c:
+        user=dict(c.execute(text("SELECT * FROM users WHERE group_slug='bm'")).mappings().one())
+        c.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='bm' AND permission_id='nk.cards.view'"))
+        actor=auth.Actor(c,user,'synthetic',datetime.now(timezone.utc))
+        with pytest.raises(Exception) as error:actor.require('nk.cards.publish',organization_id=policy_env[1],owner_id=user['id'])
+        assert getattr(error.value,'status_code',None)==403

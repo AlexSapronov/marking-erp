@@ -194,6 +194,11 @@ class Actor:
         if administrative or grant["administrative"]:
             if scope != "all" or not self.elevated_at or self.elevated_at < datetime.now(timezone.utc)-timedelta(minutes=5):
                 raise HTTPException(403, {"code": "reauth_required", "message": "Подтвердите пароль и новый код TOTP для административного действия"})
+        # A direct API permission never bypasses its related read dependency.
+        from .permission_catalog import catalog
+        permission_meta=next((p for p in catalog() if p['id']==permission),None)
+        for dependency in permission_meta['dependencies'] if permission_meta else []:
+            self.require(dependency,organization_id=organization_id,owner_id=owner_id,assigned=assigned)
         return scope
 
 
