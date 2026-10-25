@@ -246,8 +246,22 @@ sudo "$ERP_RELEASE/venv/bin/marking-erp-admin" grant-runtime --role marking_erp_
 
 ## 10. Настроить HTTPS
 
-Полученные от ИТ файлы должны соответствовать вашему DNS-имени. Пример предполагает,
-что вы предварительно передали их в `~/erp-deploy/tls/`:
+Полученные от ИТ файлы должны соответствовать вашему DNS-имени. На VPS создайте
+приватную папку для передачи:
+
+```bash
+mkdir -p ~/erp-deploy/tls
+chmod 700 ~/erp-deploy/tls
+```
+
+Оставьте это SSH-окно открытым. Во втором окне PowerShell задайте те же
+`$ErpVps` и `$ErpSshUser` из шага 2, затем передайте два файла, заменив пути:
+
+```powershell
+scp "C:\ПУТЬ_К_ФАЙЛАМ\fullchain.pem" "C:\ПУТЬ_К_ФАЙЛАМ\private.key" "${ErpSshUser}@${ErpVps}:~/erp-deploy/tls/"
+```
+
+Вернитесь в исходное SSH-окно Ubuntu и установите файлы:
 
 ```bash
 sudo install -o root -g root -m 0644 ~/erp-deploy/tls/fullchain.pem /etc/marking-erp/tls/fullchain.pem

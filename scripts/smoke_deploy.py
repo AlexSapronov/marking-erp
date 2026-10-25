@@ -49,6 +49,8 @@ def main():
     Path('/opt/marking-erp/current').symlink_to(release)
     shutil.copy2(release/'deploy/marking-erp.service','/etc/systemd/system/marking-erp.service')
     run('systemd-analyze','verify','/etc/systemd/system/marking-erp.service')
+    probe="import os,json; p=os.environ['CREDENTIALS_DIRECTORY']+'/erp-config'; s=os.stat(p); print(json.dumps({'credential_uid':s.st_uid,'credential_gid':s.st_gid,'mode':oct(s.st_mode),'uid':os.getuid(),'euid':os.geteuid(),'gid':os.getgid()}))"
+    run('systemd-run','--unit=marking-erp-credential-probe','--wait','--pipe','-p','User=marking-erp','-p','Group=marking-erp','-p','LoadCredential=erp-config:/etc/marking-erp/runtime.json','-p','ProtectSystem=strict',release/'venv/bin/python','-c',probe)
     run('systemctl','daemon-reload');run('systemctl','start','marking-erp')
     try:
         for attempt in range(40):
