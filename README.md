@@ -6,6 +6,8 @@
 
 [Запуск текущей ERP на Ubuntu VPS](docs/architecture/UBUNTU-PILOT.md): отдельная runtime-роль БД, приватные systemd credentials, preflight и Nginx/TLS.
 
+[Экран состояния системы](docs/architecture/SYSTEM-STATUS.md): защищённая административная диагностика сервера и явные ограничения подключений.
+
 - [Исходное ТЗ](docs/SPEC-2.0.md)
 - [Контрольная точка и ограничения](docs/audit/CHECKPOINT.md)
 - [Исходные SHA](docs/audit/BASELINE.md)

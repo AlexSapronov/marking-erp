@@ -1,4 +1,5 @@
 import {createOperations} from '/assets/operations.js';
+import {createSystem} from '/assets/system.js';
 import {createRegistry} from '/assets/registry.js';
 import {createAdmin} from '/assets/admin.js';
 const $ = id => document.getElementById(id);
@@ -7,6 +8,7 @@ const state = {session:null,generation:0,route:'/',users:[],options:null,editing
 const admin=createAdmin({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
 const registry=createRegistry({state,$,api,node,button,heading,notice,report,openDialog});
 const operations=createOperations({state,$,api,node,button,heading,report,openDialog});
+const system=createSystem({state,$,api,node,button,heading,report});
 const groupNames = {bm:'БМ',logistics:'Логист',warehouse:'Склад',tsd:'ТСД',specialist:'Специалист по маркировке',administrator:'Администратор'};
 const modules = [
   ['Национальный каталог','Карточки товаров и характеристики','nk.cards.view','▦'],
@@ -75,6 +77,7 @@ function closeDialog(id,force=false) {
 function openDialog(id) {const d=$(id);d.querySelectorAll('.error-message').forEach(n=>n.hidden=true);if(!d.open)d.showModal();d.querySelector('input:not([disabled])')?.focus();}
 function allDialogsClosed() {for(const d of document.querySelectorAll('dialog[open]'))if(!closeDialog(d.id))return false;return true;}
 function showLogin(message='') {
+  system.reset();
   operations.reset();$('operation-content').replaceChildren();registry.reset();$('code-content').replaceChildren();admin.sessionReset();$('page-content').replaceChildren();$('configuration-content').replaceChildren();state.generation++;state.session=null;state.users=[];state.options=null;state.editing=null;state.credentials=null;
   document.querySelectorAll('dialog').forEach(d=>closeDialog(d.id,true));
   $('workspace').hidden=true;$('login-screen').hidden=false;$('boot').hidden=true;
@@ -89,6 +92,7 @@ function shell() {
   $('group-badge').textContent=state.session.group_name;
   $('users-link').hidden=!managesUsers();
   $('operations-link').hidden=!has('operations.view');
+  $('system-link').hidden=!has('system.diagnostics.view');
   $('codes-link').hidden=!has('codes.registry.view');
   $('groups-link').hidden=!has('permissions.manage');$('rules-link').hidden=!has('business_rules.manage');
   document.querySelectorAll('[data-nav]').forEach(link=>{if(link.closest('nav')){if(link.getAttribute('href')===state.route)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');}});
@@ -122,9 +126,10 @@ function profile() {
 function forbidden() {const p=node('section',undefined,'panel empty');p.append(node('h2','Раздел недоступен'),node('p','У вашей группы нет разрешения на управление пользователями.'),button('На рабочее место',()=>navigate('/'),'section-gap'));$('page-content').replaceChildren(p);}
 function navigate(path,replace=false) {
   if(!state.session||!allDialogsClosed()||!admin.canLeave())return;
-  operations.reset();registry.reset();admin.reset();state.route=['/','/profile','/users','/groups','/rules','/codes','/operations'].includes(path)?path:'/';
+  system.reset();operations.reset();registry.reset();admin.reset();state.route=['/','/profile','/users','/groups','/rules','/codes','/operations','/system'].includes(path)?path:'/';
   history[replace?'replaceState':'pushState']({},'',state.route);$('notice').hidden=true;shell();
-  document.title='Marking ERP · '+({'/':'Рабочее место','/profile':'Мой профиль','/users':'Пользователи','/groups':'Группы и права','/rules':'Бизнес-правила','/codes':'Реестр КМ','/operations':'Операции'}[state.route]);
+  document.title='Marking ERP · '+({'/':'Рабочее место','/profile':'Мой профиль','/users':'Пользователи','/groups':'Группы и права','/rules':'Бизнес-правила','/codes':'Реестр КМ','/operations':'Операции','/system':'Состояние системы'}[state.route]);
+  if(state.route==='/system'){system.show();return;}
   if(state.route==='/operations'){operations.show();return;}
   if(state.route==='/codes'){registry.show();return;}
   if(state.route==='/groups'||state.route==='/rules'){admin.show(state.route);return;}
@@ -187,7 +192,7 @@ async function ask(title,message,label) {
 }
 async function refreshSession() {
   if(!state.session||document.visibilityState!=='visible')return;
-  try{const previous=managesUsers(),priorRegistry=JSON.stringify([state.session.permissions,state.session.organization_ids]),data=await api('/api/session');state.session=data;shell();if(state.route==='/operations'&&!has('operations.view')){operations.reset();closeDialog('operation-dialog',true);navigate('/',true);notice('Ваши права изменились. Очередь недоступна.','warning');return;}if(state.route==='/operations'&&priorRegistry!==JSON.stringify([data.permissions,data.organization_ids])){closeDialog('operation-dialog',true);operations.show();}if(state.route==='/codes'&&!has('codes.registry.view')){registry.reset();closeDialog('code-dialog',true);navigate('/',true);notice('Ваши права изменились. Реестр недоступен.','warning');return;}if(state.route==='/codes'&&priorRegistry!==JSON.stringify([data.permissions,data.organization_ids])){closeDialog('code-dialog',true);registry.show();}if((state.route==='/groups'&&!has('permissions.manage'))||(state.route==='/rules'&&!has('business_rules.manage'))){admin.reset();closeDialog('configuration-dialog',true);navigate('/',true);notice('Ваши права изменились. Раздел недоступен.','warning');return;}if(previous&&!managesUsers()){for(const id of ['user-dialog','credentials-dialog','reauth-dialog'])closeDialog(id,true);if(state.route==='/users'){navigate('/',true);notice('Ваши права изменились. Управление пользователями недоступно.','warning');}}}
+  try{const previous=managesUsers(),priorRegistry=JSON.stringify([state.session.permissions,state.session.organization_ids]),data=await api('/api/session');state.session=data;shell();if(state.route==='/system'&&!has('system.diagnostics.view')){system.reset();$('page-content').replaceChildren();closeDialog('reauth-dialog',true);navigate('/',true);notice('Ваши права изменились. Диагностика недоступна.','warning');return;}if(state.route==='/system'&&priorRegistry!==JSON.stringify([data.permissions,data.organization_ids])){system.show();}if(state.route==='/operations'&&!has('operations.view')){operations.reset();closeDialog('operation-dialog',true);navigate('/',true);notice('Ваши права изменились. Очередь недоступна.','warning');return;}if(state.route==='/operations'&&priorRegistry!==JSON.stringify([data.permissions,data.organization_ids])){closeDialog('operation-dialog',true);operations.show();}if(state.route==='/codes'&&!has('codes.registry.view')){registry.reset();closeDialog('code-dialog',true);navigate('/',true);notice('Ваши права изменились. Реестр недоступен.','warning');return;}if(state.route==='/codes'&&priorRegistry!==JSON.stringify([data.permissions,data.organization_ids])){closeDialog('code-dialog',true);registry.show();}if((state.route==='/groups'&&!has('permissions.manage'))||(state.route==='/rules'&&!has('business_rules.manage'))){admin.reset();closeDialog('configuration-dialog',true);navigate('/',true);notice('Ваши права изменились. Раздел недоступен.','warning');return;}if(previous&&!managesUsers()){for(const id of ['user-dialog','credentials-dialog','reauth-dialog'])closeDialog(id,true);if(state.route==='/users'){navigate('/',true);notice('Ваши права изменились. Управление пользователями недоступно.','warning');}}}
   catch(e){if(e.code!=='stale')report(e);}
 }
 document.querySelectorAll('[data-nav]').forEach(link=>link.addEventListener('click',event=>{if(state.session){event.preventDefault();navigate(link.getAttribute('href'));}}));

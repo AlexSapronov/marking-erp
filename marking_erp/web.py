@@ -12,6 +12,7 @@ from .admin_routes import install_admin
 from .registry_routes import install_registry
 from .signer import install_signer
 from .operation_routes import install_operations
+from .system_routes import install_system
 from importlib.resources import files
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -59,6 +60,7 @@ def create_app(settings=None, engine=None):
     install_registry(app, app.state.auth_dependency, settings)
     install_signer(app,engine)
     install_operations(app,app.state.auth_dependency)
+    install_system(app,app.state.auth_dependency,settings,engine)
     static = files("marking_erp").joinpath("static")
     app.mount("/assets", StaticFiles(directory=str(static)), name="assets")
 
@@ -70,6 +72,7 @@ def create_app(settings=None, engine=None):
     @app.get("/rules")
     @app.get("/codes")
     @app.get("/operations")
+    @app.get("/system")
     def shell():
         # Public shell contains no account data. All data/actions require the API session.
         return FileResponse(str(static.joinpath("index.html")))

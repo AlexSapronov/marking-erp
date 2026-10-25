@@ -118,6 +118,7 @@ def test_six_role_homes_and_tsd_restrictions(page,live_app,group):
     from playwright.sync_api import expect
     login(page,group);expect(page.locator('#group-badge')).to_have_text(GROUPS[group]);capture(page,'home-'+group)
     if group!='administrator':
+        expect(page.locator('#system-link')).to_be_hidden()
         expect(page.locator('#users-link')).to_be_hidden()
         response=page.request.get(live_app['base']+'/api/users');assert response.status==403
     if group=='tsd':
@@ -316,3 +317,55 @@ def test_html_report_in_chromium_is_readable_and_does_not_execute_remote_fields(
         page.screenshot(path=str(screenshots / 'nk-pilot-review.png'), full_page=True)
     finally:
         context.close()
+
+
+def test_system_diagnostics_themes_mobile_and_network_failure(page, live_app):
+    from playwright.sync_api import expect
+    live_app['file_storage_path'].mkdir(mode=0o700)
+    login(page)
+    page.locator('#system-link').click()
+    expect(page.locator('.system-check')).to_have_count(10)
+    expect(page.locator('[data-check=schema_revision] .system-result')).to_have_text('Пройдено')
+    expect(page.locator('[data-check=database_runtime_role] .system-result')).to_have_text('Требует внимания')
+    expect(page.locator('.system-component')).to_have_count(5)
+    expect(page.get_by_role('heading', name='Требует внимания', exact=True)).to_be_visible()
+    capture(page, 'system-status-light')
+    page.locator('#theme').click()
+    expect(page.locator('html')).to_have_attribute('data-theme', 'dark')
+    capture(page, 'system-status-dark')
+    page.set_viewport_size({'width': 390, 'height': 844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page, 'system-status-mobile')
+    page.context.set_offline(True)
+    page.get_by_role('button', name='Обновить проверки').click()
+    expect(page.locator('.system-check')).to_have_count(0)
+    expect(page.locator('#notice')).to_contain_text('Не удалось получить ответ')
+    page.context.set_offline(False)
+    page.get_by_role('button', name='Обновить проверки').click()
+    expect(page.locator('.system-check')).to_have_count(10)
+
+
+def test_system_diagnostics_elevation_and_live_revocation(page, live_app, engine):
+    from playwright.sync_api import expect
+    login(page)
+    page.locator('#system-link').click()
+    expect(page.locator('.system-check')).to_have_count(10)
+    with engine.begin() as c:c.execute(text("UPDATE sessions SET elevated_at=now()-interval '6 minutes'"))
+    page.get_by_role('button', name='Обновить проверки').click()
+    expect(page.locator('.system-check')).to_have_count(0)
+    page.get_by_role('button', name='Подтвердить доступ', exact=True).click()
+    form = page.locator('#reauth-form')
+    form.locator('[name=password]').fill(PASSWORD)
+    form.locator('[name=otp]').fill(pyotp.TOTP(SECRET).at(time.time()+30))
+    form.locator('button[type=submit]').click()
+    expect(page.locator('#reauth-dialog')).to_be_hidden()
+    # Confirmation does not silently repeat the diagnostics request.
+    expect(page.locator('.system-check')).to_have_count(0)
+    page.get_by_role('button', name='Обновить проверки').click()
+    expect(page.locator('.system-check')).to_have_count(10)
+    with engine.begin() as c:
+        c.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='administrator' AND permission_id='system.diagnostics.view'"))
+    page.evaluate("window.dispatchEvent(new Event('focus'))")
+    expect(page.locator('#system-link')).to_be_hidden()
+    expect(page.locator('.system-check')).to_have_count(0)
+    assert page.request.get(live_app['base']+'/api/system/status').status == 403
