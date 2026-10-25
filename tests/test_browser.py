@@ -198,3 +198,37 @@ def test_credentials_enrollment_and_disabled_user(page,live_app,engine):
     expect(page.locator('#confirm-dialog')).to_be_visible();page.locator('#confirm-ok').click()
     expect(page.locator('#user-dialog')).to_be_hidden();page.get_by_label('Фильтр по состоянию').select_option('disabled');expect(row).to_contain_text('Отключён')
     with engine.connect() as c:assert c.execute(text("SELECT enabled FROM users WHERE username='bm-user'")).scalar_one() is False
+
+
+def test_group_editor_preview_history_and_live_session_revocation(page,live_app,engine,browser):
+    from playwright.sync_api import expect
+    context=browser.new_context();employee=context.new_page();employee.goto(live_app['base']);login(employee,'bm')
+    try:
+        login(page);page.locator('#groups-link').click();expect(page.get_by_role('heading',name='Группы и права',exact=True)).to_be_visible()
+        page.get_by_label('Поиск действий',exact=True).fill('nk.cards.publish')
+        page.get_by_label('nk.cards.publish',exact=True).select_option('none')
+        page.locator('#configuration-reason').fill('Убираем публикацию у группы БМ')
+        page.get_by_role('button',name='Предпросмотр изменений',exact=True).click()
+        expect(page.locator('#configuration-dialog')).to_be_visible();expect(page.locator('#configuration-content')).to_contain_text('nk.cards.publish')
+        capture(page,'groups-preview');page.get_by_role('button',name='Применить изменения',exact=True).click()
+        expect(page.locator('#configuration-dialog')).to_be_hidden();expect(page.locator('#configuration-form')).to_be_visible()
+        employee.evaluate("window.dispatchEvent(new Event('focus'))");expect(employee.locator('#login-screen')).to_be_visible()
+        page.get_by_role('button',name='История изменений',exact=True).click();expect(page.locator('#configuration-content')).to_contain_text('Убираем публикацию у группы БМ');capture(page,'groups-history')
+        with engine.connect() as c:assert c.execute(text("SELECT revision FROM groups WHERE slug='bm'")).scalar_one()==2
+    finally:context.close()
+
+
+def test_business_rule_editor_preview_validation_history_and_mobile(page,live_app,engine):
+    from playwright.sync_api import expect
+    login(page);page.locator('#rules-link').click();expect(page.get_by_role('heading',name='Бизнес-правила',exact=True)).to_be_visible()
+    page.get_by_label('Поиск правил',exact=True).fill('archive.retention_months')
+    page.get_by_label('archive.retention_months',exact=True).fill('5');page.get_by_label('archive.retention_months',exact=True).press('Tab')
+    page.locator('#configuration-reason').fill('Новая политика хранения архива')
+    page.get_by_role('button',name='Предпросмотр изменений',exact=True).click();expect(page.locator('#notice')).to_contain_text('Недопустимое значение')
+    page.get_by_label('archive.retention_months',exact=True).fill('12');page.get_by_label('archive.retention_months',exact=True).press('Tab')
+    page.get_by_role('button',name='Предпросмотр изменений',exact=True).click();expect(page.locator('#configuration-dialog')).to_be_visible();capture(page,'rules-preview')
+    page.get_by_role('button',name='Применить изменения',exact=True).click();expect(page.locator('#configuration-dialog')).to_be_hidden()
+    page.get_by_label('Поиск правил',exact=True).fill('archive.retention_months');expect(page.get_by_label('archive.retention_months',exact=True)).to_have_value('12')
+    page.locator('#theme').click();page.set_viewport_size({'width':320,'height':740});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'rules-320-dark')
+    page.get_by_role('button',name='История изменений',exact=True).click();expect(page.locator('#configuration-content')).to_contain_text('Новая политика хранения архива')
+    with engine.connect() as c:assert c.execute(text("SELECT value FROM policy_values WHERE scope_key=:org AND rule_id='archive.retention_months'"),{'org':str(live_app['org'])}).scalar_one()==12

@@ -59,6 +59,9 @@ def install_auth(app, engine, settings):
     def actor(request: Request):
         token = request.cookies.get(settings.cookie_name, "")
         with engine.begin() as connection:
+            if request.method not in ("GET", "HEAD", "OPTIONS"):
+                # Serialize identity/configuration mutations before loading the actor.
+                connection.execute(text("SELECT pg_advisory_xact_lock(683273529)"))
             current = auth.load_actor(connection, token)
             if request.method not in ("GET", "HEAD", "OPTIONS") and not hmac.compare_digest(
                     request.headers.get("X-CSRF-Token", ""), auth.csrf_token(token)):

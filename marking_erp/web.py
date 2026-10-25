@@ -8,6 +8,7 @@ from .config import Settings
 from .database import database_engine
 from .migrate import schema_head
 from .auth_routes import install_auth
+from .admin_routes import install_admin
 from importlib.resources import files
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -51,6 +52,7 @@ def create_app(settings=None, engine=None):
         return JSONResponse({"detail": "База данных временно недоступна"}, status_code=503)
 
     app.state.auth_dependency = install_auth(app, engine, settings)
+    install_admin(app, app.state.auth_dependency)
     static = files("marking_erp").joinpath("static")
     app.mount("/assets", StaticFiles(directory=str(static)), name="assets")
 
@@ -58,6 +60,8 @@ def create_app(settings=None, engine=None):
     @app.get("/login")
     @app.get("/profile")
     @app.get("/users")
+    @app.get("/groups")
+    @app.get("/rules")
     def shell():
         # Public shell contains no account data. All data/actions require the API session.
         return FileResponse(str(static.joinpath("index.html")))
