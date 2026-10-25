@@ -89,3 +89,9 @@ def test_runtime_cannot_run_grant_profile_as_an_administrative_command(runtime):
     with engine.begin() as c:
         with pytest.raises(ValueError, match='runtime_grants_require_owner'):
             apply_runtime_grants(c, role, schema)
+
+
+def test_server_program_role_membership_is_not_a_runtime_profile(runtime, engine):
+    role, _, runtime_engine, _ = runtime
+    with engine.begin() as c:c.exec_driver_sql(f'GRANT pg_execute_server_program TO "{role}"')
+    with runtime_engine.connect() as c:assert not runtime_profile_matches(c)

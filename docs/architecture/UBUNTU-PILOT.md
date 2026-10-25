@@ -32,7 +32,7 @@ DNS, доверенный клиентами сертификат, синхро�
 
 В отдельной новой БД marking_erp владелец схемы — marking_erp_owner, сервис —
 marking_erp_runtime. Оба LOGIN без SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/BYPASSRLS.
-Runtime не состоит во владельце или других привилегированных ролях. Пример через
+Runtime не состоит в других ролях, включая predefined server-access roles. Пример через
 административный psql, пароли вводятся интерактивно командой \password:
 
 ```sql

@@ -27,6 +27,9 @@ def role_is_restricted(connection, role, schema):
         OR rolreplication OR rolbypassrls FROM pg_roles WHERE rolname=:role'''), {'role': role}).scalar_one_or_none()
     if flags is None or flags:
         return False
+    if connection.execute(text("""SELECT EXISTS(SELECT 1 FROM pg_roles
+        WHERE rolname<>:role AND pg_has_role(CAST(:role AS name),oid,'MEMBER'))"""), {'role': role}).scalar_one():
+        return False
     for owner in _owners(connection, schema):
         if connection.execute(text("SELECT pg_has_role(CAST(:role AS name),CAST(:owner AS oid),'MEMBER')"), {'role': role, 'owner': owner}).scalar_one():
             return False
