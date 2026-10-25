@@ -32,7 +32,7 @@ def env(engine):
             user_id = uuid4(); users[group] = user_id
             c.execute(text("""INSERT INTO users(id,username,display_name,password_hash,group_slug,mfa_ciphertext)
                 VALUES (:id,:username,:display,:hash,:group,:mfa)"""),
-                {"id":user_id,"username":group,"display":group,"hash":HASH,"group":group,
+                {"id":user_id,"username":"u_"+group,"display":group,"hash":HASH,"group":group,
                  "mfa":auth.encrypt_mfa(TOTP_SECRET,settings) if group=="administrator" else None})
             c.execute(text("INSERT INTO user_organizations VALUES (:id,:org)"),{"id":user_id,"org":org})
     app=create_app(settings,engine)
@@ -45,7 +45,7 @@ def client(env):
 
 def login(c,group="bm",otp=None):
     if otp is None: otp=pyotp.TOTP(TOTP_SECRET).now() if group=="administrator" else ""
-    response=c.post("/api/session",json={"username":group,"password":PASSWORD,"otp":otp})
+    response=c.post("/api/session",json={"username":"u_"+group,"password":PASSWORD,"otp":otp})
     assert response.status_code==200,response.text
     c.headers["X-CSRF-Token"]=response.json()["csrf"]
     return response
@@ -55,7 +55,7 @@ def test_anonymous_and_name_only_login_are_denied(env):
     with client(env) as c:
         assert c.get("/api/session").status_code==401
         assert c.get("/api/users").status_code==401
-        response=c.post("/api/session",json={"username":"bm","password":"wrong"})
+        response=c.post("/api/session",json={"username":"u_bm","password":"wrong"})
         unknown=c.post("/api/session",json={"username":"not-here","password":"wrong"})
         assert response.status_code==unknown.status_code==401
         assert response.json()==unknown.json()
@@ -81,11 +81,11 @@ def test_session_cookie_hash_csrf_and_logout(env,engine):
 def test_admin_requires_mfa_and_rejects_replay(env):
     code=pyotp.TOTP(TOTP_SECRET).now()
     with client(env) as c, client(env) as second:
-        result=c.post("/api/session",json={"username":"administrator","password":PASSWORD})
+        result=c.post("/api/session",json={"username":"u_administrator","password":PASSWORD})
         assert result.status_code==401
         login(c,"administrator",code)
         assert c.get("/api/users").status_code==200
-        replay=second.post("/api/session",json={"username":"administrator","password":PASSWORD,"otp":code})
+        replay=second.post("/api/session",json={"username":"u_administrator","password":PASSWORD,"otp":code})
         assert replay.status_code==401
 
 
@@ -134,7 +134,7 @@ def test_disabled_user_and_auth_version_revoke_existing_sessions(env,engine):
     with client(env) as c:
         login(c)
         with engine.begin() as connection:
-            connection.execute(text("UPDATE users SET enabled=false WHERE username='bm'"))
+            connection.execute(text("UPDATE users SET enabled=false WHERE username='u_bm'"))
         assert c.get("/api/session").status_code==401
 
 
@@ -154,9 +154,9 @@ def test_rotation_and_logout_all(env):
 def test_throttling_persists_across_app_instances(env):
     with client(env) as c:
         for _ in range(5):
-            assert c.post("/api/session",json={"username":"bm","password":"incorrect"}).status_code==401
+            assert c.post("/api/session",json={"username":"u_bm","password":"incorrect"}).status_code==401
     with client(env) as second:
-        response=second.post("/api/session",json={"username":"bm","password":PASSWORD})
+        response=second.post("/api/session",json={"username":"u_bm","password":PASSWORD})
         assert response.status_code==429 and response.headers["Retry-After"]=="900"
 
 
@@ -202,8 +202,8 @@ def test_admin_revocation_and_password_reset_invalidate_tokens(env):
         response=admin.post(f"/api/users/{target}/credentials",json={"auth_version":2,"password":"changed-personal-password"})
         assert response.status_code==200,response.text
         assert employee.get("/api/session").status_code==401
-        assert employee.post("/api/session",json={"username":"bm","password":PASSWORD}).status_code==401
-        assert employee.post("/api/session",json={"username":"bm","password":"changed-personal-password"}).status_code==200
+        assert employee.post("/api/session",json={"username":"u_bm","password":PASSWORD}).status_code==401
+        assert employee.post("/api/session",json={"username":"u_bm","password":"changed-personal-password"}).status_code==200
 
 
 def test_bootstrap_is_single_use_and_encrypts_mfa(engine):
@@ -227,14 +227,14 @@ def test_employee_can_change_own_password_and_revoke_all_sessions(env):
         assert response.status_code==200,response.text
         assert c.get("/api/session").status_code==401
         assert other.get("/api/session").status_code==401
-        assert c.post("/api/session",json={"username":"bm","password":PASSWORD}).status_code==401
-        assert c.post("/api/session",json={"username":"bm","password":"new-personal-password-9876"}).status_code==200
+        assert c.post("/api/session",json={"username":"u_bm","password":PASSWORD}).status_code==401
+        assert c.post("/api/session",json={"username":"u_bm","password":"new-personal-password-9876"}).status_code==200
 
 
 def test_wrong_password_does_not_consume_totp_code(env):
     code=pyotp.TOTP(TOTP_SECRET).now()
     with client(env) as c:
-        assert c.post("/api/session",json={"username":"administrator","password":"wrong","otp":code}).status_code==401
+        assert c.post("/api/session",json={"username":"u_administrator","password":"wrong","otp":code}).status_code==401
         login(c,"administrator",code)
 
 
