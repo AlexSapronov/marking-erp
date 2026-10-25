@@ -1,6 +1,7 @@
 export function createRegistry({state,$,api,node,button,heading,notice,report,openDialog}){
   let sequence=0,organization='',query='',cursor=null,previous=[];
   const reset=()=>{sequence++;organization='';query='';cursor=null;previous=[];};
+  function showError(e){if(e.code==='stale')return;if($('code-dialog').open)$('code-content').prepend(node('p',e.message,'error-message'));report(e);}
   async function download(path,name){
     const generation=state.generation,controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
     try{const response=await fetch(path,{credentials:'same-origin',signal:controller.signal});
@@ -8,7 +9,7 @@ export function createRegistry({state,$,api,node,button,heading,notice,report,op
       if(!response.ok){const error=await response.json().catch(()=>({}));throw new Error(typeof error.detail==='string'?error.detail:'Файл недоступен.');}
       const blob=await response.blob();if(generation!==state.generation)return;
       const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    }catch(e){if(generation===state.generation)report(new Error(e.name==='AbortError'?'Не удалось скачать файл за отведённое время.':e.message));}finally{clearTimeout(timeout);}
+    }catch(e){if(generation===state.generation)showError(new Error(e.name==='AbortError'?'Не удалось скачать файл за отведённое время.':e.message));}finally{clearTimeout(timeout);}
   }
   async function show(){
     const host=$('page-content');if(!state.session.permissions['codes.registry.view']){host.replaceChildren(heading('Раздел недоступен','У вашей группы нет доступа к реестру КМ.'));return;}
@@ -42,7 +43,7 @@ export function createRegistry({state,$,api,node,button,heading,notice,report,op
         host.append(card);
       }
       host.querySelector('[data-code-more]')?.remove();if(data.next_cursor){const more=button('Ещё 25',()=>history(code,data.next_cursor));more.dataset.codeMore='';host.append(more);}openDialog('code-dialog');
-    }catch(e){if(seq===sequence)report(e);}
+    }catch(e){if(seq===sequence)showError(e);}
   }
   return {show,reset};
 }

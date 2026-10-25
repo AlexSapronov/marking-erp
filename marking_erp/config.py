@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     secure_cookie: bool = True
     mfa_encryption_key: SecretStr | None = None
 
+    @field_validator("file_storage_path")
+    @classmethod
+    def validate_file_storage(cls,value):
+        if not value.is_absolute() or value.resolve().is_relative_to(Path(__file__).parent.joinpath('static').resolve()):
+            raise ValueError('ERP_FILE_STORAGE_PATH must be absolute and outside the public assets directory')
+        return value
+
     @field_validator("mfa_encryption_key")
     @classmethod
     def validate_mfa_key(cls, value):

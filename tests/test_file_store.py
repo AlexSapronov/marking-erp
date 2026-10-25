@@ -25,3 +25,11 @@ def test_path_traversal_and_symlinks_are_rejected(tmp_path):
 def test_empty_and_excessive_files_fail(tmp_path):
     for data in [b'',b'x'*(10*1024*1024+1)]:
         with pytest.raises(ValueError):FileStore(tmp_path).write(data)
+
+
+def test_configuration_rejects_public_or_relative_storage():
+    from marking_erp.config import Settings
+    import marking_erp
+    from pydantic import ValidationError
+    for root in [Path('files'),Path(marking_erp.__file__).parent/'static'/'files']:
+        with pytest.raises(ValidationError):Settings(database_url='postgresql+psycopg://unused@localhost/test',file_storage_path=root)
