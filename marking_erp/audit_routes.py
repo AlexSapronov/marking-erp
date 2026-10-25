@@ -5,6 +5,11 @@ from fastapi import Depends, HTTPException, Query
 from sqlalchemy import text
 
 ACTION_LABELS = {
+    'document.created': 'Создана накладная',
+    'document.edited': 'Изменена накладная',
+    'document.prepared': 'Состав накладной проверен локально',
+    'document.archived': 'Накладная остановлена и архивирована',
+    'document.restored': 'Накладная возвращена в черновики',
     'rbac.initialized': 'Инициализированы группы и права',
     'administrator.bootstrapped': 'Создан первый администратор',
     'login.failed': 'Неудачный вход',
