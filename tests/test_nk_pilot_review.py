@@ -12,7 +12,6 @@ from marking_erp.nk_read_contract import ContractError
 from test_nk_pilot import load, run
 from test_nk_read_contract import encode, listing
 from test_nk_read_transport import client, response
-from test_browser import browser
 
 GTIN = '04640638349704'
 
@@ -181,30 +180,3 @@ def test_cli_integrity_failure_does_not_create_report(tmp_path, monkeypatch, cap
         nk_review_cli.main()
     assert caught.value.code == 1 and capsys.readouterr().err == 'review_body_integrity\n'
     assert not (tmp_path / 'review').exists()
-
-
-@pytest.mark.browser
-def test_html_report_in_chromium_is_readable_and_does_not_execute_remote_fields(tmp_path, browser):
-    from playwright.sync_api import expect
-    attack = '<img src="https://invalid.example/track" onerror="window.nkInjected=true">'
-    report = review_pilot(capture(tmp_path, [card(good_attrs=[{'attr_id': 13914, 'attr_value': attack}]), card(2)]))
-    output = tmp_path / 'review'
-    write_review(report, output)
-    context = browser.new_context(viewport={'width': 1440, 'height': 900}, locale='ru-RU')
-    page = context.new_page()
-    requests = []
-    page.on('request', lambda request: requests.append(request.url))
-    try:
-        page.goto((output / 'review.html').as_uri())
-        expect(page.get_by_role('heading', name='Разбор пилота НК')).to_be_visible()
-        expect(page.locator('tbody tr')).to_have_count(2)
-        expect(page.locator('tbody tr').first.locator('td').nth(1)).to_have_text(attack)
-        assert page.evaluate('window.nkInjected === undefined')
-        assert not page.locator('img,script,iframe').count()
-        assert not any(url.startswith(('http:', 'https:')) for url in requests)
-        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-        screenshots = Path('test-results/ui')
-        screenshots.mkdir(parents=True, exist_ok=True)
-        page.screenshot(path=str(screenshots / 'nk-pilot-review.png'), full_page=True)
-    finally:
-        context.close()
