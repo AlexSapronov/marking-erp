@@ -1,3 +1,4 @@
+from pathlib import Path
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
@@ -9,6 +10,7 @@ from cryptography.fernet import Fernet
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ERP_", extra="ignore", hide_input_in_errors=True)
     database_url: SecretStr
+    file_storage_path: Path = Path('/var/lib/marking-erp/files')
     build_sha: str = "development"
     public_url: str = "https://localhost"
     secure_cookie: bool = True

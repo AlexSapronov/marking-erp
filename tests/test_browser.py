@@ -36,11 +36,11 @@ def browser():
 
 
 @pytest.fixture
-def live_app(engine,fresh_schema):
+def live_app(engine,fresh_schema,tmp_path):
     sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     base=f'http://127.0.0.1:{port}'
     settings=Settings(database_url='postgresql+psycopg://unused@localhost/test',public_url=base,secure_cookie=False,
-                      mfa_encryption_key=Fernet.generate_key().decode(),build_sha=os.environ.get('GITHUB_SHA','browser-local'))
+                      file_storage_path=tmp_path/'files',mfa_encryption_key=Fernet.generate_key().decode(),build_sha=os.environ.get('GITHUB_SHA','browser-local'))
     org=uuid4();users={}
     names={'bm':'Анна · БМ','logistics':'Михаил · Логист','warehouse':'Владимир · Склад','tsd':'Терминал · ТСД','specialist':'Ирина · Маркировка','administrator':'Администратор системы'}
     with engine.begin() as c:
@@ -58,7 +58,7 @@ def live_app(engine,fresh_schema):
     deadline=time.monotonic()+10
     while not server.started and thread.is_alive() and time.monotonic()<deadline:time.sleep(.01)
     assert server.started,'Browser fixture server failed to start'
-    try:yield {'base':base,'users':users,'org':org}
+    try:yield {'base':base,'users':users,'org':org,'file_storage_path':settings.file_storage_path}
     finally:
         server.should_exit=True;thread.join(10);sock.close()
         assert not thread.is_alive(),'Browser fixture server did not stop'
@@ -232,3 +232,34 @@ def test_business_rule_editor_preview_validation_history_and_mobile(page,live_ap
     page.locator('#theme').click();page.set_viewport_size({'width':320,'height':740});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'rules-320-dark')
     page.get_by_role('button',name='История изменений',exact=True).click();expect(page.locator('#configuration-content')).to_contain_text('Новая политика хранения архива')
     with engine.connect() as c:assert c.execute(text("SELECT value FROM policy_values WHERE scope_key=:org AND rule_id='archive.retention_months'"),{'org':str(live_app['org'])}).scalar_one()==12
+
+
+def test_registry_real_history_bytes_pdf_and_conflict(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.registry import register_product,capture_code,save_payload_file,save_label
+    from marking_erp.file_store import FileStore
+    from test_gs1 import GTIN,sample
+    raw=sample(36,quantity=50)
+    with engine.begin() as c:
+        register_product(c,live_app['org'],GTIN,'PN/A-1','8542399000',source='nk_confirmed',source_ref='fixture:catalog',evidence_sha256='1'*64)
+        code=capture_code(c,live_app['org'],live_app['users']['bm'],raw,actor_id=live_app['users']['bm'],source_ref='fixture:observed')
+        save_payload_file(c,FileStore(live_app['file_storage_path']),code['payload_id'])
+        save_label(c,FileStore(live_app['file_storage_path']),code['payload_id'],'PN/A-1')
+        capture_code(c,live_app['org'],live_app['users']['bm'],sample(36,quantity=25),actor_id=live_app['users']['bm'],source_ref='fixture:conflict')
+    login(page,'bm');page.locator('#codes-link').click();expect(page.locator('tbody')).to_contain_text('PN/A-1');expect(page.locator('tbody')).to_contain_text('Конфликт payload');capture(page,'registry-light')
+    page.get_by_role('button',name='История',exact=True).click();expect(page.locator('#code-dialog')).to_be_visible();expect(page.locator('#code-content')).to_contain_text('Автоматическая замена запрещена')
+    capture(page,'registry-history')
+    with page.expect_download() as pending:page.get_by_role('button',name='Скачать исходные байты',exact=True).last.click()
+    download=pending.value;assert Path(download.path()).read_bytes()==raw
+    with page.expect_download() as pending:page.get_by_role('button',name='Скачать сохранённый PDF',exact=True).click()
+    assert Path(pending.value.path()).read_bytes().startswith(b'%PDF')
+    page.locator('#code-dialog [data-close]').click();page.locator('#theme').click();page.set_viewport_size({'width':320,'height':740})
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'registry-320-dark')
+    page.get_by_label('Поиск КМ',exact=True).fill('missing');page.get_by_role('button',name='Найти',exact=True).click();expect(page.locator('#registry-table')).to_contain_text('не найдены')
+
+
+def test_registry_tsd_direct_access_and_empty_real_database(page,live_app):
+    from playwright.sync_api import expect
+    login(page,'tsd');expect(page.locator('#codes-link')).to_be_hidden()
+    assert page.request.get(live_app['base']+'/api/codes?organization_id='+str(live_app['org'])).status==403
+    page.goto(live_app['base']+'/codes');expect(page.get_by_role('heading',name='Раздел недоступен',exact=True)).to_be_visible()
