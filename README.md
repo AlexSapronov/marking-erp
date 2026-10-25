@@ -6,6 +6,8 @@
 
 [Фактическая готовность всех модулей](docs/DELIVERY-STATUS.md) · [Накладные БМ](docs/architecture/BM-DOCUMENTS.md)
 
+[Пошаговое первое развёртывание на рабочем VPS](docs/DEPLOY-VPS.md): офлайн-пакет, команды Windows/Ubuntu, HTTPS, вход и backup.
+
 [Запуск текущей ERP на Ubuntu VPS](docs/architecture/UBUNTU-PILOT.md): отдельная runtime-роль БД, приватные systemd credentials, preflight и Nginx/TLS.
 
 [Экран состояния системы](docs/architecture/SYSTEM-STATUS.md): защищённая административная диагностика сервера и явные ограничения подключений.
