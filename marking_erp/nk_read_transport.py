@@ -125,9 +125,12 @@ class NkReadClient:
                     raise ReadError('nk_attempt_duration', retryable=True)
                 return bytes(body)
         except httpx.TransportError:
-            raise ReadError('nk_connection', retryable=True) from None
+            # Raise outside the handler so even __context__ retains no request
+            # headers or upstream exception text for an error-reporting service.
+            pass
         finally:
             self._next_allowed = max(self._next_allowed, self._clock() + _INTERVAL)
+        raise ReadError('nk_connection', retryable=True) from None
 
     def _get(self, path, params):
         if path not in _PATHS:

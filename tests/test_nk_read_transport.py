@@ -153,6 +153,7 @@ def test_network_exception_is_sanitized_and_bounded():
         with pytest.raises(ReadError) as caught:
             reader.read_next(ReadPass(WINDOW))
     assert str(caught.value) == 'nk_connection' and caught.value.__suppress_context__
+    assert caught.value.__context__ is None and caught.value.__cause__ is None
     assert len(requests) == 3
 
 
