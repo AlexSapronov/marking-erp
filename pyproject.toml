@@ -19,6 +19,7 @@ browser = ["playwright==1.55.0"]
 
 [project.scripts]
 marking-erp = "marking_erp.cli:main"
+marking-erp-backup = "marking_erp.backup_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["marking_erp*"]
