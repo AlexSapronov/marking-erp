@@ -235,7 +235,8 @@ def write_review(report, output: Path):
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>Разбор пилота НК</title><style>body{font:15px system-ui;margin:32px;color:#182338;background:#f4f6fa}
 table{border-collapse:collapse;background:white;width:100%}td,th{padding:10px;border:1px solid #dce1ea;text-align:left;overflow-wrap:anywhere}
-th{background:#e9eef8}p{max-width:1100px}code{font-size:13px}</style><h1>Разбор пилота НК</h1>
+th{background:#e9eef8}td:nth-child(3){overflow-wrap:normal;font-family:ui-monospace,monospace;font-size:14px}
+p{max-width:1100px}code{font-size:13px}</style><h1>Разбор пилота НК</h1>
 <p>Диагностика сохранённых данных. Контракт, подлинность ответа и импорт в ERP не подтверждены.</p>'''
         coverage = 'проверенный обход выборки' if report['coverage'] == 'bounded_pass' else 'неполный обход'
         html += '<p>' + escape(f"Карточек: {report['card_count']}; с замечаниями: {report['cards_with_issues']}; охват: {coverage}.") + '</p>'

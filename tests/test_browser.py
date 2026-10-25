@@ -309,6 +309,8 @@ def test_html_report_in_chromium_is_readable_and_does_not_execute_remote_fields(
         assert not page.locator('img,script,iframe').count()
         assert not any(url.startswith(('http:', 'https:')) for url in requests)
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        assert page.locator('tbody tr').first.locator('td').nth(2).evaluate(
+            'el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;}') == 1
         screenshots = Path('test-results/ui')
         screenshots.mkdir(parents=True, exist_ok=True)
         page.screenshot(path=str(screenshots / 'nk-pilot-review.png'), full_page=True)
