@@ -168,6 +168,7 @@ def install_documents(app,actor):
         existing=c.execute(text('SELECT * FROM bm_documents WHERE id=:id'),{'id':body.request_id}).mappings().first()
         if existing:
             require(current,'marking.documents.view',existing)
+            if existing['state']=='archived':require(current,'documents.archive.view',existing)
             if existing['owner_id']!=current.id or existing['organization_id']!=body.organization_id or existing['request_sha256']!=hash:raise HTTPException(409,'Повторный запрос отличается от сохранённого')
             return {'id':existing['id'],'revision':existing['revision'],'state':existing['state'],'replayed':True}
         if c.execute(text('SELECT EXISTS(SELECT 1 FROM operation_targets WHERE id=:id)'),{'id':body.request_id}).scalar_one():raise HTTPException(409,'Идентификатор уже занят')

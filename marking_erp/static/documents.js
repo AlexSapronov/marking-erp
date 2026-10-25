@@ -86,7 +86,7 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     const actions=node('div',undefined,'dialog-actions');const save=node('button','Сохранить черновик');save.type='submit';save.className='primary';actions.append(button('Отмена',()=>closeDialog('document-dialog')),save);form.append(actions);
     form.addEventListener('submit',async e=>{e.preventDefault();if(form.dataset.busy==='true')return;form.dataset.busy='true';const blocked=[...form.querySelectorAll('button')].map(b=>[b,b.disabled]);blocked.forEach(([b])=>b.disabled=true);
       const body={organization_id:doc?.organization_id||org,number:number.value,document_date:date.value,supplier:supplier.value,lines:editor.rows,imported:editor.imported,...(doc?{revision:doc.revision}:{request_id:editor.request_id})};
-      try{const data=await api(doc?'/api/documents/'+doc.id:'/api/documents',{method:doc?'PUT':'POST',body});if(seq!==editSeq)return;closeDialog('document-dialog',true);notice('Накладная сохранена.'+(data.warnings?.length?' '+data.warnings.join('; '):''));await show();}
+      try{const data=await api(doc?'/api/documents/'+doc.id:'/api/documents',{method:doc?'PUT':'POST',body});if(seq!==editSeq)return;closeDialog('document-dialog',true);notice('Накладная сохранена.'+(data.warnings?.length?' '+data.warnings.slice(0,5).join('; ')+(data.warnings.length>5?' · Всего предупреждений: '+data.warnings.length:''):''));await show();}
       catch(error){if(seq===editSeq)fail(error);}finally{if(seq===editSeq){form.dataset.busy='false';blocked.forEach(([b,disabled])=>b.disabled=disabled);}}
     });
   }

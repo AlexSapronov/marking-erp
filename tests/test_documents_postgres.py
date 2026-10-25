@@ -107,11 +107,14 @@ def test_policy_merge_and_never(env,engine):
 
 def test_archive_confirmation_restore_and_no_automatic_progress(env,engine):
     with client(env) as c,client(env) as specialist:
-        login(c);doc,_=create(c,env);id=doc['id'];change={'revision':1,'confirmation':'INV-01','reason':'Закупка отменена'}
+        login(c);doc,original= create(c,env);id=doc['id'];change={'revision':1,'confirmation':'INV-01','reason':'Закупка отменена'}
         assert c.post('/api/documents/'+id+'/archive',json={**change,'confirmation':'wrong'}).status_code==422
         assert c.post('/api/documents/'+id+'/archive',json=change).json()['state']=='archived'
         assert c.get('/api/documents',params={'organization_id':str(env[1])}).json()['documents']==[]
         assert len(c.get('/api/documents',params={'organization_id':str(env[1]),'archived':True}).json()['documents'])==1
+        with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='bm' AND permission_id='documents.archive.view'"))
+        assert c.post('/api/documents',json=original).status_code==403
+        with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='own' WHERE group_slug='bm' AND permission_id='documents.archive.view'"))
         assert c.post('/api/documents/'+id+'/restore',json={**change,'revision':2}).status_code==403
         login(specialist,'specialist')
         assert specialist.post('/api/documents/'+id+'/restore',json={**change,'revision':2}).json()['state']=='draft'
