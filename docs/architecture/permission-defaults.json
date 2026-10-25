@@ -1,0 +1,974 @@
+[
+  {
+    "id": "nk.cards.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "all",
+      "logistics": "all",
+      "warehouse": "all",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.cards.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.cards.edit",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.cards.moderate",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.cards.publish",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.gtin.generate",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.templates.use",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.import.preview",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.import.commit",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.export",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.bulk_creation.execute",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.sync.execute",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "nk.templates.approve",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.documents.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.documents.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.documents.edit",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.import.preview",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.import.commit",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.codes.issue",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.labels.download",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.application.confirm",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.reports.submit",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.atk.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.atk.transform.prepare",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.atk.transform.approve",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "marking.codes.reuse.approve",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.atk.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.atk.download",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.warehouse.transfer",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.warehouse.refresh",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.warehouse.result.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.discrepancies.resolve",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.fts.prepare",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.fts.submit",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "logistics.documents.complete",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "all",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.receipt.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.receipt.scan",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.receipt.scan.delete",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.receipt.check",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.receipt.complete",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.scan",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.scan.delete",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.check",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.complete",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.export",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.receipt.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.shipment.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.import.preview",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.import.commit",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "warehouse.documents.reopen",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "codes.verify",
+    "administrative": false,
+    "defaults": {
+      "bm": "all",
+      "logistics": "all",
+      "warehouse": "all",
+      "tsd": "all",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "codes.registry.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "codes.history.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "codes.payload.export",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "split.operations.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "split.operations.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "split.application.confirm",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "split.reports.submit",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "labels.reprint",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "labels.print.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "labels.print.confirm",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "labels.remarking.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "labels.remarking.submit",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "documents.stop",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "documents.archive",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "documents.archive.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "documents.restore",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "operations.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "operations.reconcile",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "incidents.create",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "assigned",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "incidents.manage",
+    "administrative": false,
+    "defaults": {
+      "bm": "-",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "audit.operational.view",
+    "administrative": false,
+    "defaults": {
+      "bm": "own",
+      "logistics": "assigned",
+      "warehouse": "assigned",
+      "tsd": "-",
+      "specialist": "all",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "users.manage",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "permissions.manage",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "business_rules.manage",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "integrations.manage",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "organizations.manage",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "system.diagnostics.view",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "audit.view",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  },
+  {
+    "id": "sessions.revoke",
+    "administrative": true,
+    "defaults": {
+      "bm": "-",
+      "logistics": "-",
+      "warehouse": "-",
+      "tsd": "-",
+      "specialist": "-",
+      "administrator": "all"
+    }
+  }
+]

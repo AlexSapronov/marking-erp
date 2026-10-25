@@ -1,0 +1,1560 @@
+{
+  "audited_at": "2026-10-25",
+  "retrieval": "GitHub connector, commit-pinned UTF-8 source snapshots; no repository mutations",
+  "repositories": [
+    {
+      "repository": "AlexSapronov/nk-manager",
+      "commit": "06f420f38b9ac100bd568f1238034fb1e601791d",
+      "files": [
+        {
+          "path": ".env.example",
+          "sha": "02f301806142c1c612397e2118fea67561402d8e",
+          "size": 338
+        },
+        {
+          "path": ".github/workflows/prototype.yml",
+          "sha": "3683b715eebe268798c40a8948c7d11d56422304",
+          "size": 735
+        },
+        {
+          "path": ".github/workflows/service.yml",
+          "sha": "47d5b042162c988362c840941b5b22cb47593412",
+          "size": 2065
+        },
+        {
+          "path": ".github/workflows/signer.yml",
+          "sha": "29b00e144b3a2d4b0766300250e8346249f40c63",
+          "size": 866
+        },
+        {
+          "path": ".gitignore",
+          "sha": "49fe1d8a70273c539db6ebe55aef4656015384ea",
+          "size": 118
+        },
+        {
+          "path": "README.md",
+          "sha": "9d97582a5cd2ffbc7b8bb2be1a2fd40d08e85615",
+          "size": 17128
+        },
+        {
+          "path": "docs/ACCEPTANCE.md",
+          "sha": "d00275a8719776b5ae571d7dfe1b8d7c91803db9",
+          "size": 4418
+        },
+        {
+          "path": "docs/API-CAPABILITIES.md",
+          "sha": "f738c37f2b845e1ea3edfb4d6d452cb02ec20428",
+          "size": 3154
+        },
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "sha": "416a5fff4a3e6055f21b43b394c85d1378be0c9c",
+          "size": 8211
+        },
+        {
+          "path": "docs/DESIGN-SYSTEM.md",
+          "sha": "3c00a941e1d73efc736c8b11dedf549d27a0d2cc",
+          "size": 5440
+        },
+        {
+          "path": "docs/IMPLEMENTATION.md",
+          "sha": "bb08b99d9eaf4ce7c1d87a979ee1dd647bd0e496",
+          "size": 4588
+        },
+        {
+          "path": "docs/LOCAL-RELEASE.md",
+          "sha": "c9dd4899773629de423f36c507b3a750d2ccaaf2",
+          "size": 7049
+        },
+        {
+          "path": "docs/NK-LIVE.md",
+          "sha": "b4382c024cb055a3827ced055098dc3d3cdd9bd8",
+          "size": 27081
+        },
+        {
+          "path": "docs/OPERATIONS.md",
+          "sha": "464fd946ba0b22067112aa0ab32a1006830fb74e",
+          "size": 2938
+        },
+        {
+          "path": "docs/SCREENSHOTS.md",
+          "sha": "37e14a08aed6586d87c2685267c14e5121649434",
+          "size": 2012
+        },
+        {
+          "path": "docs/TASK.md",
+          "sha": "68ccacc641fdbe599cabbb92f6f4c621e84f7603",
+          "size": 112372
+        },
+        {
+          "path": "docs/TEMPLATES.md",
+          "sha": "95d77340203ad08b9d05f409ee67b6bbd87031c8",
+          "size": 4118
+        },
+        {
+          "path": "docs/UX-ACCEPTANCE.md",
+          "sha": "1f771f9b08c029707b3fc367b7841416337ae50d",
+          "size": 2523
+        },
+        {
+          "path": "docs/UX-SPEC.md",
+          "sha": "1ee16de880adbaa79d0175ac9b988ad3416da8af",
+          "size": 6384
+        },
+        {
+          "path": "docs/WSL.md",
+          "sha": "17d79b0d9b641cd7336ea2934ad217c6e25f06df",
+          "size": 12932
+        },
+        {
+          "path": "docs/browser-report.json",
+          "sha": "8ecad62df42bc89e2f9ebc0d58737ab38de1bae9",
+          "size": 2640
+        },
+        {
+          "path": "docs/bulk-creation-browser-report.json",
+          "sha": "c9ec80bc78039858565a4e13136520fef27d8b80",
+          "size": 358
+        },
+        {
+          "path": "docs/category-browser-report.json",
+          "sha": "99a936ea9212ef862fc6e489449a9df5ed7bf68a",
+          "size": 307
+        },
+        {
+          "path": "docs/draft-workflow-browser-report.json",
+          "sha": "13f7d4d54bacffbb868f8c224af49bd678773619",
+          "size": 336
+        },
+        {
+          "path": "docs/live-browser-report.json",
+          "sha": "204eef1f92c70d841bb4709d3c95a2da0fd26517",
+          "size": 1619
+        },
+        {
+          "path": "docs/nk-browser-report.json",
+          "sha": "103d21d0f6c8a887cd283b5bb002dcb828437fb5",
+          "size": 468
+        },
+        {
+          "path": "docs/normalization-browser-report.json",
+          "sha": "56020576081e5d4493ac3d16e6f48ea27233a5e1",
+          "size": 373
+        },
+        {
+          "path": "docs/screenshots/admin.png",
+          "sha": "28dd77e6058c3502d71ed34a6878c043fe506c1c",
+          "size": 74664
+        },
+        {
+          "path": "docs/screenshots/batches.png",
+          "sha": "ba8aed9eda8790269a34d392afc3c8f2577f687f",
+          "size": 80811
+        },
+        {
+          "path": "docs/screenshots/bulk-creation-preview.png",
+          "sha": "6c590f143c21a598dedbc6deb568f47636d53299",
+          "size": 84258
+        },
+        {
+          "path": "docs/screenshots/bulk-creation-result.png",
+          "sha": "09e8db05c92965cb79f19a5ffa031b149e5b956e",
+          "size": 77726
+        },
+        {
+          "path": "docs/screenshots/bulk-template-preview.png",
+          "sha": "b192ac72e94240bad9f942962614a49bcb8a6312",
+          "size": 89827
+        },
+        {
+          "path": "docs/screenshots/category-filter-dark.png",
+          "sha": "f9292dc463109d1777bed4b601678ec225b8de90",
+          "size": 117546
+        },
+        {
+          "path": "docs/screenshots/category-filter-light.png",
+          "sha": "a3954162d75b75daee52a1c98d5ad57ed4242980",
+          "size": 117526
+        },
+        {
+          "path": "docs/screenshots/creation-wizard.png",
+          "sha": "9b1b62ffa35f98c8668a5a49e0a2c6553aeebf05",
+          "size": 93540
+        },
+        {
+          "path": "docs/screenshots/draft-workspace.png",
+          "sha": "255ee1f61a84a023684fd5e14844572f88b4c919",
+          "size": 86984
+        },
+        {
+          "path": "docs/screenshots/drawer-1366x768.png",
+          "sha": "a8ba622c4be3fbd7d9daecb44f8439c208631241",
+          "size": 110718
+        },
+        {
+          "path": "docs/screenshots/drawer-1440x900.png",
+          "sha": "09b22e6b5476485b74ca29d9f6156cc61f351455",
+          "size": 129843
+        },
+        {
+          "path": "docs/screenshots/drawer-1920x1080.png",
+          "sha": "d746c480c62f29d2dea264571ea8e4224eae7c71",
+          "size": 168731
+        },
+        {
+          "path": "docs/screenshots/drawer-390x844.png",
+          "sha": "bde33e2441a2757e75b65e819f925f5e6809aed0",
+          "size": 45211
+        },
+        {
+          "path": "docs/screenshots/drawer-dark-1366x768.png",
+          "sha": "761a4e087fb51b49c6b08c48590e6ac55c84cc5b",
+          "size": 113006
+        },
+        {
+          "path": "docs/screenshots/duplicate-review.png",
+          "sha": "7040376300e0fa259c0df7a52c5bd8462abbe082",
+          "size": 102456
+        },
+        {
+          "path": "docs/screenshots/excel-confirmation.png",
+          "sha": "30ea460c44edb85228b7265f0d69585e4b572371",
+          "size": 69855
+        },
+        {
+          "path": "docs/screenshots/live-1440x900.png",
+          "sha": "961373918b3e3ac52ec17e70a3d134987a01795e",
+          "size": 95765
+        },
+        {
+          "path": "docs/screenshots/live-1920x1080.png",
+          "sha": "8f053f04cbb857f112bc4e4139591591c087c787",
+          "size": 98958
+        },
+        {
+          "path": "docs/screenshots/live-390x844.png",
+          "sha": "c0748ddfad5d7f052577ff261578ad88622e8d9f",
+          "size": 49587
+        },
+        {
+          "path": "docs/screenshots/live-admin.png",
+          "sha": "e1741e4f898333c1c710a8e1c2b99ca71c448239",
+          "size": 83227
+        },
+        {
+          "path": "docs/screenshots/live-dark.png",
+          "sha": "2df350e6a4a3eeb20a0eb6523cb79351946aaff6",
+          "size": 89327
+        },
+        {
+          "path": "docs/screenshots/live-editor.png",
+          "sha": "d69b394ff18656f95b2676e588d1865ec73b8ed3",
+          "size": 92551
+        },
+        {
+          "path": "docs/screenshots/live-registry.png",
+          "sha": "f8c30b5db5bf37214a5b77b757b6596f1cb2bee0",
+          "size": 83076
+        },
+        {
+          "path": "docs/screenshots/nk-connection.png",
+          "sha": "cb6f48b95e63f176e42dc05878395e2f92a1a2ac",
+          "size": 100567
+        },
+        {
+          "path": "docs/screenshots/nk-operations.png",
+          "sha": "6ebdbe6cccdf707c405eee760d83d3ed01bb6570",
+          "size": 72283
+        },
+        {
+          "path": "docs/screenshots/normalization-preview.png",
+          "sha": "935fa24126c66144e675b9cf305994bbd82e3fda",
+          "size": 95437
+        },
+        {
+          "path": "docs/screenshots/normalization-result.png",
+          "sha": "98d586b24ff9195f0fb814ff1fc7622f368965d3",
+          "size": 107158
+        },
+        {
+          "path": "docs/screenshots/registry-1366-at-125-percent-space.png",
+          "sha": "b0a86e0d314753d007072c465f5d21d40f1af7fd",
+          "size": 69563
+        },
+        {
+          "path": "docs/screenshots/registry-1366x768.png",
+          "sha": "bc89623be72f0c431d21be444f7af0a04a49d8b9",
+          "size": 96338
+        },
+        {
+          "path": "docs/screenshots/registry-1440x900.png",
+          "sha": "17ff0e2f45b9db74a50ae90cde4dbf969af4eb12",
+          "size": 114012
+        },
+        {
+          "path": "docs/screenshots/registry-1920x1080.png",
+          "sha": "d5898df5dfd2c2cd54d55b9175c05eb87fc3f586",
+          "size": 138885
+        },
+        {
+          "path": "docs/screenshots/registry-390x844.png",
+          "sha": "90df633fa8f8f766074520a524e51b0c429c012b",
+          "size": 48079
+        },
+        {
+          "path": "docs/screenshots/registry-dark-1366x768.png",
+          "sha": "6e000457cceb878b01b52498be42b4862a97ddc8",
+          "size": 97604
+        },
+        {
+          "path": "docs/screenshots/registry-dark-1440x900.png",
+          "sha": "496814df594ba4c3dc975477dc9f1ddce6f5ad5d",
+          "size": 115553
+        },
+        {
+          "path": "docs/screenshots/registry-dark-1920x1080.png",
+          "sha": "61150a73c7a789089de27f18716d042d93d6341b",
+          "size": 140617
+        },
+        {
+          "path": "docs/screenshots/registry-dark-390x844.png",
+          "sha": "7fdb3131fe4ab7a9b88fee9197f2c25c4be99fae",
+          "size": 48947
+        },
+        {
+          "path": "docs/screenshots/revision-conflict.png",
+          "sha": "ac34794b42db9b7f9030861fea60ed65ec283e4a",
+          "size": 69136
+        },
+        {
+          "path": "docs/screenshots/template-diff-dark.png",
+          "sha": "bc14092d93db05a08c955153a9915beaa364f9e2",
+          "size": 64516
+        },
+        {
+          "path": "docs/screenshots/template-diff.png",
+          "sha": "d1ca8bccd200dc149f852d4774110259a9dd431b",
+          "size": 66609
+        },
+        {
+          "path": "docs/screenshots/template-preview.png",
+          "sha": "bcc16bd68cc0ed90f38a1bc534b6eddfc096df6b",
+          "size": 90681
+        },
+        {
+          "path": "docs/screenshots/template-result.png",
+          "sha": "16e52f5909fde89ec04de1e494ba783616cb2d24",
+          "size": 91086
+        },
+        {
+          "path": "docs/template-browser-report.json",
+          "sha": "04d5911e81f18b33eb91a1117a1d6739623f29ef",
+          "size": 671
+        },
+        {
+          "path": "main.py",
+          "sha": "332999432fbcb05ed2d336b66905404a53f7d989",
+          "size": 26303
+        },
+        {
+          "path": "nk_manager/__init__.py",
+          "sha": "1a139757699e3f264ca004e414e2445392b5b0fe",
+          "size": 105
+        },
+        {
+          "path": "nk_manager/bulk_creation.py",
+          "sha": "4acf4cd43999e8fb429457129da52cdba846d0b6",
+          "size": 15554
+        },
+        {
+          "path": "nk_manager/creation.py",
+          "sha": "b7b8431d1cfdee8da766ac57395f1a78bb7d1922",
+          "size": 7177
+        },
+        {
+          "path": "nk_manager/draft_workflow.py",
+          "sha": "9aeac0928175acda050e5960dc557fbf312bc6b8",
+          "size": 9201
+        },
+        {
+          "path": "nk_manager/excel.py",
+          "sha": "a369f310ba2a9736baede3bdfb3e1898f905badc",
+          "size": 6572
+        },
+        {
+          "path": "nk_manager/fields.py",
+          "sha": "37d0b62a88db132d7125814b598ea3a3f9d242be",
+          "size": 1269
+        },
+        {
+          "path": "nk_manager/nk.py",
+          "sha": "553af12cbe26bfc9069678e9a43a5c170642adbf",
+          "size": 50184
+        },
+        {
+          "path": "nk_manager/normalization.py",
+          "sha": "4067fdd1924a2d21bc73b8f279c164f432569f8d",
+          "size": 9570
+        },
+        {
+          "path": "nk_manager/normalization_service.py",
+          "sha": "533b1b611e7a3e18ac3f5ba44b70cb9f6eefec34",
+          "size": 5785
+        },
+        {
+          "path": "nk_manager/presets.py",
+          "sha": "df641b1a60c71d8a735f6a94e91a82a8169dc27c",
+          "size": 4513
+        },
+        {
+          "path": "nk_manager/service.py",
+          "sha": "223b4433b736f977c669abb15b02f87eae7f4bf1",
+          "size": 33088
+        },
+        {
+          "path": "nk_manager/store.py",
+          "sha": "ad2b0bd39e87f906fb80f0f5eaed8cb40ca3cddb",
+          "size": 5966
+        },
+        {
+          "path": "package-lock.json",
+          "sha": "ef591274980c1f0a77a0d8e5c46b994ac801d575",
+          "size": 1749
+        },
+        {
+          "path": "package.json",
+          "sha": "b42db448dc6057ab1ac2464f5f987784e3fda4b4",
+          "size": 261
+        },
+        {
+          "path": "presets/8504408300.json",
+          "sha": "fd460f2c7ac173959aedddb2ed04cb265dbfce79",
+          "size": 8264
+        },
+        {
+          "path": "presets/8504409100.json",
+          "sha": "a39c35287bff4c71b9416fe79f8896899470a33e",
+          "size": 8697
+        },
+        {
+          "path": "presets/8536490000.json",
+          "sha": "a93674de9cef49725cd539328f6ea6c60569370c",
+          "size": 7517
+        },
+        {
+          "path": "presets/8536699008.json",
+          "sha": "540ad99342d30ee22f00ea86f4dcae9716b7a8cd",
+          "size": 7415
+        },
+        {
+          "path": "presets/8536901000.json",
+          "sha": "381caba3207373326c86f8805d927c6b5e77b490",
+          "size": 7521
+        },
+        {
+          "path": "presets/8536908500.json",
+          "sha": "59e60889c84f67988a0fc0c11e1945ffa439b00f",
+          "size": 7490
+        },
+        {
+          "path": "presets/8539519009.json",
+          "sha": "e650682697c9a2b9a074eb6fe575381f65e16f25",
+          "size": 5728
+        },
+        {
+          "path": "presets/8541410002.json",
+          "sha": "444961d00195a2377f2cf2f0dc693aaffeb102bf",
+          "size": 7445
+        },
+        {
+          "path": "presets/8541410004.json",
+          "sha": "c11612e58e810a9d50b1fabc8cd9ebe53538197f",
+          "size": 9112
+        },
+        {
+          "path": "presets/8541410006.json",
+          "sha": "001e0f7128465395f36a6d021fcebbf9fe94fd91",
+          "size": 5734
+        },
+        {
+          "path": "presets/8541490000.json",
+          "sha": "6d1ff77d5ebb7d6348643ef2cfa1e43c7199e527",
+          "size": 7461
+        },
+        {
+          "path": "presets/README.md",
+          "sha": "c6116bd90b715d89e784ab07b242d31bee7b2702",
+          "size": 4305
+        },
+        {
+          "path": "presets/manifest.json",
+          "sha": "458b14fbe252729f8234914f0acd0e2efec4a545",
+          "size": 8456
+        },
+        {
+          "path": "presets/product-kinds.json",
+          "sha": "5cc4d32f478fccd9d7c4ee0ce5af30926b61c632",
+          "size": 101560
+        },
+        {
+          "path": "presets/published-fields.json",
+          "sha": "cfb5759f27e5185a40eb0fc477512e9e859a2235",
+          "size": 3750
+        },
+        {
+          "path": "prototype/app.js",
+          "sha": "8a650150ffafceca6b2b4ebe0299e6e59e1b271f",
+          "size": 53314
+        },
+        {
+          "path": "prototype/index.html",
+          "sha": "4079932c7a83c4e90693e102e9dc641344475027",
+          "size": 1796
+        },
+        {
+          "path": "prototype/palette.css",
+          "sha": "3ca8887813f277a595cd1acaede0e54126250892",
+          "size": 1333
+        },
+        {
+          "path": "prototype/preview.html",
+          "sha": "898b06b3e8e41c920c836a77f7fe7793b905cdc7",
+          "size": 79558
+        },
+        {
+          "path": "prototype/style.css",
+          "sha": "7e897d7b61adfff7d179fc23664640b5248efc94",
+          "size": 21721
+        },
+        {
+          "path": "prototype/theme.js",
+          "sha": "2b61ee7701832bf70c18f7f241dc19ae9605a403",
+          "size": 1474
+        },
+        {
+          "path": "requirements-dev.txt",
+          "sha": "cf9ab19a501e7c8e3d05d90b9740dfb5e0399c3d",
+          "size": 136
+        },
+        {
+          "path": "requirements-lock.txt",
+          "sha": "0126b2989de639ae912d61cff18d3c1f87123e2a",
+          "size": 437
+        },
+        {
+          "path": "scripts/backup.py",
+          "sha": "6e41772c87221bb7a752e92f8f1def5fd3756f29",
+          "size": 2008
+        },
+        {
+          "path": "scripts/build_preview.py",
+          "sha": "b13b56585deef7987b39c99d3465cb634b0d74e5",
+          "size": 1017
+        },
+        {
+          "path": "scripts/build_product_kinds.py",
+          "sha": "868c92088e963d77c67b82f8085b21b52b67747d",
+          "size": 946
+        },
+        {
+          "path": "scripts/run_wsl.py",
+          "sha": "b1985b6d69d4e25366adcb4fed80fe5a43ec25e5",
+          "size": 1978
+        },
+        {
+          "path": "scripts/setup.py",
+          "sha": "e6186e4759ce16184c69eb37af2b6b77e2dfbbe0",
+          "size": 1559
+        },
+        {
+          "path": "signer/Sign-Payload.vbs",
+          "sha": "550e4bdfd60b9d31d20b86a05a039a2dc5c7fd04",
+          "size": 3603
+        },
+        {
+          "path": "signer/Start-Signer.ps1",
+          "sha": "548143d1622f32106d5c82d7a844f26a12afd218",
+          "size": 11028
+        },
+        {
+          "path": "tests/__init__.py",
+          "sha": "ed1e62e6cab1b529ca59b101975b4abdde287fbe",
+          "size": 81
+        },
+        {
+          "path": "tests/browser-smoke.cjs",
+          "sha": "27e6c080d17b66e1885ef9c17666efeca9308a82",
+          "size": 13819
+        },
+        {
+          "path": "tests/bulk-creation-browser.cjs",
+          "sha": "2e72c37d9b91a26c87fe1d4e6b7239bdc3077c4d",
+          "size": 5317
+        },
+        {
+          "path": "tests/bulk_browser_server.py",
+          "sha": "fe9e56c649aeb2218dc103a7919ad4d70ef32dc5",
+          "size": 628
+        },
+        {
+          "path": "tests/category-browser.cjs",
+          "sha": "1d68b6b0f0a1502331035595e2df8bf59bfcabda",
+          "size": 6334
+        },
+        {
+          "path": "tests/creation-ui.cjs",
+          "sha": "3bcdf56c06611e4fad4bd60153260dbbf4d81b04",
+          "size": 1961
+        },
+        {
+          "path": "tests/draft-workflow-browser.cjs",
+          "sha": "ed68746ce0e3b53cb388e46a73452441314012e8",
+          "size": 5839
+        },
+        {
+          "path": "tests/draft_browser_server.py",
+          "sha": "8dbe5c7e657f0618cecdc6aaf4c7a5dd2a91ecf9",
+          "size": 1819
+        },
+        {
+          "path": "tests/field-visibility.cjs",
+          "sha": "c30ccfa1a88274662daa640216f0f214dfd14fc2",
+          "size": 1713
+        },
+        {
+          "path": "tests/live-browser.cjs",
+          "sha": "93e5b041760547e29bb3dffac368297ea30acb67",
+          "size": 14566
+        },
+        {
+          "path": "tests/nk-browser.cjs",
+          "sha": "bc7466f565cc0fa45fdf5f75c6d4dd3383352193",
+          "size": 8271
+        },
+        {
+          "path": "tests/nk_browser_server.py",
+          "sha": "ee609851fbeb7bfb34da27ee8b89cacac47a2051",
+          "size": 1439
+        },
+        {
+          "path": "tests/normalization-browser.cjs",
+          "sha": "4b44bd52cf50ce7a5570cac710da313210861f0c",
+          "size": 5254
+        },
+        {
+          "path": "tests/normalization_browser_server.py",
+          "sha": "42adb14a277207f75b2f90cc785fbb7e35f9cf2e",
+          "size": 1650
+        },
+        {
+          "path": "tests/signer-connection.ps1",
+          "sha": "90a63b80ca7ceb0c8164ab54b7f4fd6a6644d2d9",
+          "size": 3252
+        },
+        {
+          "path": "tests/template-browser.cjs",
+          "sha": "26ffeba709028c58d8a103dd4b0caa762273d2c1",
+          "size": 8660
+        },
+        {
+          "path": "tests/template_browser_server.py",
+          "sha": "280c2fa12ca6cc6e12a87882393b2dea8568fb66",
+          "size": 1122
+        },
+        {
+          "path": "tests/test_bulk_creation.py",
+          "sha": "e7a0a595b052f92159fb68bd7558920fb10089c8",
+          "size": 10533
+        },
+        {
+          "path": "tests/test_creation.py",
+          "sha": "bb103c243b69de62af4561da8c1b849f50da4823",
+          "size": 6314
+        },
+        {
+          "path": "tests/test_draft_workflow.py",
+          "sha": "99486f6a9f53aecaa07fbfedf35d04a2952bfdc9",
+          "size": 6859
+        },
+        {
+          "path": "tests/test_fields.py",
+          "sha": "ea7bb4b8099acb7d67f1d9e5b8cb7ad168da3a8b",
+          "size": 1291
+        },
+        {
+          "path": "tests/test_launcher.py",
+          "sha": "405ba735364c8546c897e9b7c53ef0934a900229",
+          "size": 1996
+        },
+        {
+          "path": "tests/test_nk.py",
+          "sha": "d637e8ac6e6cabbeffe1a6db0cf10f6f2f63eb10",
+          "size": 20718
+        },
+        {
+          "path": "tests/test_normalization.py",
+          "sha": "1c9b8133dd32de98c5dd36607566a940f5123378",
+          "size": 7076
+        },
+        {
+          "path": "tests/test_presets.py",
+          "sha": "103e8ae8729514ba05132ab918f7ce5d99132531",
+          "size": 6602
+        },
+        {
+          "path": "tests/test_service.py",
+          "sha": "9b388cc1bc1c6c2ce23f031c72fcc059d02fb76f",
+          "size": 15210
+        },
+        {
+          "path": "tests/test_template_workflow.py",
+          "sha": "150bddedc61e5ad78f5e92be54fdbab46e9c71f0",
+          "size": 3994
+        },
+        {
+          "path": "web/bulk-creation.js",
+          "sha": "4fb801b83633437514dc9d009a4e8a32253ac01e",
+          "size": 6521
+        },
+        {
+          "path": "web/category-filter.js",
+          "sha": "fb506f22b00aef2dba399712ad2eb74f25959761",
+          "size": 4539
+        },
+        {
+          "path": "web/creation.js",
+          "sha": "91ed916923fda8cd0b9f1f642f6615094fef36b4",
+          "size": 6875
+        },
+        {
+          "path": "web/draft-workspace.js",
+          "sha": "840dc839af1ab8e438902f3b32a9d883e8015ae0",
+          "size": 11960
+        },
+        {
+          "path": "web/index.html",
+          "sha": "15852372a099ccb13ddd359ee3d0a7a409423f4e",
+          "size": 2978
+        },
+        {
+          "path": "web/live.css",
+          "sha": "f00dc0997e078b5ee36a43b94c1574cddf3ac10e",
+          "size": 9037
+        },
+        {
+          "path": "web/live.js",
+          "sha": "c226262caf4612e907746f5a1f399e3923a43198",
+          "size": 42202
+        },
+        {
+          "path": "web/nk.js",
+          "sha": "d1b58b203f2566a53366715cbabe773a5d53b6e0",
+          "size": 20479
+        },
+        {
+          "path": "web/normalization-flow.js",
+          "sha": "9b72d4b5b1ee8a2490a52d1a0361f31ecac22836",
+          "size": 7138
+        },
+        {
+          "path": "web/palette.css",
+          "sha": "3ca8887813f277a595cd1acaede0e54126250892",
+          "size": 1333
+        },
+        {
+          "path": "web/style.css",
+          "sha": "7e897d7b61adfff7d179fc23664640b5248efc94",
+          "size": 21721
+        },
+        {
+          "path": "web/template-flow.js",
+          "sha": "59870da297f7fda2c6e675c505dd93396c9c3f92",
+          "size": 8762
+        },
+        {
+          "path": "web/theme.js",
+          "sha": "2b61ee7701832bf70c18f7f241dc19ae9605a403",
+          "size": 1474
+        }
+      ]
+    },
+    {
+      "repository": "AlexSapronov/marking-bm",
+      "commit": "ce77a1cf720ff62530988b091c29c2dc0ae69ed6",
+      "files": [
+        {
+          "path": ".env.example",
+          "sha": "b7912863644580294ab1b965e0a2fe8775c6292c",
+          "size": 570
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha": "88bc392fa59f3c7e051f7510ba8cac08661a77ea",
+          "size": 578
+        },
+        {
+          "path": ".gitignore",
+          "sha": "dd3b31412f6d3902d378cd98f1d1878a4e2a5aad",
+          "size": 90
+        },
+        {
+          "path": "README.md",
+          "sha": "ecbf779ad1ac04a30c0ebb5d221a1591dfa80e7f",
+          "size": 17479
+        },
+        {
+          "path": "deploy/marking-bm.service",
+          "sha": "21eed15b4d04e0af7ade92d8ee09d00ce5893113",
+          "size": 583
+        },
+        {
+          "path": "deploy/nginx.conf",
+          "sha": "57f52693e4eb411d12c0081e0986e1feb272e6ba",
+          "size": 322
+        },
+        {
+          "path": "docs/ACCEPTANCE.md",
+          "sha": "7f851a1e74465547ea0250c20333d952d2a676c7",
+          "size": 7060
+        },
+        {
+          "path": "docs/ADMIN.md",
+          "sha": "cea276d21280cf559960e62895c3831f2bab8a72",
+          "size": 14124
+        },
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "sha": "5eaf6553f7fa7f27e52ce7fb625fb1949aadea6d",
+          "size": 15672
+        },
+        {
+          "path": "docs/IMPLEMENTATION.md",
+          "sha": "190ccec8e5d7e57b201f59d1c9eb6447fd36e573",
+          "size": 6909
+        },
+        {
+          "path": "docs/INTEGRATIONS.md",
+          "sha": "af5fb8c9cd8fd94e8af0a790473720a2fd0a0e65",
+          "size": 10772
+        },
+        {
+          "path": "docs/LOGISTICS.md",
+          "sha": "ab22d7394cf8f4347ceaa345dd2b4f1f197dab3b",
+          "size": 5382
+        },
+        {
+          "path": "docs/REVIEW-2026-10-24.md",
+          "sha": "d0938a16b7114c68d6bcaf9bd99b2e16139e8e69",
+          "size": 12683
+        },
+        {
+          "path": "docs/SIGNER.md",
+          "sha": "13b6d8d709c3086b570ba00a345f6eaf0eab00f5",
+          "size": 8054
+        },
+        {
+          "path": "docs/TASK.md",
+          "sha": "c83096b21724dc9edb3e7c7d4047299fd9c63d50",
+          "size": 53415
+        },
+        {
+          "path": "docs/USER.md",
+          "sha": "b0351434be27137425c27247f3f179a78e05b5d7",
+          "size": 13825
+        },
+        {
+          "path": "docs/WSL.md",
+          "sha": "c1feab225b0b0e4459ab07c17937836e40f17742",
+          "size": 11487
+        },
+        {
+          "path": "docs/screenshots/admin-workspace.png",
+          "sha": "f5af6b11d2fdc96959ee6339d8555c21e5be6a49",
+          "size": 134798
+        },
+        {
+          "path": "docs/screenshots/admin.png",
+          "sha": "044f1797b094c8108a38bb0b2428c0e55522b3d5",
+          "size": 243533
+        },
+        {
+          "path": "docs/screenshots/documents-workspace.png",
+          "sha": "8b16e59c030f8211421745c17eea64bbafd220b3",
+          "size": 107061
+        },
+        {
+          "path": "docs/screenshots/documents.png",
+          "sha": "254832fcbfbf9b63105dff21cbf70cf57b627a0c",
+          "size": 83294
+        },
+        {
+          "path": "docs/screenshots/excel-mapping.png",
+          "sha": "500c7b19932b7045db69210a9f7b143d9285ea86",
+          "size": 163315
+        },
+        {
+          "path": "docs/screenshots/invoice-dark.png",
+          "sha": "8f2db0f74981b289f74d25675a05abe54a5b975b",
+          "size": 122333
+        },
+        {
+          "path": "docs/screenshots/invoice-workspace.png",
+          "sha": "7b34c34c0937e99b3f2eb2267bddf7a43c41f94c",
+          "size": 118784
+        },
+        {
+          "path": "docs/screenshots/invoice.png",
+          "sha": "83d6dd602b0eb3a2b6d06e7aaa1b6804262802e6",
+          "size": 123116
+        },
+        {
+          "path": "docs/screenshots/logistics-dark.png",
+          "sha": "a1ef44cf319e229e4bc25ceb42478f985b84c111",
+          "size": 103422
+        },
+        {
+          "path": "docs/screenshots/logistics-mobile.png",
+          "sha": "56f5cb140b257eea5b1b89e4b6d546c2a8863cd9",
+          "size": 100260
+        },
+        {
+          "path": "docs/screenshots/logistics.png",
+          "sha": "1d46e88d6ddfaa3117e77c71e1af68b9786da158",
+          "size": 104416
+        },
+        {
+          "path": "docs/screenshots/mobile.png",
+          "sha": "a792680ab9939388bc5b2b775e154c4ed324574b",
+          "size": 71833
+        },
+        {
+          "path": "docs/screenshots/stop-confirmation.png",
+          "sha": "355d80e1bf7c415d6ccaea25c3cc07e9db10df22",
+          "size": 151266
+        },
+        {
+          "path": "main.py",
+          "sha": "4a07c2642eb706397055594fa575a856e5f28ce9",
+          "size": 43015
+        },
+        {
+          "path": "marking_bm/__init__.py",
+          "sha": "7968eb22671f3a7013d689369414d7b8f78c0e04",
+          "size": 115
+        },
+        {
+          "path": "marking_bm/auth.py",
+          "sha": "a1646ae02d1dfd740c3cc9cf2465ac2e55db34de",
+          "size": 1181
+        },
+        {
+          "path": "marking_bm/codes.py",
+          "sha": "2a4e2b557fb270de314456c906f896939fe5e01e",
+          "size": 3437
+        },
+        {
+          "path": "marking_bm/config.py",
+          "sha": "4901a79831979135b27c79479d8bdb8c85007e52",
+          "size": 2902
+        },
+        {
+          "path": "marking_bm/db.py",
+          "sha": "f68811c2ac76981a17fd161641156fdb43f0dfc0",
+          "size": 9077
+        },
+        {
+          "path": "marking_bm/excel.py",
+          "sha": "3da173c984c5ffb2bc18f9d8ad9fd0e08beead5b",
+          "size": 19010
+        },
+        {
+          "path": "marking_bm/gateway.py",
+          "sha": "368dad3d1a22e75c706d26895385abaf6b2fb504",
+          "size": 13156
+        },
+        {
+          "path": "marking_bm/labels.py",
+          "sha": "88f131096b048cc02a88f30db8c94ff8a81cd761",
+          "size": 5127
+        },
+        {
+          "path": "marking_bm/service.py",
+          "sha": "00d1c765984edc59d2cea4b48e7774f835d2b503",
+          "size": 62814
+        },
+        {
+          "path": "marking_bm/worker.py",
+          "sha": "cc9a0b090406a89d44a3c91d3369527ed1f93aad",
+          "size": 24283
+        },
+        {
+          "path": "pytest.ini",
+          "sha": "c7b23ecb1408be49fb2fa8ef77ffa48640681e34",
+          "size": 42
+        },
+        {
+          "path": "requirements-dev.txt",
+          "sha": "afc06d03528ac90c90da2e990f06e5c257b67117",
+          "size": 103
+        },
+        {
+          "path": "requirements-lock.txt",
+          "sha": "b975f7d0cfa356d91e85e708f5653b52522d1157",
+          "size": 492
+        },
+        {
+          "path": "requirements.txt",
+          "sha": "c769637ce854759faa8a4cb391474411054dfe38",
+          "size": 144
+        },
+        {
+          "path": "scripts/backup.py",
+          "sha": "b16c236f210d634d792ef634887bcff514f43f52",
+          "size": 2560
+        },
+        {
+          "path": "scripts/diagnose_atk.py",
+          "sha": "f2dd4e4a2f2bb47f783a269ee34f1f4bfc0b238a",
+          "size": 6204
+        },
+        {
+          "path": "scripts/password_hash.py",
+          "sha": "815f67b7803b5ed2b22eccce349977742faee8e0",
+          "size": 513
+        },
+        {
+          "path": "scripts/reprint_labels.py",
+          "sha": "fb4c0edef19d6013ae9c307698611c1aad937ed7",
+          "size": 6051
+        },
+        {
+          "path": "scripts/run_wsl_local.py",
+          "sha": "5dcb3e8fded2643ebcd5b51d10f52bfec66e7368",
+          "size": 2585
+        },
+        {
+          "path": "scripts/setup_wsl_local.py",
+          "sha": "d3a6063c0f6659909b8a9476dfd12cef70a7cead",
+          "size": 2326
+        },
+        {
+          "path": "signer/Sign-Payload.vbs",
+          "sha": "550e4bdfd60b9d31d20b86a05a039a2dc5c7fd04",
+          "size": 3603
+        },
+        {
+          "path": "signer/Start-Signer.ps1",
+          "sha": "e06acbef375caf79aac3d2156f226e4ead269ec4",
+          "size": 7772
+        },
+        {
+          "path": "signer/Test-Cades-VBScript.vbs",
+          "sha": "c1508c286d6caa21d589b618e1f398f7e1d4ae17",
+          "size": 2876
+        },
+        {
+          "path": "static/app.js",
+          "sha": "a497990244c3a09ef7a37d89aa5c568abc357a31",
+          "size": 73375
+        },
+        {
+          "path": "static/assets/chestny-znak.png",
+          "sha": "f5f9a76fa5b6602b37894322aeb71bcbf85c8585",
+          "size": 1618
+        },
+        {
+          "path": "static/index.html",
+          "sha": "30cecfd9b53e6f9db1ce59413c2ced334e9ec972",
+          "size": 554
+        },
+        {
+          "path": "static/style.css",
+          "sha": "0ee5743e544f41f821862bd699d001b9cc653393",
+          "size": 20022
+        },
+        {
+          "path": "static/theme.js",
+          "sha": "972dcbe947144c931fa241684d90348ba3a87a30",
+          "size": 1304
+        },
+        {
+          "path": "static/workspace.js",
+          "sha": "08673b011b241e5b4f954af684a873689cd1bbe7",
+          "size": 17459
+        },
+        {
+          "path": "tests/browser_smoke.py",
+          "sha": "6317655a6894d3325e1110d6d45d152ae9af7697",
+          "size": 24168
+        },
+        {
+          "path": "tests/conftest.py",
+          "sha": "75a12877de0af2bc7122448aea74c3fecb00ff0d",
+          "size": 9173
+        },
+        {
+          "path": "tests/test_excel_import.py",
+          "sha": "8730efe4644d191ae5f2377a4d8ee4d19df57b57",
+          "size": 9339
+        },
+        {
+          "path": "tests/test_logistics.py",
+          "sha": "bdaf6d447856f225dea0db79466e233f5e8d6053",
+          "size": 13123
+        },
+        {
+          "path": "tests/test_review_regressions.py",
+          "sha": "121d0a4571b6f429f829966934c211ac69c64fa0",
+          "size": 5588
+        },
+        {
+          "path": "tests/test_security_labels.py",
+          "sha": "78bf0a46275de1809d8d51322daf3b4307022291",
+          "size": 8399
+        },
+        {
+          "path": "tests/test_stop_archive.py",
+          "sha": "5903579a1320133692d1fb269a895611c5b0ad66",
+          "size": 16183
+        },
+        {
+          "path": "tests/test_workflow.py",
+          "sha": "e79527607bf4b3b897a74b869601834b3c9da010",
+          "size": 23051
+        }
+      ]
+    },
+    {
+      "repository": "AlexSapronov/gis-trueapi",
+      "commit": "503b87d422a07063d97da1e54f9a749c4b2e65cc",
+      "files": [
+        {
+          "path": ".env.example",
+          "sha": "4961b6635412b8838b5983c211abc7b34362c1c6",
+          "size": 1216
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha": "9164ad7144608cc8359e60bab6888095fcb02112",
+          "size": 916
+        },
+        {
+          "path": ".gitignore",
+          "sha": "8f1e0941991391648504436f98b489d6438b64c6",
+          "size": 425
+        },
+        {
+          "path": "README.md",
+          "sha": "d4121d570b01e684b3f8be518d7fa5fa06f11a48",
+          "size": 69053
+        },
+        {
+          "path": "admin_auth.py",
+          "sha": "d4ff8f37403515884b8957a975bcf44cbe1e702a",
+          "size": 3437
+        },
+        {
+          "path": "app_settings.py",
+          "sha": "380225583a97aecb87777b1172033f6290bd8f5c",
+          "size": 8259
+        },
+        {
+          "path": "buildinfo.py",
+          "sha": "cc4695b00aa474d29174065846975a18da9befbc",
+          "size": 4492
+        },
+        {
+          "path": "config.py",
+          "sha": "a5a2b4b4de7ad401f7f6ea31fa366765a43ae877",
+          "size": 3053
+        },
+        {
+          "path": "data/.gitkeep",
+          "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+          "size": 0
+        },
+        {
+          "path": "datamatrix.py",
+          "sha": "58998a0278a887b645f84242c2618e076da468b9",
+          "size": 8169
+        },
+        {
+          "path": "main.py",
+          "sha": "21bcc01717cc8602153e052f1504a144bd03e9d8",
+          "size": 4535
+        },
+        {
+          "path": "mockclient.py",
+          "sha": "1df7256e100f40210a4dd22670ffb983ff442aed",
+          "size": 5168
+        },
+        {
+          "path": "models.py",
+          "sha": "2db2d43be4389f44f06b9e9f8de83c6b1c13b62e",
+          "size": 9416
+        },
+        {
+          "path": "organizations.py",
+          "sha": "10eafb35668106e1912b090544b572525ee619da",
+          "size": 850
+        },
+        {
+          "path": "pytest.ini",
+          "sha": "27d3ce298caeab05d5a3dcde36f1ea13b5114019",
+          "size": 61
+        },
+        {
+          "path": "refresh_trueapi_token.ps1",
+          "sha": "d07b4bbfa56a8345abee9d398816f5fe5f14c2a6",
+          "size": 11400
+        },
+        {
+          "path": "requirements-lock.txt",
+          "sha": "02d9c4bfdd2c71504d52edcd5f8876d5dfd2637a",
+          "size": 1051
+        },
+        {
+          "path": "requirements.txt",
+          "sha": "296b78fe932fb5e8b65056abd8d621e484eb5d0b",
+          "size": 187
+        },
+        {
+          "path": "schemas.py",
+          "sha": "cd39de6c8dc91f305eba2b43990c67c4a5ece7af",
+          "size": 2363
+        },
+        {
+          "path": "service.py",
+          "sha": "e504f0b20dadf12a8ca19e5c061c776823990a37",
+          "size": 23417
+        },
+        {
+          "path": "static/admin-settings.js",
+          "sha": "f415744de9b0ffb77fc806ee340e92dfec2aa89f",
+          "size": 6006
+        },
+        {
+          "path": "static/app.js",
+          "sha": "862f6fd7e9bd8fb3b0fe13c6b8d85fe526be5e5f",
+          "size": 36262
+        },
+        {
+          "path": "static/scanner-focus.js",
+          "sha": "1439d4c6d32fe85cf579e6e1fbf8ee13e077065b",
+          "size": 1525
+        },
+        {
+          "path": "static/style.css",
+          "sha": "689cace61c7e0fdbb20edbb87e81b15a23184582",
+          "size": 16036
+        },
+        {
+          "path": "static/theme.js",
+          "sha": "2e668f90ba715a8e61588d06eb0a887d3d23136f",
+          "size": 1365
+        },
+        {
+          "path": "static/warehouse.css",
+          "sha": "ccbca45a3d90cbb79aca2930d34a1a796e91b280",
+          "size": 13950
+        },
+        {
+          "path": "static/warehouse.js",
+          "sha": "a09a4dee6c7b4d2aa2b466aba197a3a431287512",
+          "size": 54433
+        },
+        {
+          "path": "templates/_mode_nav.html",
+          "sha": "f7d3f44af127a54770ccaba9831ba2b22a175a9b",
+          "size": 578
+        },
+        {
+          "path": "templates/index.html",
+          "sha": "9298c315f3b15d1900e29cb44ad95209d55d63d4",
+          "size": 3078
+        },
+        {
+          "path": "templates/warehouse.html",
+          "sha": "8d67da99992f022eaabf2a286e45d62c67413bf4",
+          "size": 15987
+        },
+        {
+          "path": "tests/browser_warehouse.py",
+          "sha": "161d92cf1c3245419e1a110b5c77fdfb4f8e0d0c",
+          "size": 36378
+        },
+        {
+          "path": "tests/test_buildinfo.py",
+          "sha": "b858a4c636297c3ca6bbee16f738b70264f3f79f",
+          "size": 2737
+        },
+        {
+          "path": "tests/test_datamatrix.py",
+          "sha": "168d696f3614e3e45fb1dda2e692696d2afd168f",
+          "size": 8556
+        },
+        {
+          "path": "tests/test_regressions.py",
+          "sha": "a192acd66ec33a89d0e5fb86ecc9f6e26f02c902",
+          "size": 12814
+        },
+        {
+          "path": "tests/test_service.py",
+          "sha": "7cb95f8e8a8041746aef21cf4daf677722f3f4a2",
+          "size": 5373
+        },
+        {
+          "path": "tests/test_status_api.py",
+          "sha": "b3328433530987523f922aa804e14f0479bae97c",
+          "size": 2186
+        },
+        {
+          "path": "tests/test_tokens.py",
+          "sha": "02cd910343519b6eeba7f512d7692b6170125919",
+          "size": 2903
+        },
+        {
+          "path": "tests/test_trueapi.py",
+          "sha": "82361641f4fd70ea5cdd5f5a72b57ca495a64973",
+          "size": 7042
+        },
+        {
+          "path": "tests/test_verdict.py",
+          "sha": "7dbc3409c526be211b6fc7c6e1a285844a3ac453",
+          "size": 7075
+        },
+        {
+          "path": "tests/test_warehouse.py",
+          "sha": "18ea7b8e77f092c26984bc175570b37ffc8d2664",
+          "size": 54359
+        },
+        {
+          "path": "tokens.py",
+          "sha": "fcd83396ff2f571e2c37dfe63b803a2e4381bd33",
+          "size": 4396
+        },
+        {
+          "path": "trueapi.py",
+          "sha": "541c79af68526a59879780bafef5420c07e86993",
+          "size": 14308
+        },
+        {
+          "path": "warehouse_excel.py",
+          "sha": "40a2eab5b432b67ec417f4050158f1805448d9bb",
+          "size": 14482
+        },
+        {
+          "path": "warehouse_issues.py",
+          "sha": "1c692931570f0a59628c1233fd82ddd038a9dbd8",
+          "size": 9980
+        },
+        {
+          "path": "warehouse_routes.py",
+          "sha": "33f6ea0dce438763b0e2ecd3d9bb7e8788f37f74",
+          "size": 11353
+        },
+        {
+          "path": "warehouse_service.py",
+          "sha": "e7f30cdafcd2a2d9920b4537a3f2119ef66f45d1",
+          "size": 7517
+        },
+        {
+          "path": "warehouse_store.py",
+          "sha": "c865e402cbf66a2101aed29bd2c90eaa46872717",
+          "size": 20915
+        },
+        {
+          "path": "Обновить токен ЧЗ.cmd",
+          "sha": "6479536df73b06d15211912d6ea29309c8fbd55d",
+          "size": 165
+        }
+      ]
+    },
+    {
+      "repository": "AlexSapronov/km-split",
+      "commit": "847e4fbd95b046e5c0de3fabdbe23b88f8baf901",
+      "files": [
+        {
+          "path": ".env.example",
+          "sha": "f99c0c4df3cc65c91ea4f61895667020502093c4",
+          "size": 187
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha": "664806d79a1ba8aad712f3269c7db9f7b7c5957e",
+          "size": 665
+        },
+        {
+          "path": ".gitignore",
+          "sha": "a076c4d05912f10fca16819bb6e002af524b5717",
+          "size": 93
+        },
+        {
+          "path": "README.md",
+          "sha": "e1688e307af380326323f1721b4462c091faea3e",
+          "size": 24675
+        },
+        {
+          "path": "deploy/km-split.service",
+          "sha": "7b0533a7e1a92e31d4a1be634410243ec86395b6",
+          "size": 621
+        },
+        {
+          "path": "km_split/__init__.py",
+          "sha": "f09882abe3b5fde86833760ce50321c02d47baa6",
+          "size": 62
+        },
+        {
+          "path": "km_split/clients.py",
+          "sha": "c14702222c458c60f7b4797664b305b11e6bbba3",
+          "size": 11892
+        },
+        {
+          "path": "km_split/codes.py",
+          "sha": "f73855cc5378c0d77046f03127daedadb4674c03",
+          "size": 4204
+        },
+        {
+          "path": "km_split/config.py",
+          "sha": "ef1cf9b669e8445a12d7d59d7ebde3a43366d3e2",
+          "size": 4263
+        },
+        {
+          "path": "km_split/db.py",
+          "sha": "5ad1c59a34e4fea1ac2e8c1f2d78818d09f03d6c",
+          "size": 2942
+        },
+        {
+          "path": "km_split/labels.py",
+          "sha": "0abd9791ac8b71f7c7381f0a3666b9c50cb044d0",
+          "size": 4665
+        },
+        {
+          "path": "km_split/service.py",
+          "sha": "3bfe85a62161e542fa947e2487c9ba9333ce334c",
+          "size": 23216
+        },
+        {
+          "path": "main.py",
+          "sha": "ad51e08d068fd8b54708f52e0711d5b5444b2e09",
+          "size": 11495
+        },
+        {
+          "path": "organizations.example.json",
+          "sha": "cfd2a6185307b8f94bef81e934852bc4168297ce",
+          "size": 341
+        },
+        {
+          "path": "pytest.ini",
+          "sha": "8f32afa405356603b1d645297184d041babf6d1e",
+          "size": 62
+        },
+        {
+          "path": "requirements-dev.txt",
+          "sha": "1562a5decdcfa78e9c329fd492eaf68a5c078078",
+          "size": 89
+        },
+        {
+          "path": "requirements.txt",
+          "sha": "d8514bc3744ae58b1bf5cb7913373f2f0a6f7bd5",
+          "size": 117
+        },
+        {
+          "path": "scripts/backup.sh",
+          "sha": "def6767d46c78dfe4204a6b5b2e069aef241abf5",
+          "size": 1256
+        },
+        {
+          "path": "scripts/install-crypto-bridge.sh",
+          "sha": "748ca8b9781364e8bb1eae2ea1b9e15926a2f770",
+          "size": 563
+        },
+        {
+          "path": "scripts/sign-job.ps1",
+          "sha": "7d1750b87592832b650d20d210e0748d9d7b9193",
+          "size": 2479
+        },
+        {
+          "path": "static/admin.html",
+          "sha": "8d5dcfc742d8cc369c73aff71d8f0a36b04d2973",
+          "size": 2317
+        },
+        {
+          "path": "static/admin.js",
+          "sha": "0719a16bb90a6154e70706b1418d9a382963c4a7",
+          "size": 5481
+        },
+        {
+          "path": "static/app.js",
+          "sha": "e76e6aeae77d948948832f74a66621329115f1fc",
+          "size": 19188
+        },
+        {
+          "path": "static/assets/chestny-znak.png",
+          "sha": "f5f9a76fa5b6602b37894322aeb71bcbf85c8585",
+          "size": 1618
+        },
+        {
+          "path": "static/index.html",
+          "sha": "c0ca2b7e4602efdc0ae4eea137428f2a910136f8",
+          "size": 6583
+        },
+        {
+          "path": "static/settings.css",
+          "sha": "886472ff63ae9061dc5951b71792451a3ba1191c",
+          "size": 669
+        },
+        {
+          "path": "static/style.css",
+          "sha": "6e11455912bda9ae5ad015eab69ec2cd27297663",
+          "size": 8722
+        },
+        {
+          "path": "static/theme.js",
+          "sha": "928d24e47ef93ca24d785a0164b3ae0e05a00a45",
+          "size": 1366
+        },
+        {
+          "path": "tests/__init__.py",
+          "sha": "07b08277a885fe6b656673fcb75c69a6cc72ede4",
+          "size": 75
+        },
+        {
+          "path": "tests/browser_live.py",
+          "sha": "eb3156c763814decdae3d96208fca2392b8e1c86",
+          "size": 9602
+        },
+        {
+          "path": "tests/browser_smoke.py",
+          "sha": "eeb4cfb5f500b0e2a3f48c93fac409b132c5d94e",
+          "size": 6984
+        },
+        {
+          "path": "tests/live_fixture.py",
+          "sha": "afbaac71a79fba9f86fbc41724a6f838771048de",
+          "size": 4471
+        },
+        {
+          "path": "tests/test_live_acceptance.py",
+          "sha": "139e2b5ce86f7a2536248303709cf050c9ef0c68",
+          "size": 3337
+        },
+        {
+          "path": "tests/test_remote_errors.py",
+          "sha": "9cce9482668a9e3789cc594c424dd4c8e3d13319",
+          "size": 2719
+        },
+        {
+          "path": "tests/test_setup.py",
+          "sha": "881bd6719c39bc60e450ba943ab6ec8364d3d9a2",
+          "size": 6990
+        },
+        {
+          "path": "tests/test_workflow.py",
+          "sha": "79921302d4d372f751d3f25cea4e6c52de3f8328",
+          "size": 15001
+        }
+      ]
+    }
+  ]
+}

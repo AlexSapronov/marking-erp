@@ -1,0 +1,344 @@
+[
+  {
+    "repo": "gis-trueapi",
+    "file": "trueapi.py",
+    "line": 189,
+    "wrapper": "_post_json",
+    "method": "POST",
+    "path_expression": "/api/v3/true-api/auth/simpleSignIn",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "gis-trueapi",
+    "file": "trueapi.py",
+    "line": 219,
+    "wrapper": "_post_json",
+    "method": "POST",
+    "path_expression": "/api/v3/true-api/cises/info",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "gis-trueapi",
+    "file": "trueapi.py",
+    "line": 255,
+    "wrapper": "_post_json",
+    "method": "POST",
+    "path_expression": "/api/v4/true-api/product/info",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "gis-trueapi",
+    "file": "trueapi.py",
+    "line": 289,
+    "wrapper": "_post_json",
+    "method": "POST",
+    "path_expression": "/api/v4/true-api/cises/search",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "gis-trueapi",
+    "file": "trueapi.py",
+    "line": 310,
+    "wrapper": "_post_json",
+    "method": "POST",
+    "path_expression": "/cises/check",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/clients.py",
+    "line": 112,
+    "wrapper": "request",
+    "method": "POST",
+    "path_expression": "org['true_api_url'] + '/api/v3/true-api/cises/info'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/clients.py",
+    "line": 138,
+    "wrapper": "request",
+    "method": "POST",
+    "path_expression": "org['true_api_url'] + '/api/v4/true-api/product/info'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/clients.py",
+    "line": 156,
+    "wrapper": "request",
+    "method": "GET",
+    "path_expression": "org['true_api_url'] + '/api/v3/true-api/auth/key'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 201,
+    "wrapper": "oms",
+    "method": "POST",
+    "path_expression": "/api/v3/order",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 201,
+    "wrapper": "oms",
+    "method": "POST",
+    "path_expression": "/api/v3/utilisation",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 242,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "/api/v3/order/status",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 256,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "/api/v3/order/status",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 270,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "/api/v3/codes",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 306,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "/api/v3/report/info",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "km-split",
+    "file": "km_split/service.py",
+    "line": 311,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "/api/v3/receipts/receipt",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 79,
+    "wrapper": "request",
+    "method": "dynamic",
+    "path_expression": "self.settings.oms_url + '/api/v3/' + path",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 90,
+    "wrapper": "request",
+    "method": "POST",
+    "path_expression": "self.settings.true_url + '/api/v3/true-api/cises/info'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 181,
+    "wrapper": "oms",
+    "method": "POST",
+    "path_expression": "order",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 184,
+    "wrapper": "oms",
+    "method": "POST",
+    "path_expression": "utilisation",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 187,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "codes",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 202,
+    "wrapper": "request",
+    "method": "POST",
+    "path_expression": "self.settings.true_url + '/api/v3/true-api/lk/documents/create'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 222,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "order/status",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 229,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "report/info",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 236,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "receipts/receipt",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 247,
+    "wrapper": "request",
+    "method": "GET",
+    "path_expression": "self.settings.true_url + f'/api/v4/true-api/doc/{ext}/info'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 267,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "order/codes/blocks",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 281,
+    "wrapper": "oms",
+    "method": "GET",
+    "path_expression": "order/codes/retry",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "marking-bm",
+    "file": "marking_bm/gateway.py",
+    "line": 291,
+    "wrapper": "request",
+    "method": "GET",
+    "path_expression": "self.settings.true_url + '/api/v3/true-api/auth/key'",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 92,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v3/feed-product",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 264,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v3/attributes",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 516,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v4/product-list",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 528,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v3/feed-product",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 558,
+    "wrapper": "call",
+    "method": "POST",
+    "path_expression": "/v3/feed-product-document",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 577,
+    "wrapper": "call",
+    "method": "POST",
+    "path_expression": "/v3/feed",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 581,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v3/feed-moderation",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 587,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v3/generate-gtins",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 599,
+    "wrapper": "call",
+    "method": "POST",
+    "path_expression": "/v3/feed-product-sign-pkcs",
+    "status": "UNVERIFIED"
+  },
+  {
+    "repo": "nk-manager",
+    "file": "nk_manager/nk.py",
+    "line": 608,
+    "wrapper": "call",
+    "method": "GET",
+    "path_expression": "/v3/feed-status",
+    "status": "UNVERIFIED"
+  }
+]
