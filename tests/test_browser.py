@@ -502,3 +502,92 @@ def test_profile_revokes_other_context_but_preserves_current_and_foreign(page,li
         expect(second.locator('#page-content')).to_be_empty()
     finally:
         for context in contexts:context.close()
+
+
+def test_documents_manual_prepare_archive_themes_mobile(page,live_app):
+    from playwright.sync_api import expect
+    login(page,'bm');page.locator('#documents-link').click()
+    page.get_by_role('button',name='+ Новая накладная',exact=True).click()
+    page.get_by_label('Номер накладной',exact=True).fill('INV-BROWSER-01')
+    page.get_by_label('Поставщик',exact=True).fill('Поставщик А')
+    for name,value in [('PN','PN/А-1'),('GTIN','04640638349704'),('Штук в этикетке','10'),('Этикеток','3'),('ТН ВЭД','8542399000')]:
+        page.get_by_label(name+', строка 1',exact=True).fill(value)
+    capture(page,'documents-editor-light')
+    page.get_by_role('button',name='Сохранить черновик',exact=True).click()
+    expect(page.locator('#document-dialog')).to_be_hidden()
+    row=page.locator('#document-list tbody tr');expect(row).to_have_count(1)
+    expect(row).to_contain_text('INV-BROWSER-01');capture(page,'documents-list-light')
+    page.locator('#theme').click();capture(page,'documents-list-dark')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page,'documents-list-mobile')
+    page.get_by_role('button',name='Открыть',exact=True).click()
+    expect(page.get_by_role('button',name='Проверить состав',exact=True)).to_be_visible()
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page,'documents-detail-mobile')
+    page.get_by_role('button',name='Проверить состав',exact=True).click()
+    expect(page.locator('#document-dialog')).to_be_hidden()
+    expect(row).to_contain_text('Состав проверен локально')
+    page.get_by_role('button',name='Открыть',exact=True).click()
+    page.get_by_role('button',name='История накладной',exact=True).click()
+    expect(page.locator('#document-history')).to_contain_text('Версия 2')
+    page.get_by_label('Подтвердите номер накладной',exact=True).fill('INV-BROWSER-01')
+    page.get_by_label('Причина',exact=True).fill('Документ больше не нужен')
+    page.get_by_role('button',name='Документ не нужен — в архив',exact=True).click()
+    expect(page.locator('#document-dialog')).to_be_hidden()
+    expect(row).to_have_count(0)
+    page.get_by_label('Раздел',exact=True).select_option('archived')
+    expect(row).to_have_count(1)
+    page.get_by_role('button',name='Открыть',exact=True).click()
+    expect(page.get_by_role('button',name='Вернуть в черновики',exact=True)).to_have_count(0)
+    expect(page.get_by_role('button',name='Редактировать состав',exact=True)).to_have_count(0)
+
+
+def test_documents_excel_mapping_preview_then_commit(page,live_app):
+    from playwright.sync_api import expect
+    from marking_erp.invoice_excel import xlsx
+    login(page,'bm');page.locator('#documents-link').click()
+    page.get_by_role('button',name='+ Новая накладная',exact=True).click()
+    page.get_by_label('Номер накладной',exact=True).fill('INV-XLSX')
+    page.get_by_label('Поставщик',exact=True).fill('Поставщик Excel')
+    content=xlsx({'Товары':[['A','B','C','D','E'],['PN/Excel','04640638349704',10,3,'8542399000']]})
+    page.get_by_label('Файл Excel',exact=True).set_input_files({'name':'invoice.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':content})
+    page.get_by_role('button',name='Предпросмотр Excel',exact=True).click()
+    expect(page.get_by_label('Лист Excel',exact=True)).to_be_visible()
+    for name,value in [('PN','0'),('GTIN','1'),('Штук в этикетке','2'),('Этикеток','3'),('ТН ВЭД','4')]:
+        page.get_by_label(name,exact=True).select_option(value)
+    capture(page,'documents-import-mapping')
+    page.get_by_role('button',name='Проверить сопоставление',exact=True).click()
+    expect(page.get_by_role('button',name='Применить строки к черновику',exact=True)).to_be_visible()
+    page.get_by_role('button',name='Применить строки к черновику',exact=True).click()
+    expect(page.get_by_label('PN, строка 1',exact=True)).to_have_value('PN/Excel')
+    page.get_by_role('button',name='Сохранить черновик',exact=True).click()
+    expect(page.locator('#document-dialog')).to_be_hidden()
+    row=page.locator('#document-list tbody tr');expect(row).to_have_count(1)
+    result=page.request.get(live_app['base']+'/api/documents/'+row.get_attribute('data-document-id')).json()
+    assert result['document']['lines'][0]['labels']==3
+    assert result['document']['lines'][0]['quantity']==10
+    assert result['external_dispatch_available'] is False
+
+
+def test_documents_dirty_close_network_and_live_revoke(page,live_app,engine):
+    from playwright.sync_api import expect
+    login(page,'bm');page.locator('#documents-link').click()
+    page.get_by_role('button',name='+ Новая накладная',exact=True).click()
+    page.get_by_label('Номер накладной',exact=True).fill('Unsaved')
+    page.once('dialog',lambda dialog:dialog.dismiss())
+    page.locator('#document-dialog [data-close]').click()
+    expect(page.locator('#document-dialog')).to_be_visible()
+    page.once('dialog',lambda dialog:dialog.accept())
+    page.locator('#document-dialog [data-close]').click()
+    expect(page.locator('#document-dialog')).to_be_hidden()
+    page.context.set_offline(True);page.get_by_role('button',name='Обновить накладные',exact=True).click()
+    expect(page.locator('#notice')).to_contain_text('Не удалось получить ответ')
+    page.context.set_offline(False);page.get_by_role('button',name='Обновить накладные',exact=True).click()
+    page.get_by_role('button',name='+ Новая накладная',exact=True).click()
+    page.get_by_label('Номер накладной',exact=True).fill('Secret draft')
+    with engine.begin() as c:c.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='bm' AND permission_id='marking.documents.view'"))
+    page.evaluate("window.dispatchEvent(new Event('focus'))")
+    expect(page.locator('#documents-link')).to_be_hidden()
+    expect(page.locator('#document-dialog')).to_be_hidden()
+    expect(page.locator('#document-content')).to_be_empty()

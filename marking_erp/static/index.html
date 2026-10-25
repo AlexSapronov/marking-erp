@@ -25,7 +25,8 @@
 </section>
 <div id="workspace" class="workspace" hidden>
   <aside class="sidebar"><a class="brand" href="/" data-nav><span class="brand-mark">M</span><span>Marking<span class="brand-erp">ERP</span></span></a>
-    <p class="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</p><nav aria-label="Главное меню"><a href="/" data-nav>Рабочее место</a><a href="/profile" data-nav>Мой профиль</a><a href="/users" data-nav id="users-link" hidden>Пользователи</a><a href="/operations" data-nav id="operations-link" hidden>Операции</a><a href="/codes" data-nav id="codes-link" hidden>Реестр КМ</a><a href="/groups" data-nav id="groups-link" hidden>Группы и права</a><a href="/rules" data-nav id="rules-link" hidden>Бизнес-правила</a><a href="/audit" data-nav id="audit-link" hidden>Журнал аудита</a>
+    <p class="nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</p><nav aria-label="Главное меню"><a href="/" data-nav>Рабочее место</a><a href="/documents" data-nav id="documents-link" hidden>Накладные БМ</a>
+        <a href="/profile" data-nav>Мой профиль</a><a href="/users" data-nav id="users-link" hidden>Пользователи</a><a href="/operations" data-nav id="operations-link" hidden>Операции</a><a href="/codes" data-nav id="codes-link" hidden>Реестр КМ</a><a href="/groups" data-nav id="groups-link" hidden>Группы и права</a><a href="/rules" data-nav id="rules-link" hidden>Бизнес-правила</a><a href="/audit" data-nav id="audit-link" hidden>Журнал аудита</a>
         <a href="/system" data-nav id="system-link" hidden>Состояние системы</a></nav>
     <div class="sidebar-footer"><span class="status-dot"></span>Личная сессия</div>
   </aside>
@@ -72,6 +73,7 @@
 <dialog id="operation-dialog" class="configuration-dialog" aria-labelledby="operation-title"><div class="dialog-heading"><h2 id="operation-title">Операция</h2><button type="button" data-close="operation-dialog" aria-label="Закрыть">✕</button></div><div id="operation-content"></div></dialog>
 <dialog id="code-dialog" class="configuration-dialog" aria-labelledby="code-title"><div class="dialog-heading"><h2 id="code-title">История КМ</h2><button type="button" data-close="code-dialog" aria-label="Закрыть">✕</button></div><div id="code-content"></div></dialog>
 <dialog id="configuration-dialog" class="configuration-dialog" aria-labelledby="configuration-title"><div class="dialog-heading"><h2 id="configuration-title">Изменения</h2><button type="button" data-close="configuration-dialog" aria-label="Закрыть">✕</button></div><div id="configuration-content"></div></dialog>
+<dialog id="document-dialog" class="configuration-dialog" aria-labelledby="document-title"><div class="dialog-heading"><h2 id="document-title">Накладная</h2><button type="button" data-close="document-dialog" aria-label="Закрыть">✕</button></div><div id="document-content"></div></dialog>
 <dialog id="confirm-dialog" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-message" class="muted"></p><div class="dialog-actions"><button value="cancel">Отмена</button><button value="ok" id="confirm-ok" class="danger">Подтвердить</button></div></form></dialog>
 <noscript>Для работы Marking ERP включите JavaScript.</noscript>
 </body></html>
