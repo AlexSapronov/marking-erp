@@ -44,6 +44,8 @@ jobs:
         run: |
           mkdir -p /tmp/erp-bundle
           tar -xzf release-dist/marking-erp-"$GITHUB_SHA".tar.gz -C /tmp/erp-bundle
+          sudo install -d -o root -g root -m 0755 /opt/marking-erp /opt/marking-erp/releases
+          sudo stat -c "%U:%G %a %n" /opt/marking-erp /opt/marking-erp/releases
           sudo python3.12 /tmp/erp-bundle/marking-erp-"$GITHUB_SHA"/install-release.py --bundle /tmp/erp-bundle/marking-erp-"$GITHUB_SHA"
       - name: Test real systemd HTTPS and recovery
         run: |

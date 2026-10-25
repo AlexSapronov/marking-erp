@@ -121,6 +121,7 @@ sudo -u postgres psql -X -d postgres -c 'SHOW listen_addresses;'
 ERP_RELEASE_SHA=ВСТАВЬТЕ_40_СИМВОЛОВ_SHA
 ERP_RELEASE=/opt/marking-erp/releases/$ERP_RELEASE_SHA
 tar -xzf "marking-erp-$ERP_RELEASE_SHA.tar.gz"
+sudo install -d -o root -g root -m 0755 /opt/marking-erp /opt/marking-erp/releases
 sudo python3.12 "marking-erp-$ERP_RELEASE_SHA/install-release.py" --bundle "$PWD/marking-erp-$ERP_RELEASE_SHA"
 ```
 
