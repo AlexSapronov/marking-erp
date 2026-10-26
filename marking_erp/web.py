@@ -15,6 +15,7 @@ from .operation_routes import install_operations
 from .system_routes import install_system
 from .audit_routes import install_audit
 from .document_routes import install_documents
+from .warehouse_routes import install_warehouse
 from importlib.resources import files
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -65,6 +66,7 @@ def create_app(settings=None, engine=None):
     install_system(app,app.state.auth_dependency,settings,engine)
     install_audit(app,app.state.auth_dependency)
     install_documents(app,app.state.auth_dependency)
+    install_warehouse(app,app.state.auth_dependency)
     static = files("marking_erp").joinpath("static")
     app.mount("/assets", StaticFiles(directory=str(static)), name="assets")
 
@@ -79,6 +81,9 @@ def create_app(settings=None, engine=None):
     @app.get("/system")
     @app.get("/audit")
     @app.get("/documents")
+    @app.get("/logistics")
+    @app.get("/receipt")
+    @app.get("/shipment")
     def shell():
         # Public shell contains no account data. All data/actions require the API session.
         return FileResponse(str(static.joinpath("index.html")))

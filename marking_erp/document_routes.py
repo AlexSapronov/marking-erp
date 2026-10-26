@@ -85,6 +85,8 @@ def install_documents(app,actor):
         return dict(doc)
 
     def no_external(c,id):
+        if c.execute(text("SELECT EXISTS(SELECT 1 FROM warehouse_tasks WHERE source_id=:id AND state<>'cancelled')"),{'id':id}).scalar_one():
+            raise HTTPException(409,'Накладная передана на склад. Сначала отмените складские задания через логиста.')
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM external_operations WHERE target_id=:id AND state NOT IN ('rejected','cancelled_before_dispatch'))"),{'id':id}).scalar_one():
             raise HTTPException(409,'У документа есть внешние операции. Требуется разбор фактического состояния.')
 

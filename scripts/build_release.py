@@ -43,6 +43,7 @@ print(json.dumps(sorted([d.metadata['Name']+'=='+d.version for d in importlib.me
         shutil.copy2(repo/'deploy/install_release.py',bundle/'install-release.py')
         shutil.copy2(repo/'docs/DEPLOY-VPS.md',bundle/'DEPLOY-VPS.md')
         shutil.copy2(repo/'docs/DELIVERY-STATUS.md',bundle/'DELIVERY-STATUS.md')
+        shutil.copy2(repo/'docs/MVP-WAREHOUSE.md',bundle/'MVP-WAREHOUSE.md')
         release={'sha':a.sha,'schema_revision':schema_head(),'os':'ubuntu','version':'24.04','machine':'x86_64','python':'3.12'}
         (bundle/'release.json').write_text(json.dumps(release,indent=2)+'\n')
         hashes={str(path.relative_to(bundle)):hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(bundle.rglob('*')) if path.is_file()}

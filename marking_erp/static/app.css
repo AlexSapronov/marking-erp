@@ -26,3 +26,12 @@ textarea{font:inherit;min-height:72px;width:100%;padding:12px;border:1px solid v
 #document-dialog{width:min(1280px,calc(100vw - 32px))}.document-lines{min-width:1100px}.document-lines td:nth-child(2),.document-lines td:nth-child(5){white-space:nowrap}.document-scroll-hint{display:none}
 @media(max-width:760px){.document-scroll-hint{display:block;color:var(--muted)}}
 .document-filters{align-items:end}#document-list table{min-width:800px}#document-list td:first-child strong{white-space:nowrap}
+
+.warehouse-task{display:flex;align-items:center;justify-content:space-between;gap:1.2rem;padding:1.2rem 0;border-bottom:1px solid var(--border)}
+.warehouse-task h2{margin:0;font-size:1.15rem}.warehouse-task progress{width:100%;max-width:26rem;accent-color:var(--primary)}
+.warehouse-metrics{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;padding:1rem 0}.warehouse-metrics strong{font-size:1.7rem}.warehouse-metrics progress{width:100%;height:1.1rem}
+.warehouse-scan{display:grid;gap:.8rem;padding:1rem;border:1px solid var(--border);border-radius:12px;margin:1rem 0}.warehouse-scan input{min-height:54px;font-size:1.15rem}
+.warehouse-lines{min-width:700px}.warehouse-lines td:nth-child(2){white-space:nowrap;font-family:monospace}.warehouse-done{background:color-mix(in srgb,#22a06b 9%,transparent)}
+.warehouse-scan-row{display:flex;justify-content:space-between;gap:.7rem;padding:.65rem 0;border-bottom:1px solid var(--border)}.warehouse-transition{display:grid;gap:.8rem}
+#warehouse-dialog{width:min(1100px,96vw);max-width:96vw}#warehouse-content{overflow-wrap:anywhere}
+@media(max-width:600px){.warehouse-task{align-items:stretch;flex-direction:column}.warehouse-task button{min-height:48px}.warehouse-scan-row{flex-direction:column}.warehouse-scan button{min-height:52px}}
