@@ -157,9 +157,9 @@ def install_documents(app,actor):
             FROM bm_documents d WHERE d.organization_id=:org AND (d.state='archived')=:archived
             AND (:grant='all' OR (:grant='own' AND d.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
             AND (:view='all' OR (:view='own' AND d.owner_id=:user) OR (:view='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
-            AND (CAST(:before AS uuid) IS NULL OR d.id<CAST(:before AS uuid))
+            AND (CAST(:before AS uuid) IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM bm_documents WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (d.number ILIKE :q ESCAPE '!' OR d.supplier ILIKE :q ESCAPE '!' OR EXISTS(SELECT 1 FROM jsonb_array_elements(d.lines) l WHERE l->>'pn' ILIKE :q ESCAPE '!'))
-            ORDER BY d.id DESC LIMIT 26'''),{'org':organization_id,'archived':archived,'grant':grant,'view':view,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            ORDER BY d.created_at DESC,d.id DESC LIMIT 26'''),{'org':organization_id,'archived':archived,'grant':grant,'view':view,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'documents':[dict(r) for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None,'external_dispatch_available':False}
 
     @app.post('/api/documents')
