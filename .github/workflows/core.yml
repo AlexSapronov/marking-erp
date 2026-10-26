@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -36,6 +36,31 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: sudo apt-get install -y postgresql-client-16
       - run: python -m pytest -q --junitxml=test-results.xml
+      - name: Install deployment smoke dependencies
+        run: sudo apt-get install -y nginx openssl fonts-dejavu-core
+      - name: Build pinned offline release
+        run: python scripts/build_release.py --sha "$GITHUB_SHA" --output release-dist
+      - name: Install offline release into fresh runner
+        run: |
+          mkdir -p /tmp/erp-bundle
+          tar -xzf release-dist/marking-erp-"$GITHUB_SHA".tar.gz -C /tmp/erp-bundle
+          sudo install -d -o root -g root -m 0755 /opt/marking-erp /opt/marking-erp/releases
+          sudo stat -c "%U:%G %a %n" /opt/marking-erp /opt/marking-erp/releases
+          sudo python3.12 /tmp/erp-bundle/marking-erp-"$GITHUB_SHA"/install-release.py --bundle /tmp/erp-bundle/marking-erp-"$GITHUB_SHA"
+      - name: Test real systemd HTTPS and recovery
+        run: |
+          export ERP_RELEASE_SHA="$GITHUB_SHA"
+          sudo --preserve-env=GITHUB_ACTIONS,ERP_TEST_DATABASE_URL,ERP_RELEASE_SHA /opt/marking-erp/releases/"$GITHUB_SHA"/venv/bin/python scripts/smoke_deploy.py
+      - name: Deployment diagnostics on failure
+        if: failure()
+        run: |
+          sudo journalctl -u marking-erp --no-pager -n 80
+          if command -v nginx >/dev/null; then sudo nginx -t; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu24-python312-offline-${{ github.sha }}
+          path: release-dist
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -101,3 +101,28 @@ def test_systemd_unit_syntax_with_placeholder_executable(tmp_path):
     target.write_text(unit.read_text().replace('/opt/marking-erp/current/venv/bin/marking-erp-service', '/usr/bin/true'))
     result = subprocess.run([analyze, 'verify', '--man=no', str(target)], capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize('change', ['valid','foreign_user','extra_group','owner_write','mask_write','other_read','truncated','version'])
+def test_systemd_acl_accepts_only_root_and_service_read_access(monkeypatch,change):
+    import struct
+    uid=12345;undefined=0xffffffff
+    entries=[(1,4,undefined),(2,4,uid),(4,0,undefined),(16,4,undefined),(32,0,undefined)]
+    if change=='foreign_user':entries[1]=(2,4,54321)
+    if change=='extra_group':entries.insert(3,(8,4,123))
+    if change=='owner_write':entries[0]=(1,6,undefined)
+    if change=='mask_write':entries[3]=(16,6,undefined)
+    if change=='other_read':entries[4]=(32,4,undefined)
+    value=struct.pack('<I',3 if change=='version' else 2)+b''.join(struct.pack('<HHI',*entry) for entry in entries)
+    if change=='truncated':value=value[:-1]
+    monkeypatch.setattr(os,'getxattr',lambda *_:value)
+    assert service.credential_acl_is_private(0,uid)==(change=='valid')
+
+
+def test_acl_mode_is_only_allowed_for_systemd_credential_context(tmp_path,monkeypatch):
+    import struct
+    path=config(tmp_path);path.chmod(0o440);undefined=0xffffffff
+    value=struct.pack('<I',2)+b''.join(struct.pack('<HHI',*entry) for entry in [(1,4,undefined),(2,4,os.getuid()),(4,0,undefined),(16,4,undefined),(32,0,undefined)])
+    monkeypatch.setattr(os,'getxattr',lambda *_:value)
+    with pytest.raises(service.ServiceError,match='service_config_permissions'):service.load_settings(path)
+    assert service.load_settings(path,systemd_credential=True).build_sha=='a'*40
