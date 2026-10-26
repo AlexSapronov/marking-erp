@@ -63,7 +63,15 @@ def install_auth(app, engine, settings):
                 # The bounded Excel preview is read-only; do not hold the global
                 # mutation lock while a client streams its file. CSRF still applies.
                 if request.url.path != "/api/documents/import-preview":
-                    connection.execute(text("SELECT pg_advisory_xact_lock(683273529)"))
+                    # Independent scan transactions may proceed concurrently.
+                    # RBAC/session edits, archive, close and dispatch retain the
+                    # exclusive fence and wait for all active scans to finish.
+                    path=request.url.path
+                    warehouse_scan=(path.startswith('/api/warehouse/tasks/') and
+                                    ((request.method=='POST' and path.endswith('/scans')) or
+                                     (request.method=='DELETE' and '/scans/' in path)))
+                    lock='pg_advisory_xact_lock_shared' if warehouse_scan else 'pg_advisory_xact_lock'
+                    connection.execute(text('SELECT '+lock+'(683273529)'))
             current = auth.load_actor(connection, token)
             if request.method not in ("GET", "HEAD", "OPTIONS") and not hmac.compare_digest(
                     request.headers.get("X-CSRF-Token", ""), auth.csrf_token(token)):

@@ -84,3 +84,27 @@ def test_task_and_invoice_lists_use_creation_time_with_uuid_cursor(env,engine):
     with client(env) as c:
         login(c);url='/api/documents?organization_id='+str(env[1]);assert [r['id'] for r in c.get(url).json()['documents']]==[doc2,doc1]
         assert [r['id'] for r in c.get(url+'&before_id='+doc2).json()['documents']]==[doc1]
+
+
+def test_scan_of_another_task_does_not_wait_for_locked_task(env,engine):
+    import time
+    first,_,_=setup(env);second,_,_=setup(env)
+    with client(env) as a,client(env) as b,engine.connect() as db:
+        login(a,'tsd');login(b,'tsd')
+        tx=db.begin();db.execute(text('SELECT id FROM warehouse_tasks WHERE id=:id FOR UPDATE'),{'id':first})
+        pool=ThreadPoolExecutor(max_workers=2)
+        try:
+            blocked=pool.submit(scan,a,first)
+            deadline=time.monotonic()+3
+            while time.monotonic()<deadline:
+                with engine.connect() as observer:
+                    locked=observer.execute(text("SELECT count(*) FROM pg_locks WHERE locktype='advisory' AND objid=683273529 AND granted")).scalar_one()
+                if locked:break
+                time.sleep(.02)
+            assert locked,'First scan did not reach the authorization fence'
+            independent=pool.submit(scan,b,second)
+            response=independent.result(timeout=3)
+            assert response.status_code==200,response.text
+        finally:
+            tx.rollback();pool.shutdown(wait=True)
+        assert blocked.result().status_code==200
