@@ -188,6 +188,8 @@ def validate_rows(rows, row_numbers=None, merge=True):
             if not isinstance(row, (list, tuple)) or len(row) != 5:
                 raise ValueError("Нужно пять полей")
             pn, gtin, quantity, labels, tnved = row
+            if isinstance(pn,(int,float,Decimal)) and not isinstance(pn,bool):
+                warnings.append(f'Строка {n}: PN сохранён в Excel как число; ведущие нули могли быть потеряны. Сверьте артикул с исходным документом и используйте текстовый формат PN.')
             pn = pn_text(pn)
             gtin, gtin_padded = identifier(gtin, 14, "GTIN")
             if not valid_gtin(gtin):

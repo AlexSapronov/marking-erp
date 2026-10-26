@@ -132,9 +132,9 @@ def install_warehouse(app, actor):
             (SELECT count(*) FROM warehouse_scans s WHERE s.task_id=t.id AND s.removed_at IS NULL) AS scanned,
             (SELECT sum((l->>'labels')::bigint) FROM jsonb_array_elements(t.lines) l) AS expected
             FROM warehouse_tasks t WHERE t.organization_id=:org AND t.kind=:kind
-            AND (:closed OR t.state='open') AND (CAST(:before AS uuid) IS NULL OR t.id<CAST(:before AS uuid))
+            AND (:closed OR t.state='open') AND (CAST(:before AS uuid) IS NULL OR (t.created_at,t.id)<(SELECT created_at,id FROM warehouse_tasks WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (:grant='all' OR (:grant='own' AND t.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=t.id AND a.user_id=:user)))
-            AND (t.number ILIKE :q ESCAPE '!' OR t.supplier ILIKE :q ESCAPE '!') ORDER BY t.id DESC LIMIT 26'''), {'org':organization_id,'kind':kind,'closed':closed,'grant':grant,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            AND (t.number ILIKE :q ESCAPE '!' OR t.supplier ILIKE :q ESCAPE '!') ORDER BY t.created_at DESC,t.id DESC LIMIT 26'''), {'org':organization_id,'kind':kind,'closed':closed,'grant':grant,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'tasks':[{k:v for k,v in r.items() if k not in ('organization_id','owner_id','kind')} for r in rows[:25] if permitted(current,r,logistics=logistics)], 'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
 
     @app.get('/api/warehouse/tasks/{id}')
@@ -149,7 +149,7 @@ def install_warehouse(app, actor):
 
     @app.post('/api/warehouse/tasks/{id}/scans')
     def scan(id:UUID, body:Scan, current=dep):
-        task=get(current,id,True);require(current,task,'scan');writable(current,task);c=current.connection
+        task=get(current,id,True);require(current,task,'scan');c=current.connection
         try: parsed=gs1.parse(body.raw.encode('ascii'),scanner=True)
         except (ValueError,UnicodeError) as error: raise HTTPException(422, str(error) if isinstance(error,ValueError) else 'Переключите сканер на английскую раскладку') from None
         quantity=parsed.quantity or 1
@@ -157,6 +157,7 @@ def install_warehouse(app, actor):
         if existing:
             if existing['task_id']==id and bytes(existing['payload'])==parsed.normalized and existing['removed_at'] is None and (body.line_index is None or body.line_index==existing['line_index']): return {'id':existing['id'],'replayed':True}
             raise HTTPException(409, 'Запрос уже использован. Обновите задание.')
+        writable(current,task)
         duplicate=c.execute(text('SELECT id FROM warehouse_scans WHERE task_id=:id AND cis=:cis AND removed_at IS NULL'), {'id':id,'cis':parsed.cis}).scalar_one_or_none()
         if duplicate: raise HTTPException(409, {'code':'duplicate_scan','message':'Этот КМ уже отсканирован. При ошибке удалите ранее принятый скан.','scan_id':str(duplicate)})
         candidates=[i for i,r in enumerate(task['lines']) if r['gtin']==parsed.gtin and r['quantity']==quantity]

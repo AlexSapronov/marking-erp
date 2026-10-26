@@ -16,3 +16,13 @@ def test_incomplete_draft_is_not_a_verified_product():
     rows,_=normalize_lines([{'pn':'A','gtin':'','tnved':'','quantity':'1,0','labels':'2'}])
     assert rows[0]=={'pn':'A','gtin':'','tnved':'','quantity':1,'labels':2}
     with pytest.raises(HTTPException):normalize_lines([{**rows[0],'quantity':'1.5'}])
+
+
+def test_numeric_pn_warns_about_lost_leading_zeros():
+    from marking_erp.invoice_excel import validate_rows
+    result=validate_rows([[123,'04640638349704',10,1,'8542399000']])
+    assert result['lines'][0]['pn']=='123'
+    assert any('ведущие нули' in warning and 'PN' in warning for warning in result['warnings'])
+    text=validate_rows([['00123','04640638349704',10,1,'8542399000']])
+    assert text['lines'][0]['pn']=='00123'
+    assert not any('PN сохранён' in warning for warning in text['warnings'])
