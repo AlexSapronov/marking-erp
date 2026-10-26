@@ -20,7 +20,7 @@ def install_operations(app,actor):
             AND (:state='' OR o.state=:state) AND (CAST(:before AS uuid) IS NULL OR o.id<CAST(:before AS uuid)) ORDER BY o.id DESC LIMIT 26'''),
             {'org':organization_id,'scope':grant,'user':current.id,'state':state,'before':str(before_id) if before_id else None}).mappings().all()
         return {'operations':[dict(r) for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None,'dispatch_available':False,
-                'notice':'Продуктивные адаптеры и валидатор ГОСТ-подписи пока не подключены.'}
+                'notice':'Live-адаптеры доступны после настройки подключений. Подпись требует зарегистрированного доверенного Windows-верификатора.'}
 
     @app.get('/api/operations/{id}')
     def detail(id:UUID,current=dependency):

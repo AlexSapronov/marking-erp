@@ -35,3 +35,7 @@ textarea{font:inherit;min-height:72px;width:100%;padding:12px;border:1px solid v
 .warehouse-scan-row{display:flex;justify-content:space-between;gap:.7rem;padding:.65rem 0;border-bottom:1px solid var(--border)}.warehouse-transition{display:grid;gap:.8rem}
 #warehouse-dialog{width:min(1100px,96vw);max-width:96vw}#warehouse-content{overflow-wrap:anywhere}
 @media(max-width:600px){.warehouse-task{align-items:stretch;flex-direction:column}.warehouse-task button{min-height:48px}.warehouse-scan-row{flex-direction:column}.warehouse-scan button{min-height:52px}}
+
+.business-form{display:grid;gap:16px;max-width:900px}.business-form>p{line-height:1.55}.business-form input[type=checkbox]{width:24px;min-height:24px}.business-attributes{display:grid;gap:14px}.business-bulk{flex-wrap:wrap;margin:14px 0}.business-reprints{display:grid;gap:12px}#business-dialog{width:min(1050px,96vw);max-width:96vw}#business-content{display:grid;gap:14px;overflow-wrap:anywhere}.business-check-result{display:grid;gap:10px;padding:16px;border:1px solid var(--border);border-radius:10px}.sidebar nav{overflow-y:auto;max-height:calc(100dvh - 180px)}
+
+.table-panel input[type=checkbox]{width:20px;height:20px;min-height:20px;accent-color:var(--primary)}

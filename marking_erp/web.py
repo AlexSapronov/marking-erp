@@ -28,7 +28,10 @@ def create_app(settings=None, engine=None):
 
     @asynccontextmanager
     async def lifespan(app):
-        yield
+        from .business.worker import BusinessWorker
+        worker=BusinessWorker(engine,settings);worker.start()
+        try:yield
+        finally:worker.close()
         if owned_engine:
             engine.dispose()
 
@@ -37,7 +40,7 @@ def create_app(settings=None, engine=None):
 
     @app.middleware("http")
     async def security(request: Request, call_next):
-        if request.method not in ("GET", "HEAD", "OPTIONS") and request.url.path not in ("/api/signer/claim", "/api/signer/result"):
+        if request.method not in ("GET", "HEAD", "OPTIONS") and request.url.path not in ("/api/signer/claim", "/api/signer/result", "/api/signer/verification"):
             if request.headers.get("origin") != settings.public_url or request.headers.get("X-Requested-With") != "marking-erp":
                 return JSONResponse({"detail": "Недопустимый источник запроса"}, status_code=403)
         response = await call_next(request)
@@ -49,6 +52,11 @@ def create_app(settings=None, engine=None):
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, error):
         return JSONResponse({"detail": [{"loc": list(item["loc"]), "msg": item["msg"], "type": item["type"]} for item in error.errors()]}, status_code=422)
+
+    from .business.errors import RemoteError
+    @app.exception_handler(RemoteError)
+    async def remote_business_error(request,error):
+        return JSONResponse({'detail':str(error)},status_code=503)
 
     @app.exception_handler(ValueError)
     async def invalid(request, error):
@@ -66,7 +74,17 @@ def create_app(settings=None, engine=None):
     install_system(app,app.state.auth_dependency,settings,engine)
     install_audit(app,app.state.auth_dependency)
     install_documents(app,app.state.auth_dependency)
-    install_warehouse(app,app.state.auth_dependency)
+    install_warehouse(app,app.state.auth_dependency,settings)
+    from .business.connections import install_connections
+    from .business.nk import install_nk
+    from .business.marking import install_marking
+    from .business.verifier import install_verifier
+    install_connections(app,app.state.auth_dependency,settings)
+    install_nk(app,app.state.auth_dependency,settings)
+    install_marking(app,app.state.auth_dependency,settings)
+    install_verifier(app,engine)
+    from .business.fts import install_fts
+    install_fts(app,app.state.auth_dependency,settings)
     static = files("marking_erp").joinpath("static")
     app.mount("/assets", StaticFiles(directory=str(static)), name="assets")
 
@@ -84,6 +102,14 @@ def create_app(settings=None, engine=None):
     @app.get("/logistics")
     @app.get("/receipt")
     @app.get("/shipment")
+    @app.get("/catalog")
+    @app.get("/marking")
+    @app.get("/atks")
+    @app.get("/split")
+    @app.get("/connections")
+    @app.get("/verify")
+    @app.get("/reprint")
+    @app.get("/fts")
     def shell():
         # Public shell contains no account data. All data/actions require the API session.
         return FileResponse(str(static.joinpath("index.html")))
