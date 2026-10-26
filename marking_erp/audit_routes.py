@@ -5,6 +5,13 @@ from fastapi import Depends, HTTPException, Query
 from sqlalchemy import text
 
 ACTION_LABELS = {
+    'warehouse.transferred': 'Накладная передана на склад',
+    'warehouse.scanned': 'Принят складской скан КМ',
+    'warehouse.scan_removed': 'Удалён ошибочный складской скан',
+    'warehouse.close': 'Складское задание закрыто',
+    'warehouse.reopen': 'Складское задание возвращено в работу',
+    'warehouse.cancel': 'Складское задание отменено',
+    'warehouse.export': 'Выгружены сканы отгрузки',
     'document.created': 'Создана накладная',
     'document.edited': 'Изменена накладная',
     'document.prepared': 'Состав накладной проверен локально',
