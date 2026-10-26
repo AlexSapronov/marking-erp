@@ -12,6 +12,7 @@ from .. import gs1,auth
 from ..auth_routes import Body
 from ..labels import render_label,render_labels
 from . import store as s
+from . import registry as registry_bridge
 from .connections import load
 from .live import Live
 from .nk import workbook
@@ -65,13 +66,16 @@ def order_payload(gtin,count,config,id,split=False):
     return {'productGroup':'radio','products':[{'gtin':gtin,'quantity':count,'serialNumberType':'OPERATOR','templateId':config['template_id'],'cisType':'UNIT'}],
         'attributes':{'releaseMethodType':'REAPPLY' if split else 'IMPORT','paymentType':1,'productionOrderId':str(id)}}
 
-def labels(current,row):
+def labels(current,row,settings):
     codes=rows(current.connection,row['id'])
     if not codes:raise HTTPException(409,'Коды ещё не получены')
     if any(c['state'] not in ('emitted','reserved','applied') for c in codes):raise HTTPException(409,'Есть неподтверждённые КМ')
     out=BytesIO()
     with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
-        for i,code in enumerate(codes,1):archive.writestr(f'{i:05d}.pdf',render_label(bytes(code['payload']),code['pn'],code['quantity']))
+        for i,code in enumerate(codes,1):
+            data=render_label(bytes(code['payload']),code['pn'],code['quantity'])
+            registry_bridge.label(current,row,code,settings,data)
+            archive.writestr(f'{i:05d}.pdf',data)
     s.artifact(current,row,'labels_pdf','labels-58x40.pdf',render_labels([{'raw':bytes(c['payload']),'pn':c['pn'],'quantity':c['quantity']} for c in codes]),'application/pdf',{'codes':[c['cis'] for c in codes]})
     return s.artifact(current,row,'labels','labels-58x40.zip',out.getvalue(),'application/zip',{'codes':[{'cis':c['cis'],'pn':c['pn'],'quantity':c['quantity'],'sha256':sha256(bytes(c['payload'])).hexdigest()} for c in codes]})
 
@@ -80,7 +84,7 @@ def validate_source(current,row):
         source=current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()
         if source['state']=='archived' or source['revision']!=row['body']['source_revision']:raise HTTPException(409,'Исходная накладная остановлена или изменена')
 
-def apply(current,row,op,link,payload,result,live):
+def apply(current,row,op,link,payload,result,live,settings):
     c=current.connection;step=op['kind'];body=dict(row['body'])
     if step.endswith('.order'):
         # Fetch every GTIN separately. Each consuming request has a unique durable command.
@@ -102,14 +106,17 @@ def apply(current,row,op,link,payload,result,live):
         if len(allocations)<len(parsed):raise ValueError('КМ не помещаются в состав')
         for value,allocation in zip(parsed,allocations):
             index,pn,tnved,quantity=allocation
-            full=gs1.with_quantity(value.base,quantity) if quantity!=1 else value.base
+            full=gs1.with_quantity(value.base,quantity)
+            code_id=uuid4()
             c.execute(text('''INSERT INTO business_codes(id,organization_id,cis,gtin,base,payload,item_id,line_index,quantity,state,tnved,pn,evidence_ref)
-                VALUES (:id,:org,:cis,:gtin,:base,:payload,:item,:line,:qty,'emitted',:tnved,:pn,:ref)'''),{'id':uuid4(),'org':row['organization_id'],'cis':value.cis,'gtin':value.gtin,'base':value.base,'payload':full,'item':row['id'],'line':index,'qty':quantity,'tnved':tnved,'pn':pn,'ref':'operation:'+str(op['id'])})
+                VALUES (:id,:org,:cis,:gtin,:base,:payload,:item,:line,:qty,'emitted',:tnved,:pn,:ref)'''),{'id':code_id,'org':row['organization_id'],'cis':value.cis,'gtin':value.gtin,'base':value.base,'payload':full,'item':row['id'],'line':index,'qty':quantity,'tnved':tnved,'pn':pn,'ref':'operation:'+str(op['id'])})
+            code=dict(c.execute(text('SELECT * FROM business_codes WHERE id=:id'),{'id':code_id}).mappings().one())
+            registry_bridge.capture(current,row,code,settings)
         if len(parsed)<expected:
             s.queue(current,row,step,{'orderId':link['metadata']['order_id'],'gtin':gtin,'quantity':expected-len(parsed)},{**link['metadata'],'expected':expected-len(parsed)})
         expected_total=1 if row['kind']=='split' else sum(r['labels'] for r in body['lines'])
         if len(rows(c,row['id']))==expected_total:
-            file=labels(current,row);s.save(current,row,'codes_received',body={**body,'label_file_id':str(file)},state='labels_ready')
+            file=labels(current,row,settings);s.save(current,row,'codes_received',body={**body,'label_file_id':str(file)},state='labels_ready')
     elif step.endswith('.report'):
         c.execute(text("UPDATE business_codes SET state='applied' WHERE item_id=:id"),{'id':row['id']})
         if row['kind']=='split':
@@ -199,14 +206,15 @@ def install_marking(app,actor,settings):
         for code in codes:pool.setdefault(code['gtin'],[]).append(code)
         for index,line in enumerate(lines):
             for _ in range(line['labels']):
-                code=pool[line['gtin']].pop(0);payload=gs1.with_quantity(bytes(code['base']),line['quantity']) if line['quantity']!=1 else bytes(code['base'])
+                code=pool[line['gtin']].pop(0);payload=gs1.with_quantity(bytes(code['base']),line['quantity'])
                 c.execute(text('UPDATE business_codes SET line_index=:line,pn=:pn,tnved=:tnved,quantity=:quantity,payload=:payload WHERE id=:id'),{'id':code['id'],'line':index,'pn':line['pn'],'tnved':line['tnved'],'quantity':line['quantity'],'payload':payload})
+                registry_bridge.capture(current,row,{**code,'payload':payload},settings,quantity_change=True)
         source=dict(c.execute(text('SELECT * FROM bm_documents WHERE id=:id FOR UPDATE'),{'id':row['source_id']}).mappings().one());source.update(lines=lines,revision=source['revision']+1,state='prepared')
         c.execute(text("UPDATE bm_documents SET lines=CAST(:lines AS jsonb),revision=:revision,updated_at=now() WHERE id=:id"),{'id':source['id'],'lines':json.dumps(lines),'revision':source['revision']})
         c.execute(text('UPDATE operation_targets SET revision=:revision WHERE id=:id'),{'id':source['id'],'revision':source['revision']})
         snapshot={k:source[k] for k in ('id','organization_id','owner_id','number','document_date','supplier','revision','state','lines','policy_snapshot')}
         c.execute(text("INSERT INTO bm_document_versions(document_id,organization_id,revision,actor_id,actor_name,action,reason,snapshot) VALUES (:id,:org,:revision,:user,:name,'edited',:reason,CAST(:snapshot AS jsonb))"),{'id':source['id'],'org':source['organization_id'],'revision':source['revision'],'user':current.id,'name':current.user['display_name'],'reason':body.reason,'snapshot':json.dumps(snapshot,default=str)})
-        body_data={**row['body'],'lines':lines,'source_revision':source['revision']};updated=s.save(current,row,'codes_reallocated',body=body_data,state='labels_ready');file=labels(current,updated)
+        body_data={**row['body'],'lines':lines,'source_revision':source['revision']};updated=s.save(current,row,'codes_reallocated',body=body_data,state='labels_ready');file=labels(current,updated,settings)
         return s.save(current,updated,'labels_replaced',body={**body_data,'label_file_id':str(file)})
     @app.post('/api/marking/start')
     def start(body:Start,current=dep):
@@ -225,19 +233,20 @@ def install_marking(app,actor,settings):
             if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND p.pn=:pn AND r.gtin=:gtin AND p.tnved=:tnved LIMIT 1'),{'org':source['organization_id'],'pn':line['pn'],'gtin':line['gtin'],'tnved':line['tnved']}).scalar():raise HTTPException(409,'Сначала подтвердите PN/GTIN/ТН ВЭД в НК: '+line['pn'])
         pool=[dict(r) for r in c.execute(text("SELECT * FROM business_codes WHERE organization_id=:org AND state='free' AND gtin=ANY(CAST(:gtins AS text[])) ORDER BY created_at,id FOR UPDATE"),{'org':source['organization_id'],'gtins':list({r['gtin'] for r in source['lines']})}).mappings()]
         if pool:Live(config,organization(c,source['organization_id'])).verify(pool,'EMITTED')
-        row=s.create(current,'marking',source['number'],{'source_revision':source['revision'],'supplier':source['supplier'],'lines':source['lines']},source['organization_id'],source['id'],body.request_id,state='ordering')
+        row=s.create(current,'marking',source['number'],{'source_revision':source['revision'],'supplier':source['supplier'],'lines':source['lines']},source['organization_id'],source['id'],body.request_id,state='ordering',owner=source['owner_id'])
         totals={}
         for line in source['lines']:totals[line['gtin']]=totals.get(line['gtin'],0)+line['labels']
         for index,line in enumerate(source['lines']):
             available=[v for v in pool if v['gtin']==line['gtin']]
             for code in available[:line['labels']]:
-                payload=gs1.with_quantity(bytes(code['base']),line['quantity']) if line['quantity']!=1 else bytes(code['base'])
+                payload=gs1.with_quantity(bytes(code['base']),line['quantity'])
                 c.execute(text("UPDATE business_codes SET item_id=:item,line_index=:line,quantity=:qty,pn=:pn,tnved=:tnved,payload=:payload,state='emitted' WHERE id=:id AND state='free'"),{'id':code['id'],'item':row['id'],'line':index,'qty':line['quantity'],'pn':line['pn'],'tnved':line['tnved'],'payload':payload})
+                registry_bridge.capture(current,row,{**code,'payload':payload},settings,quantity_change=True)
                 pool.remove(code);totals[line['gtin']]-=1
         for gtin,count in totals.items():
             if count:s.queue(current,row,'bm.order',order_payload(gtin,count,config,uuid4()))
         if not any(totals.values()):
-            file=labels(current,row);return s.save(current,row,'pool_reserved',body={**row['body'],'label_file_id':str(file)},state='labels_ready')
+            file=labels(current,row,settings);return s.save(current,row,'pool_reserved',body={**row['body'],'label_file_id':str(file)},state='labels_ready')
         return row
     @app.post('/api/business/{id}/release-pool')
     def release(id:UUID,body:Step,current=dep):
@@ -297,7 +306,7 @@ def install_marking(app,actor,settings):
         s.idle(c,id)
         if action=='labels':
             if row['state'] not in ('labels_ready','application_confirmed','reporting','applied'):raise HTTPException(409,'Дождитесь получения всех КМ')
-            file=labels(current,row);return {'file_id':file}
+            file=labels(current,row,settings);return {'file_id':file}
         if action=='applied':
             if row['state']!='labels_ready' or not body.confirmed:raise HTTPException(422,'Подтвердите нанесение актуальных этикеток')
             return s.save(current,row,'application_confirmed',state='application_confirmed')

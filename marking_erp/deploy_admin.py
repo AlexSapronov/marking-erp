@@ -87,7 +87,7 @@ def main():
     parser=argparse.ArgumentParser(description='Локальное администрирование ERP; не выполняет deploy или внешние операции')
     parser.add_argument('--config',type=Path,default=Path('/etc/marking-erp/maintenance.json'))
     parser.add_argument('--release-sha')
-    parser.add_argument('action',choices=['configure','migrate','seed','bootstrap-admin','grant-runtime','backup','verify-backup','register-signer','revoke-signer','trust-windows-verifier'])
+    parser.add_argument('action',choices=['configure','migrate','seed','bootstrap-admin','grant-runtime','backup','verify-backup','register-signer','revoke-signer','trust-windows-verifier','sync-code-registry'])
     args,rest=parser.parse_known_args()
     if os.geteuid()!=0:parser.exit(1,'Команда требует sudo; файлы настроек доступны только root.\n')
     try:

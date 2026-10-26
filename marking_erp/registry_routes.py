@@ -6,6 +6,14 @@ from . import auth
 from .file_store import FileStore,StorageError
 
 
+def assignment_sql(code,org):
+    return f'''(EXISTS(SELECT 1 FROM code_assignments x WHERE x.code_id={code} AND x.organization_id={org} AND x.user_id=:user)
+        OR EXISTS(SELECT 1 FROM business_codes bc JOIN business_items bi ON bi.id=bc.item_id
+            JOIN warehouse_tasks w ON w.source_id=bi.source_id AND w.organization_id=bi.organization_id
+            JOIN operation_assignments a ON a.target_id=w.id AND a.user_id=:user
+            WHERE bc.registry_code_id={code} AND bc.organization_id={org} AND w.state<>'cancelled'))'''
+
+
 def install_registry(app,actor,settings):
     dependency=Depends(actor,scope='function')
 
@@ -16,7 +24,7 @@ def install_registry(app,actor,settings):
         return grant
 
     def allowed_code(current,id,org,permission):
-        access=current.connection.execute(text('''SELECT a.*,EXISTS(SELECT 1 FROM code_assignments x WHERE x.code_id=a.code_id AND x.organization_id=a.organization_id AND x.user_id=:user) AS assigned
+        access=current.connection.execute(text(f'''SELECT a.*,{assignment_sql('a.code_id','a.organization_id')} AS assigned
             FROM code_access a WHERE a.code_id=:id AND a.organization_id=:org'''),{'user':current.id,'id':id,'org':org}).mappings().first()
         if not access:raise HTTPException(404,'Код не найден')
         current.require(permission,organization_id=org,owner_id=access['owner_id'],assigned=access['assigned'])
@@ -25,16 +33,16 @@ def install_registry(app,actor,settings):
     @app.get('/api/codes')
     def codes(organization_id:UUID,q:str=Query('',max_length=120),before_id:UUID|None=None,limit:int=Query(25,ge=1,le=100),current=dependency):
         scope=list_scope(current,organization_id,'codes.registry.view')
-        result=current.connection.execute(text('''SELECT c.id,c.cis,c.gtin,c.created_at,
+        result=current.connection.execute(text(f'''SELECT c.id,c.cis,c.gtin,c.created_at,
             (SELECT count(*) FROM code_events e WHERE e.code_id=c.id AND e.organization_id=:org AND e.kind='payload_conflict') AS conflicts,
             v.template,v.label_quantity,v.created_at AS captured_at,v.version,
-            (SELECT string_agg(DISTINCT p.pn,', ' ORDER BY p.pn) FROM product_pns p JOIN products pr ON pr.id=p.product_id WHERE pr.gtin=c.gtin AND p.organization_id=:org) AS pn
+            COALESCE((SELECT bc.pn FROM business_codes bc WHERE bc.registry_code_id=c.id AND bc.organization_id=:org),(SELECT string_agg(DISTINCT p.pn,', ' ORDER BY p.pn) FROM product_pns p JOIN products pr ON pr.id=p.product_id WHERE pr.gtin=c.gtin AND p.organization_id=:org)) AS pn
             FROM codes c JOIN code_access a ON a.code_id=c.id AND a.organization_id=:org
-            JOIN LATERAL (SELECT template,label_quantity,created_at,version FROM code_payload_versions WHERE code_id=c.id AND organization_id=:org ORDER BY version LIMIT 1) v ON true
-            WHERE (:scope='all' OR (:scope='own' AND a.owner_id=:user) OR (:scope='assigned' AND EXISTS(SELECT 1 FROM code_assignments x WHERE x.code_id=c.id AND x.organization_id=:org AND x.user_id=:user)))
-            AND (CAST(:before AS uuid) IS NULL OR c.id<CAST(:before AS uuid))
+            JOIN LATERAL (SELECT template,label_quantity,created_at,version FROM code_payload_versions p WHERE code_id=c.id AND organization_id=:org AND EXISTS(SELECT 1 FROM code_events e WHERE e.payload_id=p.id AND e.kind<>'payload_conflict') ORDER BY version DESC LIMIT 1) v ON true
+            WHERE (:scope='all' OR (:scope='own' AND a.owner_id=:user) OR (:scope='assigned' AND {assignment_sql('c.id',':org')}))
+            AND (CAST(:before AS uuid) IS NULL OR (c.created_at,c.id)<(SELECT created_at,id FROM codes WHERE id=CAST(:before AS uuid)))
             AND (c.cis LIKE :q ESCAPE '!' OR c.gtin LIKE :q ESCAPE '!' OR EXISTS(SELECT 1 FROM product_pns p JOIN products pr ON pr.id=p.product_id WHERE pr.gtin=c.gtin AND p.organization_id=:org AND p.pn ILIKE :q ESCAPE '!'))
-            ORDER BY c.id DESC LIMIT :limit'''),{'org':organization_id,'scope':scope,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%','limit':limit+1}).mappings().all()
+            ORDER BY c.created_at DESC,c.id DESC LIMIT :limit'''),{'org':organization_id,'scope':scope,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%','limit':limit+1}).mappings().all()
         return {'codes':[dict(x) for x in result[:limit]],'next_cursor':str(result[limit-1]['id']) if len(result)>limit else None}
 
     @app.get('/api/codes/{id}/history')
@@ -63,6 +71,10 @@ def install_registry(app,actor,settings):
         if not row:raise HTTPException(404,'Файл не найден')
         permission='codes.payload.export' if row['kind']=='payload' else 'marking.labels.download'
         allowed_code(current,row['code_id'],row['organization_id'],permission)
+        if row['kind']=='label_pdf':
+            allocation=current.connection.execute(text('SELECT state,registry_payload_id FROM business_codes WHERE registry_code_id=:code AND organization_id=:org'),{'code':row['code_id'],'org':row['organization_id']}).mappings().first()
+            if allocation and (allocation['state']=='free' or allocation['registry_payload_id']!=row['payload_id']):
+                raise HTTPException(409,'Состав этикетки изменён или КМ возвращён в пул. Используйте последнюю сохранённую этикетку.')
         try:data=FileStore(settings.file_storage_path).read(row)
         except StorageError:raise HTTPException(503,'Файл недоступен или повреждён') from None
         auth.audit(current.connection,current.id,'file.downloaded',id,{'organization_id':str(row['organization_id']),'sha256':row['sha256']})
