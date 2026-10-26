@@ -85,6 +85,8 @@ def install_documents(app,actor):
         return dict(doc)
 
     def no_external(c,id):
+        if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE source_id=:id AND kind='marking' AND state<>'archived')"),{'id':id}).scalar_one():
+            raise HTTPException(409,'Накладная уже участвует в маркировке. Сначала остановите процесс.')
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM warehouse_tasks WHERE source_id=:id AND state<>'cancelled')"),{'id':id}).scalar_one():
             raise HTTPException(409,'Накладная передана на склад. Сначала отмените складские задания через логиста.')
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM external_operations WHERE target_id=:id AND state NOT IN ('rejected','cancelled_before_dispatch'))"),{'id':id}).scalar_one():
@@ -186,7 +188,7 @@ def install_documents(app,actor):
     def detail(id:UUID,current=dep):
         doc=get(current,id)
         return {'document':{k:v for k,v in doc.items() if k!='request_sha256'},'external_dispatch_available':False,
-                'notice':'Проверка состава локальная. Эмиссия, отчёт и АТК ещё не подключены; сведения каталога этим документом не подтверждаются.'}
+                'notice':'Проверка состава локальная. Для эмиссии и нанесения откройте раздел «Маркировка». Сведения каталога подтверждаются через Национальный каталог.'}
 
     @app.put('/api/documents/{id}')
     def edit(id:UUID,body:Edit,current=dep):
@@ -218,6 +220,11 @@ def install_documents(app,actor):
                 if doc['state']=='archived':raise HTTPException(409,'Накладная уже в архиве')
                 current.connection.execute(text('UPDATE operation_targets SET stopped=true WHERE id=:id'),{'id':id})
                 for op in current.connection.execute(text("SELECT id FROM external_operations WHERE target_id=:id AND state IN ('queued','awaiting_signature','blocked') ORDER BY id FOR UPDATE"),{'id':id}).scalars().all():cancel_before_dispatch(current.connection,op)
+                for process in current.connection.execute(text("SELECT * FROM business_items WHERE source_id=:id AND kind='marking' FOR UPDATE"),{'id':id}).mappings().all():
+                    for operation in current.connection.execute(text('SELECT o.* FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id ORDER BY o.id FOR UPDATE'),{'id':process['id']}).mappings().all():
+                        current.connection.execute(text('UPDATE operation_targets SET stopped=true WHERE id=:id'),{'id':operation['target_id']})
+                        if operation['state'] in ('queued','awaiting_signature','blocked'):cancel_before_dispatch(current.connection,operation['id'])
+                    current.connection.execute(text("UPDATE business_items SET state='archived',body=jsonb_set(body,'{archived_from}',to_jsonb(state)),revision=revision+1 WHERE id=:id AND state<>'archived'"),{'id':process['id']})
                 doc['state']='archived'
             else:
                 if doc['state']!='archived':raise HTTPException(409,'Накладная не в архиве')

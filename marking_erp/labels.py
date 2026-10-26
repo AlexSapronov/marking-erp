@@ -47,7 +47,7 @@ class GS1Matrix(ECC200DataMatrix):
         return data
 
 
-def render_label(raw:bytes,pn:str,quantity:int)->bytes:
+def render_label(raw:bytes,pn:str,quantity:int,*,_canvas=None)->bytes:
     value=parse(raw)
     if type(quantity) is not int or quantity!=(value.quantity if value.quantity is not None else 1):raise ValueError('Количество не совпадает с содержимым КМ')
     if not isinstance(pn,str) or not pn.strip() or len(pn)>120 or any(ord(x)<32 for x in pn):raise ValueError('Некорректный PN')
@@ -60,7 +60,7 @@ def render_label(raw:bytes,pn:str,quantity:int)->bytes:
     symbol=GS1Matrix(value.normalized.decode('ascii'));symbol.validate();matrix=symbol.encode()
     dots=int((24*mm/(72/203))//len(matrix));module=dots*72/203
     if dots<2:raise ValueError('Слишком плотный код для макета')
-    size=len(matrix)*module;out=BytesIO();canvas=Canvas(out,pagesize=(58*mm,40*mm),pageCompression=1)
+    size=len(matrix)*module;out=BytesIO();canvas=_canvas if _canvas is not None else Canvas(out,pagesize=(58*mm,40*mm),pageCompression=1)
     x,y=2*mm,38*mm-size
     for row in range(len(matrix)):
         for col in range(len(matrix[row])):
@@ -76,4 +76,13 @@ def render_label(raw:bytes,pn:str,quantity:int)->bytes:
     canvas.setFont(font,11);canvas.drawCentredString(42.5*mm,9*mm,str(quantity)+(' шт.' if font!='Helvetica' else ' pcs'))
     canvas.setFont('Helvetica',5.4)
     for i,line in enumerate([value.cis[:19],value.cis[19:]]):canvas.drawCentredString(x+size/2,y-(3+i*2.8)*mm,line)
-    canvas.showPage();canvas.save();return out.getvalue()
+    canvas.showPage()
+    if _canvas is not None:return b''
+    canvas.save();return out.getvalue()
+
+
+def render_labels(entries):
+    """One printable 58x40 PDF, preserving each saved code's exact payload."""
+    out=BytesIO();canvas=Canvas(out,pagesize=(58*mm,40*mm),pageCompression=1)
+    for entry in entries:render_label(entry['raw'],entry['pn'],entry['quantity'],_canvas=canvas)
+    canvas.save();return out.getvalue()

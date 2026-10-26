@@ -1,4 +1,4 @@
-"""Durable commands. No production HTTP adapter is registered by this module."""
+"""Durable commands; only explicitly registered adapters may dispatch."""
 from dataclasses import dataclass
 from hashlib import sha256
 import hmac
@@ -13,6 +13,10 @@ from .policy import snapshot
 MAX_BYTES=1048576
 
 class CommandConflict(ValueError):pass
+
+class DispatchBlocked(Exception):
+    """Adapter proves no consuming request has been made in this attempt."""
+    pass
 
 
 class RetryAfter(Exception):
@@ -74,8 +78,8 @@ def prepare(c,*,organization_id,actor_id,kind,target_id,target_revision,idempote
     return dict(c.execute(text('SELECT * FROM external_operations WHERE id=:id'),{'id':id}).mappings().one())
 
 
-def recover_expired(c):
-    rows=c.execute(text("SELECT * FROM external_operations WHERE state='dispatching' AND lease_until<clock_timestamp() FOR UPDATE SKIP LOCKED")).mappings().all()
+def recover_expired(c,allowed_kinds=None):
+    rows=c.execute(text("SELECT * FROM external_operations WHERE state='dispatching' AND lease_until<clock_timestamp() AND (CAST(:kinds AS text[]) IS NULL OR kind=ANY(CAST(:kinds AS text[]))) FOR UPDATE SKIP LOCKED"),{'kinds':allowed_kinds}).mappings().all()
     for op in rows:
         state='queued' if op['semantic']=='read' and op['fence']<5 else 'unknown'
         transition(c,op['id'],state,'lease_expired')
@@ -83,12 +87,12 @@ def recover_expired(c):
     return len(rows)
 
 
-def claim(c,worker_id,*,lease_seconds=60):
+def claim(c,worker_id,*,lease_seconds=60,allowed_kinds=None):
     if not worker_id or len(worker_id)>100 or not 5<=lease_seconds<=300:raise ValueError('Invalid lease')
     # Same authorization fence as identity/configuration edits; never held during IO.
     c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
-    recover_expired(c)
-    op=c.execute(text("SELECT * FROM external_operations WHERE state='queued' AND available_at<=clock_timestamp() ORDER BY available_at,created_at,id FOR UPDATE SKIP LOCKED LIMIT 1")).mappings().first()
+    recover_expired(c,allowed_kinds)
+    op=c.execute(text("SELECT * FROM external_operations WHERE state='queued' AND available_at<=clock_timestamp() AND (CAST(:kinds AS text[]) IS NULL OR kind=ANY(CAST(:kinds AS text[]))) ORDER BY available_at,created_at,id FOR UPDATE SKIP LOCKED LIMIT 1"),{'kinds':allowed_kinds}).mappings().first()
     if not op:return None
     reason=authorization(c,op)
     signature=None
@@ -163,13 +167,13 @@ def cancel_before_dispatch(c,id):
     c.execute(text("UPDATE signer_jobs SET state='cancelled',lease_hash=NULL,lease_until=NULL WHERE operation_id=:id AND state<>'verified'"),{'id':id})
 
 
-def dispatch_once(engine,worker_id,adapters):
+def dispatch_once(engine,worker_id,adapters,*,allowed_kinds=None,lease_seconds=60):
     """Transactions finish before adapter IO; adapters are explicitly injected.
 
-    This package has no production adapters. A missing adapter blocks the command,
+    A missing adapter blocks the command,
     rather than inventing an endpoint or reporting success.
     """
-    with engine.begin() as c:ticket=claim(c,worker_id)
+    with engine.begin() as c:ticket=claim(c,worker_id,allowed_kinds=allowed_kinds,lease_seconds=lease_seconds)
     if ticket is None:return False
     adapter=adapters.get((ticket['kind'],ticket['contract_version']))
     if adapter is None:
@@ -180,6 +184,12 @@ def dispatch_once(engine,worker_id,adapters):
                 c.execute(text('UPDATE external_operations SET lease_hash=NULL,lease_until=NULL WHERE id=:id'),{'id':ticket['id']})
         return False
     try:result=adapter(ticket)
+    except DispatchBlocked as error:
+        with engine.begin() as c:
+            op=c.execute(text('SELECT state,fence,lease_hash FROM external_operations WHERE id=:id FOR UPDATE'),{'id':ticket['id']}).mappings().one()
+            if op['state']=='dispatching' and op['fence']==ticket['fence'] and op['lease_hash']==sha256(ticket['lease'].encode()).hexdigest():
+                transition(c,ticket['id'],'blocked','before_dispatch:'+str(error)[:500])
+                c.execute(text('UPDATE external_operations SET lease_hash=NULL,lease_until=NULL WHERE id=:id'),{'id':ticket['id']})
     except RetryAfter as error:
         with engine.begin() as c:transport_failure(c,ticket,retry_after=error.seconds)
     except Exception:

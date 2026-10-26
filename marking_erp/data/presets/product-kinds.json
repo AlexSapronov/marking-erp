@@ -1,0 +1,3353 @@
+{
+  "schema_version": 1,
+  "source_archive_sha256": "c3e20e5a469f852356704596c37e16bfbf149c7997a1e650d6e4471e14c58a86",
+  "kinds": [
+    {
+      "id": "ca78749c1c27863d5e65dc9d",
+      "tnved": "8504408300",
+      "name": "AC/DC модуль зарядного устройства",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "AC/DC модуль зарядного устройства",
+      "published_count": 1,
+      "category_id": "231198",
+      "category": "Выпрямители (РЭП)",
+      "brands": [
+        {
+          "name": "Tonhe Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "9b9be1737c9f1a763c4254a0",
+      "tnved": "8504408300",
+      "name": "AC/DC преобразователь",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "AC/DC преобразователь",
+      "published_count": 29,
+      "category_id": "231198",
+      "category": "Выпрямители (РЭП)",
+      "brands": [
+        {
+          "name": "YINGJIAO ELECTRICAL",
+          "count": 19
+        },
+        {
+          "name": "Shineting Technology",
+          "count": 6
+        },
+        {
+          "name": "Dexu Electronics",
+          "count": 2
+        },
+        {
+          "name": "Favotek",
+          "count": 1
+        },
+        {
+          "name": "Kreco",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e319ac5a08158e54effc4b46",
+      "tnved": "8504408300",
+      "name": "DC/DC преобразователь",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "DC/DC преобразователь",
+      "published_count": 6,
+      "category_id": "231198",
+      "category": "Выпрямители (РЭП)",
+      "brands": [
+        {
+          "name": "Shineting Technology",
+          "count": 2
+        },
+        {
+          "name": "YINGJIAO ELECTRICAL",
+          "count": 2
+        },
+        {
+          "name": "Dexu Electronics",
+          "count": 1
+        },
+        {
+          "name": "Favotek",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e1c197b3a1ec433980725b23",
+      "tnved": "8504408300",
+      "name": "Блок питания CRPS 2U",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Блок питания CRPS 2U",
+      "published_count": 1,
+      "category_id": "231198",
+      "category": "Выпрямители (РЭП)",
+      "brands": [
+        {
+          "name": "FSP",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8823040c78bdf1e77192fb37",
+      "tnved": "8504408300",
+      "name": "Отладочное средство",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Отладочное средство",
+      "published_count": 1,
+      "category_id": "231198",
+      "category": "Выпрямители (РЭП)",
+      "brands": [
+        {
+          "name": "Dongke",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "938f5ab878f577d76995d860",
+      "tnved": "8504409100",
+      "name": "AC-DC/DC преобразователь",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "AC-DC/DC преобразователь",
+      "published_count": 3,
+      "category_id": "231320",
+      "category": "Преобразователи статические (РЭП)",
+      "brands": [
+        {
+          "name": "MORNSUN",
+          "count": 3
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e579d28ddbae940f87291069",
+      "tnved": "8504409100",
+      "name": "AC/DC преобразователь",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "AC/DC преобразователь",
+      "published_count": 31,
+      "category_id": "231320",
+      "category": "Преобразователи статические (РЭП)",
+      "brands": [
+        {
+          "name": "MORNSUN",
+          "count": 29
+        },
+        {
+          "name": "Ruihan",
+          "count": 1
+        },
+        {
+          "name": "Suplet",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "6979c1406d0eb2bbce45026b",
+      "tnved": "8504409100",
+      "name": "DC/DC преобразователь",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "DC/DC преобразователь",
+      "published_count": 252,
+      "category_id": "231320",
+      "category": "Преобразователи статические (РЭП)",
+      "brands": [
+        {
+          "name": "MORNSUN",
+          "count": 196
+        },
+        {
+          "name": "Shineting Technology",
+          "count": 19
+        },
+        {
+          "name": "WINCHEN",
+          "count": 9
+        },
+        {
+          "name": "Favotek",
+          "count": 7
+        },
+        {
+          "name": "Delta Electronics",
+          "count": 4
+        },
+        {
+          "name": "Suplet",
+          "count": 4
+        },
+        {
+          "name": "Wengao Electronic",
+          "count": 4
+        },
+        {
+          "name": "Resine PS",
+          "count": 3
+        },
+        {
+          "name": "Mornsun",
+          "count": 2
+        },
+        {
+          "name": "Hua Wei Digital Power",
+          "count": 1
+        },
+        {
+          "name": "Murata-PS",
+          "count": 1
+        },
+        {
+          "name": "Ringtone",
+          "count": 1
+        },
+        {
+          "name": "TDPower",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "b71d7d6bb05244aa54bf11fd",
+      "tnved": "8504409100",
+      "name": "Источник питания",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Источник питания",
+      "published_count": 1,
+      "category_id": "231320",
+      "category": "Преобразователи статические (РЭП)",
+      "brands": [
+        {
+          "name": "MORNSUN",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e305c4b7f5c9d15b545f2c89",
+      "tnved": "8504409100",
+      "name": "Преобразователь",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Преобразователь",
+      "published_count": 2,
+      "category_id": "231320",
+      "category": "Преобразователи статические (РЭП)",
+      "brands": [
+        {
+          "name": "FSP",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "387a985d66004076067ff930",
+      "tnved": "8536490000",
+      "name": "Высоковольтный контактор постоянного тока",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Высоковольтный контактор постоянного тока",
+      "published_count": 1,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "SAYOON ELECTRIC",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e40ed687b71900fcd3dca872",
+      "tnved": "8536490000",
+      "name": "Реле ЭМ",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле ЭМ",
+      "published_count": 2,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Asia Dragon Electric",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "7ced32588b2824c66100b6e2",
+      "tnved": "8536490000",
+      "name": "Реле ЭМ Моторчиковое",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле ЭМ Моторчиковое",
+      "published_count": 4,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Bolta Electric",
+          "count": 4
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "992ad194644feb449ce299ef",
+      "tnved": "8536490000",
+      "name": "Реле ЭМ Промежуточное",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле ЭМ Промежуточное",
+      "published_count": 2,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Asia Dragon Electric",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "7c2c3248b7f9cc270829afeb",
+      "tnved": "8536490000",
+      "name": "Реле ЭМ Сигнальное",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле ЭМ Сигнальное",
+      "published_count": 4,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Meishuo Electric",
+          "count": 4
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "bd044e6cc30221426fcf921c",
+      "tnved": "8536490000",
+      "name": "Реле ЭМ Силовое",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле ЭМ Силовое",
+      "published_count": 4,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Asia Dragon Electric",
+          "count": 1
+        },
+        {
+          "name": "Glomore",
+          "count": 1
+        },
+        {
+          "name": "Meishuo Electric",
+          "count": 1
+        },
+        {
+          "name": "Omron",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "0fbdb114b1812490193ba5eb",
+      "tnved": "8536490000",
+      "name": "Реле напряжения",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле напряжения",
+      "published_count": 1,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "NCR Industrial",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "7503a45628a5c4068a423c04",
+      "tnved": "8536490000",
+      "name": "Реле общепромышленного назначения",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле общепромышленного назначения",
+      "published_count": 26,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Capwin Electrical",
+          "count": 5
+        },
+        {
+          "name": "HONGFA",
+          "count": 5
+        },
+        {
+          "name": "Omron",
+          "count": 4
+        },
+        {
+          "name": "Asia Dragon Electric",
+          "count": 3
+        },
+        {
+          "name": "Meishuo Electric",
+          "count": 3
+        },
+        {
+          "name": "Champere",
+          "count": 2
+        },
+        {
+          "name": "Zomkun",
+          "count": 2
+        },
+        {
+          "name": "Bolta Electric",
+          "count": 1
+        },
+        {
+          "name": "TE Connectivity",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "4b46a1e3a59eed74c8b349bb",
+      "tnved": "8536490000",
+      "name": "Реле общепромышленное",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле общепромышленное",
+      "published_count": 2,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "TE Connectivity",
+          "count": 1
+        },
+        {
+          "name": "Zomkun",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "21627469736f9ce79b0f99d1",
+      "tnved": "8536490000",
+      "name": "Реле сверхминиатюрное",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле сверхминиатюрное",
+      "published_count": 1,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "HKE",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "7f47d370dd09c53ebf724e27",
+      "tnved": "8536490000",
+      "name": "Реле электромеханическое",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Реле электромеханическое",
+      "published_count": 2,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "Meishuo Electric",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "76d460be826e6466f1849b6c",
+      "tnved": "8536490000",
+      "name": "Сверхминиатюрное электромагнитное реле",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Сверхминиатюрное электромагнитное реле",
+      "published_count": 1,
+      "category_id": "231081",
+      "category": "Реле времени, защиты, функциональные",
+      "brands": [
+        {
+          "name": "HKE",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "5e89127f805de5f851f4497b",
+      "tnved": "8536699008",
+      "name": "BRS-B012 Штепсельный разъём на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "BRS-B012 Штепсельный разъём на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Beris Electronic",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "6d8c07433e862f7e664ce156",
+      "tnved": "8536699008",
+      "name": "ODU Разъем на панель, розетка",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "ODU Разъем на панель, розетка",
+      "published_count": 4,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "XinSheng Electronics",
+          "count": 4
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "3b953ac18ee09c020c461f91",
+      "tnved": "8536699008",
+      "name": "Гнездо на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Гнездо на кабель",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ACIT",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "2f3a9cdc7b4dc2f32724a4a6",
+      "tnved": "8536699008",
+      "name": "Гнездовой контакт для штепсельного разъема",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Гнездовой контакт для штепсельного разъема",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a144e2290b918f4fdf7d9015",
+      "tnved": "8536699008",
+      "name": "Изолированная ножевая клемма на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Изолированная ножевая клемма на кабель",
+      "published_count": 5,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Jeesoon",
+          "count": 5
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "29e7b41d792ab4d6cb53b80e",
+      "tnved": "8536699008",
+      "name": "Клемма для монтажа на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клемма для монтажа на кабель",
+      "published_count": 6,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 6
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "66b228dc3c8f8067c3180993",
+      "tnved": "8536699008",
+      "name": "Клемма на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клемма на кабель",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Jeesoon",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "1388b77dc40dc4757913219f",
+      "tnved": "8536699008",
+      "name": "Клеммная колодка",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммная колодка",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "golten electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "5606d272281a8e5d0a924489",
+      "tnved": "8536699008",
+      "name": "Клеммная колодка на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммная колодка на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "028a6f8175aae904ce61564f",
+      "tnved": "8536699008",
+      "name": "Клеммник монтаж на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммник монтаж на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "3ddc9b038390d84ebb00b476",
+      "tnved": "8536699008",
+      "name": "Контакт для разъема",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт для разъема",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Molex",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "55671967113464b043584522",
+      "tnved": "8536699008",
+      "name": "Контакт монтаж на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт монтаж на кабель",
+      "published_count": 37,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 15
+        },
+        {
+          "name": "Molex",
+          "count": 9
+        },
+        {
+          "name": "AOHAI",
+          "count": 3
+        },
+        {
+          "name": "Lianhe Electronics",
+          "count": 3
+        },
+        {
+          "name": "HAIHE ELECTRICAL",
+          "count": 2
+        },
+        {
+          "name": "Haidie Electric",
+          "count": 2
+        },
+        {
+          "name": "GreenConn",
+          "count": 1
+        },
+        {
+          "name": "KINKONG ELECTRIC",
+          "count": 1
+        },
+        {
+          "name": "SWB",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "91a836b5319c64abf37d1b2f",
+      "tnved": "8536699008",
+      "name": "Контакт на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт на кабель",
+      "published_count": 15,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 5
+        },
+        {
+          "name": "Lianhe Electronics",
+          "count": 4
+        },
+        {
+          "name": "Molex",
+          "count": 3
+        },
+        {
+          "name": "CITY YOUYE",
+          "count": 1
+        },
+        {
+          "name": "GreenConn",
+          "count": 1
+        },
+        {
+          "name": "HULANE",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "faaea9a485f35621b16a34bb",
+      "tnved": "8536699008",
+      "name": "Контакт на кабель штепсельный",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт на кабель штепсельный",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "AOHAI",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "7618534d9a6abdf4225eae64",
+      "tnved": "8536699008",
+      "name": "Контакт-детали штепсельного типа",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт-детали штепсельного типа",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Zomkun",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "04412c1cdcbb966883b68584",
+      "tnved": "8536699008",
+      "name": "Обжимная клемма на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Обжимная клемма на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Lianhe Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8585474c0a4edbe8df6e8fc1",
+      "tnved": "8536699008",
+      "name": "Разъем М12 на панель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем М12 на панель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Rigoal Connector",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "46c9026271ca7625f3027580",
+      "tnved": "8536699008",
+      "name": "Разъем на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ALTW Technology",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "0e1d8f499bd8bd2635954c5f",
+      "tnved": "8536699008",
+      "name": "Разъем на кабель М12",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на кабель М12",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ALTW Technology",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "d2fa0cad5da77a60d364725e",
+      "tnved": "8536699008",
+      "name": "Разъем на кабель штепсельный",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на кабель штепсельный",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Wanjie Electronic",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "6b69ea37cc5a6fa62381beae",
+      "tnved": "8536699008",
+      "name": "Разъем на кабель, Push-Pull",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на кабель, Push-Pull",
+      "published_count": 3,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "XinSheng Electronics",
+          "count": 3
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a6e481d0988fb4415b9eb087",
+      "tnved": "8536699008",
+      "name": "Разъем на панель, розетка",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на панель, розетка",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "XinSheng Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "72951aa38c43d83c4811e33e",
+      "tnved": "8536699008",
+      "name": "Разъем штепсельный",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем штепсельный",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "5b969a7fb22efdef1f2ed330",
+      "tnved": "8536699008",
+      "name": "Разъём на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём на кабель",
+      "published_count": 140,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Molex",
+          "count": 31
+        },
+        {
+          "name": "Rigoal Connector",
+          "count": 25
+        },
+        {
+          "name": "Degson",
+          "count": 17
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 16
+        },
+        {
+          "name": "ACIT",
+          "count": 14
+        },
+        {
+          "name": "ALTW Technology",
+          "count": 11
+        },
+        {
+          "name": "TE Connectivity",
+          "count": 8
+        },
+        {
+          "name": "KINKONG ELECTRIC",
+          "count": 6
+        },
+        {
+          "name": "Golten Electronics",
+          "count": 3
+        },
+        {
+          "name": "DECA SWITCHLAB",
+          "count": 2
+        },
+        {
+          "name": "XinSheng Electronics",
+          "count": 2
+        },
+        {
+          "name": "AMPHENOL",
+          "count": 1
+        },
+        {
+          "name": "Amass",
+          "count": 1
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 1
+        },
+        {
+          "name": "Lianhe Electronics",
+          "count": 1
+        },
+        {
+          "name": "Wago",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "74cd957804cfa1e32cb10695",
+      "tnved": "8536699008",
+      "name": "Разъём на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём на плату",
+      "published_count": 3,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 2
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "eb422e15a167208d3cabcef2",
+      "tnved": "8536699008",
+      "name": "Разъём штепсельный для монтажа на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём штепсельный для монтажа на кабель",
+      "published_count": 4,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 4
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "fc7201cf02ca7b721b0d422f",
+      "tnved": "8536699008",
+      "name": "Разъём штепсельный на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём штепсельный на кабель",
+      "published_count": 6,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 6
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "19d9ad5aff3b299bc3df58a5",
+      "tnved": "8536699008",
+      "name": "Разъём электрический штепсельный",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём электрический штепсельный",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Amass",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "c5355ef666d924aa2f56af87",
+      "tnved": "8536699008",
+      "name": "Цилиндрический разъём",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Цилиндрический разъём",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ACIT",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "62b0848c23251bed36da171b",
+      "tnved": "8536699008",
+      "name": "Цилиндрический разъём на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Цилиндрический разъём на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ACIT",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "f2af870b5f9cf0d8b70b169d",
+      "tnved": "8536699008",
+      "name": "Штепсельные разъем",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельные разъем",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Rigoal Connector",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "38c601df5551f4321f504ee1",
+      "tnved": "8536699008",
+      "name": "Штепсельный клеммник на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный клеммник на кабель",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "efa340eb3ca3eae6f0e5bc4a",
+      "tnved": "8536699008",
+      "name": "Штепсельный клеммный разъём на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный клеммный разъём на кабель",
+      "published_count": 19,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 19
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "cc78ea644b86146b751b7c81",
+      "tnved": "8536699008",
+      "name": "Штепсельный контакт на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный контакт на кабель",
+      "published_count": 3,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 2
+        },
+        {
+          "name": "Molex",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "30aba812eb612fcd4d141ae3",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъем",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем",
+      "published_count": 7,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ALTW Technology",
+          "count": 2
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 2
+        },
+        {
+          "name": "Rigoal Connector",
+          "count": 2
+        },
+        {
+          "name": "Molex",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "96ac093e9b4437cc2f0132b8",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъем (контакт) на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем (контакт) на кабель",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "SFENG",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "1c5278bb400b59ec655eaa92",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъем для монтажа на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем для монтажа на кабель",
+      "published_count": 6,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 6
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "2b67d7f280c83d716cf5ec06",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъем на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем на кабель",
+      "published_count": 15,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Rigoal Connector",
+          "count": 10
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 2
+        },
+        {
+          "name": "ALTW Technology",
+          "count": 1
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 1
+        },
+        {
+          "name": "XinSheng Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "214d0bb199052f8d3a0678b5",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъем на корпус",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем на корпус",
+      "published_count": 1,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Cazn",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "de66436e08cfeaab7a74ab5d",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъём",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём",
+      "published_count": 100,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 21
+        },
+        {
+          "name": "ACIT",
+          "count": 13
+        },
+        {
+          "name": "Rigoal Connector",
+          "count": 13
+        },
+        {
+          "name": "Renhotec",
+          "count": 11
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 10
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 7
+        },
+        {
+          "name": "ALTW Technology",
+          "count": 5
+        },
+        {
+          "name": "XinSheng Electronics",
+          "count": 3
+        },
+        {
+          "name": "CITY YOUYE",
+          "count": 2
+        },
+        {
+          "name": "Cazn",
+          "count": 2
+        },
+        {
+          "name": "DECA SWITCHLAB",
+          "count": 2
+        },
+        {
+          "name": "KINKONG ELECTRIC",
+          "count": 2
+        },
+        {
+          "name": "AOHAI",
+          "count": 1
+        },
+        {
+          "name": "Amass",
+          "count": 1
+        },
+        {
+          "name": "Anchi",
+          "count": 1
+        },
+        {
+          "name": "DEGSON",
+          "count": 1
+        },
+        {
+          "name": "Degson",
+          "count": 1
+        },
+        {
+          "name": "Dinkle",
+          "count": 1
+        },
+        {
+          "name": "Lanz Electronics",
+          "count": 1
+        },
+        {
+          "name": "Lianhe Electronics",
+          "count": 1
+        },
+        {
+          "name": "seso",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "10012ec9965a8cefc83ad952",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъём М12",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём М12",
+      "published_count": 2,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Cazn",
+          "count": 1
+        },
+        {
+          "name": "Rigoal Connector",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "58b4e3a43336a9715c4079e2",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъём для монтажа на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём для монтажа на кабель",
+      "published_count": 37,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 17
+        },
+        {
+          "name": "ACIT",
+          "count": 6
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 5
+        },
+        {
+          "name": "Rigoal Connector",
+          "count": 2
+        },
+        {
+          "name": "golten electronics",
+          "count": 2
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 1
+        },
+        {
+          "name": "Degson",
+          "count": 1
+        },
+        {
+          "name": "Molex",
+          "count": 1
+        },
+        {
+          "name": "Olink",
+          "count": 1
+        },
+        {
+          "name": "XinSheng Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "602a8ef720565554f54df724",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъём для монтажа на панель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём для монтажа на панель",
+      "published_count": 4,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "Lanz Electronics",
+          "count": 4
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "2acd7ccde22d57455aa04a37",
+      "tnved": "8536699008",
+      "name": "Штепсельный разъём на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём на кабель",
+      "published_count": 29,
+      "category_id": "231084",
+      "category": "Штепсели и розетки",
+      "brands": [
+        {
+          "name": "ALTW Technology",
+          "count": 5
+        },
+        {
+          "name": "ACIT",
+          "count": 4
+        },
+        {
+          "name": "Golten Electronics",
+          "count": 4
+        },
+        {
+          "name": "Beris Electronic",
+          "count": 3
+        },
+        {
+          "name": "GreenConn",
+          "count": 3
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 3
+        },
+        {
+          "name": "Rigoal Connector",
+          "count": 3
+        },
+        {
+          "name": "CITY YOUYE",
+          "count": 2
+        },
+        {
+          "name": "CAZN",
+          "count": 1
+        },
+        {
+          "name": "Molex",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "360e180633b96b6ee68c2eb6",
+      "tnved": "8536901000",
+      "name": "КЛЕММА ВИНТОВАЯ",
+      "nk_kind": "КЛЕММА ВИНТОВАЯ",
+      "other_kind": "",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "In-saiL",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "ecc1c8151a02cc713025c0df",
+      "tnved": "8536901000",
+      "name": "FPC/FFC разъем на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "FPC/FFC разъем на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "9dcdbaa99a3bc2404d50e474",
+      "tnved": "8536901000",
+      "name": "Винтовой разъём для монтажа на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Винтовой разъём для монтажа на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Degson",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "237490c2b7113fc333346350",
+      "tnved": "8536901000",
+      "name": "Клемма винтовая на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клемма винтовая на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "cfd148488e37c692238d4d34",
+      "tnved": "8536901000",
+      "name": "Клемма на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клемма на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "c5fd6045cc53b27d1d6e83d6",
+      "tnved": "8536901000",
+      "name": "Клемма штепсельная",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клемма штепсельная",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Degson",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "42c2bc17c6ddda44edeb0bec",
+      "tnved": "8536901000",
+      "name": "Клеммная винтовая колодка на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммная винтовая колодка на плату",
+      "published_count": 4,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 4
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "b904d42422c69ac5ea058e2d",
+      "tnved": "8536901000",
+      "name": "Клеммная втулка винтовая монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммная втулка винтовая монтаж на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "6bb90d27adaa594565da3078",
+      "tnved": "8536901000",
+      "name": "Клеммная колодка на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммная колодка на плату",
+      "published_count": 4,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 3
+        },
+        {
+          "name": "Wanjie Electronic",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "dc6b8937c33f36e75d574a7e",
+      "tnved": "8536901000",
+      "name": "Клеммник винтовой на печатную плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммник винтовой на печатную плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a82710caf75950d6fcfbc82a",
+      "tnved": "8536901000",
+      "name": "Клеммник на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммник на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Wanjie Electronic",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "96aa74d4dcffe902c03fe834",
+      "tnved": "8536901000",
+      "name": "Клеммник штепсельный",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клеммник штепсельный",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "DECA SWITCHLAB",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "49eb712be8b22c50236c2596",
+      "tnved": "8536901000",
+      "name": "Контакт монтаж на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт монтаж на кабель",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "9d8385b2e30bbccd1c4dad80",
+      "tnved": "8536901000",
+      "name": "Разъем на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на кабель",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "f032cabb72435aed8538f059",
+      "tnved": "8536901000",
+      "name": "Разъемный клеммники",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъемный клеммники",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Degson",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "2e1ebfd9cdb23a6adb37e506",
+      "tnved": "8536901000",
+      "name": "Разъём на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём на кабель",
+      "published_count": 35,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 10
+        },
+        {
+          "name": "Wago",
+          "count": 9
+        },
+        {
+          "name": "Golten Electronics",
+          "count": 6
+        },
+        {
+          "name": "Degson",
+          "count": 4
+        },
+        {
+          "name": "Molex",
+          "count": 3
+        },
+        {
+          "name": "DECA SWITCHLAB",
+          "count": 1
+        },
+        {
+          "name": "Omron",
+          "count": 1
+        },
+        {
+          "name": "TE Connectivity",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e4421971c9f4a10f8bacf6c2",
+      "tnved": "8536901000",
+      "name": "Разъём на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём на плату",
+      "published_count": 7,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 5
+        },
+        {
+          "name": "Golten Electronics",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e8c701686860ddc1adabcc31",
+      "tnved": "8536901000",
+      "name": "Разъём прижимной для монтажа на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём прижимной для монтажа на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "f6b4e9563870cae900b200fc",
+      "tnved": "8536901000",
+      "name": "Разъём прижимной на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём прижимной на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Scondar",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "db77e231436a0493a144cd85",
+      "tnved": "8536901000",
+      "name": "Штепсельный на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "ПЕРЕМЕННАЯ ХАРАКТЕРИСТИКА ОТСУТСТВУЕТ"
+    },
+    {
+      "id": "eda0f1dbdfce3dde81242a06",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъем",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "5d2a32e7640bea0cbb61e267",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъем для монтажа на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем для монтажа на плату",
+      "published_count": 19,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 19
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "577bc7a4357efc0d8726444b",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъем монтаж на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем монтаж на кабель",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Degson",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "886f831ae36f46348919b82e",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъем монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем монтаж на плату",
+      "published_count": 11,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 10
+        },
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a253efb31539b345ce1c53e8",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъем на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем на плату",
+      "published_count": 7,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 7
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "11144e194a3398dffd629b2b",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъём",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём",
+      "published_count": 4,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Golten Electronics",
+          "count": 2
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "eb27823e9ec202c326188e01",
+      "tnved": "8536901000",
+      "name": "Штепсельный разъём на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём на плату",
+      "published_count": 1,
+      "category_id": "231216",
+      "category": "Соединители и контактные элементы для проводов и кабелей",
+      "brands": [
+        {
+          "name": "Omron",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e00622ec29a904f64dadaf08",
+      "tnved": "8536908500",
+      "name": "Pogo pin разъём",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Pogo pin разъём",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "QH Industrial",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "3d01ea7c694961a382ea883b",
+      "tnved": "8536908500",
+      "name": "Блок держателя предохранителя на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Блок держателя предохранителя на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "6c7d1d6c8658487b56d0db34",
+      "tnved": "8536908500",
+      "name": "Держатель Micro-SD карт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель Micro-SD карт",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "JinBiLai Hardware",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "4ee38577210a57dfcb316f30",
+      "tnved": "8536908500",
+      "name": "Держатель Micro-Sim",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель Micro-Sim",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "JinBiLai Hardware",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a6fa652f96d11b3b9768f211",
+      "tnved": "8536908500",
+      "name": "Держатель Nano SIM на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель Nano SIM на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "c1ccb23f657c695def8b38c4",
+      "tnved": "8536908500",
+      "name": "Держатель Nano Sim карт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель Nano Sim карт",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Pt-joint",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "844fd48d96a1dab3ec1eca7e",
+      "tnved": "8536908500",
+      "name": "Держатель SIM CARD на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель SIM CARD на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "839dd1f9cb9252b457f86395",
+      "tnved": "8536908500",
+      "name": "Держатель SIM на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель SIM на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        },
+        {
+          "name": "JinBiLai Hardware",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "44a4ba9d512bbed38225a456",
+      "tnved": "8536908500",
+      "name": "Держатель батарейки CR-2032",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель батарейки CR-2032",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "b16a708d1f139fd629484832",
+      "tnved": "8536908500",
+      "name": "Держатель батарейки монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель батарейки монтаж на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "2ad67cc6ab86eb884c1947cf",
+      "tnved": "8536908500",
+      "name": "Держатель для Sim карт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель для Sim карт",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "JinBiLai Hardware",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "ee69055f2a77fe2f5ea3d83e",
+      "tnved": "8536908500",
+      "name": "Держатель контактный для батарейки",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Держатель контактный для батарейки",
+      "published_count": 4,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Bonrex Technology",
+          "count": 1
+        },
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        },
+        {
+          "name": "LOTES",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "b8a2c037e453e1d802b51726",
+      "tnved": "8536908500",
+      "name": "Джампер на разъем",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Джампер на разъем",
+      "published_count": 4,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 3
+        },
+        {
+          "name": "hsuan mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "75dee0234dd3a9fcda459f49",
+      "tnved": "8536908500",
+      "name": "Джампер-перемычка в пластиковом корпусе",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Джампер-перемычка в пластиковом корпусе",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "feb4993bce41b177a4c7ed17",
+      "tnved": "8536908500",
+      "name": "Джампер-перемычка на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Джампер-перемычка на плату",
+      "published_count": 6,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 6
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "5146ca9bee4f3624b3ef3a5d",
+      "tnved": "8536908500",
+      "name": "Клемма на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Клемма на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a12fce41d551ca461d268b31",
+      "tnved": "8536908500",
+      "name": "Контакт монтаж на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт монтаж на кабель",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "f0b58c802088b2e0de805ff0",
+      "tnved": "8536908500",
+      "name": "Контакт на кабель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт на кабель",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "oupiin",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8303e6f60f0d71652fecb71f",
+      "tnved": "8536908500",
+      "name": "Контакт на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Контакт на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        },
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "42040353986359e79ae18607",
+      "tnved": "8536908500",
+      "name": "Корпус разъема",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Корпус разъема",
+      "published_count": 3,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "OUPIIN",
+          "count": 3
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "954c0003af229b11fed6f83c",
+      "tnved": "8536908500",
+      "name": "Прижимной разъем монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Прижимной разъем монтаж на плату",
+      "published_count": 3,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "LOTES",
+          "count": 3
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "64f17ee4d1ec0db91c9aced1",
+      "tnved": "8536908500",
+      "name": "Прижимной разъем на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Прижимной разъем на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "LOTES",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "aba27973d261eca774972afa",
+      "tnved": "8536908500",
+      "name": "Прижимной штепсельный разъём на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Прижимной штепсельный разъём на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "LOTES",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "b2b74adfb28fcb6b19483e30",
+      "tnved": "8536908500",
+      "name": "Пружинный контакт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Пружинный контакт",
+      "published_count": 3,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 3
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "53605f8eb78d0e44a1b19ff6",
+      "tnved": "8536908500",
+      "name": "Пружинный контакт на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Пружинный контакт на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "SFENG",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "9a31e6db94ae36f82864361f",
+      "tnved": "8536908500",
+      "name": "Разъем для M2 карт на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем для M2 карт на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "4a0c01738406a1744413822a",
+      "tnved": "8536908500",
+      "name": "Разъем для Micro SD карты на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем для Micro SD карты на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "ebcc3f406ac49885558676b6",
+      "tnved": "8536908500",
+      "name": "Разъем для SD-карт монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем для SD-карт монтаж на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "1596d9eadcd3691b00ffb562",
+      "tnved": "8536908500",
+      "name": "Разъем для сим-карт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем для сим-карт",
+      "published_count": 4,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 2
+        },
+        {
+          "name": "Molex",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "32ca552c0380b1fca9112b6c",
+      "tnved": "8536908500",
+      "name": "Разъем для сим-карт монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем для сим-карт монтаж на плату",
+      "published_count": 10,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "JinBiLai Hardware",
+          "count": 4
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 3
+        },
+        {
+          "name": "Cixi Cardconn",
+          "count": 2
+        },
+        {
+          "name": "Molex",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "cd8677236161888350582f0d",
+      "tnved": "8536908500",
+      "name": "Разъем для сим-карт на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем для сим-карт на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "JinBiLai Hardware",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "bcb38efded8ad2899cdfe7d9",
+      "tnved": "8536908500",
+      "name": "Разъем на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на плату",
+      "published_count": 22,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 9
+        },
+        {
+          "name": "LOTES",
+          "count": 6
+        },
+        {
+          "name": "EEMB",
+          "count": 2
+        },
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        },
+        {
+          "name": "Degson",
+          "count": 1
+        },
+        {
+          "name": "Molex",
+          "count": 1
+        },
+        {
+          "name": "Omron",
+          "count": 1
+        },
+        {
+          "name": "Wago",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "68707905e5d5680ad308e9dc",
+      "tnved": "8536908500",
+      "name": "Разъем на плату для М2",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем на плату для М2",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "LOTES",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "64a14c37323aad51482283ca",
+      "tnved": "8536908500",
+      "name": "Разъем под батарею",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем под батарею",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "LOTES",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "461ca989504bcd1e00510bd2",
+      "tnved": "8536908500",
+      "name": "Разъем под батарею монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъем под батарею монтаж на плату",
+      "published_count": 5,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "EEMB",
+          "count": 2
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 2
+        },
+        {
+          "name": "Bonrex Technology",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "4e63c98ad9c16c460938654f",
+      "tnved": "8536908500",
+      "name": "Разъём Pogo-pin",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём Pogo-pin",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "SFENG",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "5b6e422fb217062399eb7a3e",
+      "tnved": "8536908500",
+      "name": "Разъём для Micro SD карт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём для Micro SD карт",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Wurth Electronics Inc",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "2c3546db9a49632847b6a116",
+      "tnved": "8536908500",
+      "name": "Разъём на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Разъём на плату",
+      "published_count": 4,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "TE Connectivity",
+          "count": 2
+        },
+        {
+          "name": "Golten Electronics",
+          "count": 1
+        },
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a56de41de59a6c386027b208",
+      "tnved": "8536908500",
+      "name": "Сокет для процессора",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Сокет для процессора",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "LOTES",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "569bbbe8ccb974160783cb37",
+      "tnved": "8536908500",
+      "name": "Штепсельный разъем",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем",
+      "published_count": 7,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "OUPIIN",
+          "count": 7
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "a5d7d266b92696f5fe42c818",
+      "tnved": "8536908500",
+      "name": "Штепсельный разъем для монтажа на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем для монтажа на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "OUPIIN",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "f2c4bfaeb686d06a0d2cccfe",
+      "tnved": "8536908500",
+      "name": "Штепсельный разъем монтаж на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъем монтаж на плату",
+      "published_count": 2,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "OUPIIN",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "bc10b6ab9ef45d997299b65d",
+      "tnved": "8536908500",
+      "name": "Штепсельный разъём",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "KLS",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "19451bb40920e56d3f50f088",
+      "tnved": "8536908500",
+      "name": "Штепсельный разъём для Micro SIM на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Штепсельный разъём для Micro SIM на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8609b6c47aae99e3caee80d7",
+      "tnved": "8536908500",
+      "name": "держатель для MicroSD карт",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "держатель для MicroSD карт",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Hsuan Mao",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8e960a7bd4138f78d8cda76d",
+      "tnved": "8536908500",
+      "name": "держатель для SIM карты",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "держатель для SIM карты",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8333c74011cce398008096a2",
+      "tnved": "8536908500",
+      "name": "держатель для Sim-карт на плату",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "держатель для Sim-карт на плату",
+      "published_count": 1,
+      "category_id": "231264",
+      "category": "Аппаратура электрическая для коммутации и защиты",
+      "brands": [
+        {
+          "name": "Cixi Cardconn",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "9d811a4964ceb19c1806d356",
+      "tnved": "8539519009",
+      "name": "Гибкая светодиодная лента",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Гибкая светодиодная лента",
+      "published_count": 8,
+      "category_id": "239034",
+      "category": "Модули светодиодные (LED)",
+      "brands": [
+        {
+          "name": "OASISTEK",
+          "count": 8
+        }
+      ],
+      "variable_type": "ПЕРЕМЕННАЯ ХАРАКТЕРИСТИКА ОТСУТСТВУЕТ"
+    },
+    {
+      "id": "ff9235d8d7ea8f3d2233f0ed",
+      "tnved": "8539519009",
+      "name": "Лента светодиодная",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Лента светодиодная",
+      "published_count": 1,
+      "category_id": "239034",
+      "category": "Модули светодиодные (LED)",
+      "brands": [
+        {
+          "name": "Oasistek (Taiwan Oasis)",
+          "count": 1
+        }
+      ],
+      "variable_type": "ПЕРЕМЕННАЯ ХАРАКТЕРИСТИКА ОТСУТСТВУЕТ"
+    },
+    {
+      "id": "36c484dfefe05fb4f88ddfcc",
+      "tnved": "8541410002",
+      "name": "Модуль светодиодный тестовый",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Модуль светодиодный тестовый",
+      "published_count": 1,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Тестовый бренд",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "626cc30b7fa41b34dd9f008a",
+      "tnved": "8541410002",
+      "name": "Подсветка для ЖК дисплея светодиодная",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Подсветка для ЖК дисплея светодиодная",
+      "published_count": 1,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Portmont Limited",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "e18a60344e2026445e085613",
+      "tnved": "8541410002",
+      "name": "Подсветка светодиодная для ЖК дисплея",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Подсветка светодиодная для ЖК дисплея",
+      "published_count": 2,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "JICTECH-LCD",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "85e3c02612c97cd6f2908e0e",
+      "tnved": "8541410002",
+      "name": "Светодиод для поверхностного монтажа",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Светодиод для поверхностного монтажа",
+      "published_count": 61,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 36
+        },
+        {
+          "name": "Lite ON LED",
+          "count": 11
+        },
+        {
+          "name": "LUTO Technology",
+          "count": 4
+        },
+        {
+          "name": "JICTECH-LCD",
+          "count": 3
+        },
+        {
+          "name": "Bridgelux",
+          "count": 1
+        },
+        {
+          "name": "Foryard Optoelectronics",
+          "count": 1
+        },
+        {
+          "name": "Jointsemi LED",
+          "count": 1
+        },
+        {
+          "name": "OASISTEK",
+          "count": 1
+        },
+        {
+          "name": "PARA LIGHT",
+          "count": 1
+        },
+        {
+          "name": "Portmont Limited",
+          "count": 1
+        },
+        {
+          "name": "Yuliang Optoelectronic",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "df39e0ec37007db7e92d6059",
+      "tnved": "8541410004",
+      "name": "Диод для поверхностного монтажа",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Диод для поверхностного монтажа",
+      "published_count": 1,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "882d7001995403cf455deee5",
+      "tnved": "8541410004",
+      "name": "Диод светоизлучающий",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Диод светоизлучающий",
+      "published_count": 1,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "4f4c52c13c9ff27788b2ce6b",
+      "tnved": "8541410004",
+      "name": "Светодиод для поверхностного монтажа",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Светодиод для поверхностного монтажа",
+      "published_count": 509,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 406
+        },
+        {
+          "name": "Foryard Optoelectronics",
+          "count": 39
+        },
+        {
+          "name": "Jointsemi LED",
+          "count": 11
+        },
+        {
+          "name": "XingLight",
+          "count": 10
+        },
+        {
+          "name": "Harvatek Technology",
+          "count": 8
+        },
+        {
+          "name": "Lite ON LED",
+          "count": 6
+        },
+        {
+          "name": "Harvatek",
+          "count": 4
+        },
+        {
+          "name": "Yuliang Optoelectronic",
+          "count": 4
+        },
+        {
+          "name": "PARA LIGHT",
+          "count": 3
+        },
+        {
+          "name": "Jiangsu AMICC Optoelectronics Technology Co., Ltd.",
+          "count": 2
+        },
+        {
+          "name": "Lite-On Corp.",
+          "count": 2
+        },
+        {
+          "name": "Refond",
+          "count": 2
+        },
+        {
+          "name": "Everlight",
+          "count": 1
+        },
+        {
+          "name": "FOSHAN NATIONSTAR OPTOELECTRONICS CO.,LTD",
+          "count": 1
+        },
+        {
+          "name": "Fedy-LED",
+          "count": 1
+        },
+        {
+          "name": "HONGLITRONIC",
+          "count": 1
+        },
+        {
+          "name": "Harvatek Corp. (TW)",
+          "count": 1
+        },
+        {
+          "name": "Highland",
+          "count": 1
+        },
+        {
+          "name": "KINGBRIGHT",
+          "count": 1
+        },
+        {
+          "name": "LITE-ON",
+          "count": 1
+        },
+        {
+          "name": "OASISTEK",
+          "count": 1
+        },
+        {
+          "name": "OSRAM",
+          "count": 1
+        },
+        {
+          "name": "TYANSHINE",
+          "count": 1
+        },
+        {
+          "name": "WorldWide JT",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "16c886acd42f45dd3d36a1fe",
+      "tnved": "8541410006",
+      "name": "Светодиод для поверхностного монтажа",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Светодиод для поверхностного монтажа",
+      "published_count": 4,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Jointsemi LED",
+          "count": 2
+        },
+        {
+          "name": "Kingbright",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8be8109ad84b21f3f6c0cb64",
+      "tnved": "8541490000",
+      "name": "Оптопара полупроводниковая",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Оптопара полупроводниковая",
+      "published_count": 1,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Hualian Electronics Corp",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "8612d17a6015c21d452a8a11",
+      "tnved": "8541490000",
+      "name": "Фотопрерыватель",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Фотопрерыватель",
+      "published_count": 2,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 2
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "6d0d2c52904dcb3410e37fc5",
+      "tnved": "8541490000",
+      "name": "Фоторезистор",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Фоторезистор",
+      "published_count": 1,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "234ea7231c5b63c8990e4daf",
+      "tnved": "8541490000",
+      "name": "Фототранзистор",
+      "nk_kind": "НЕТ В СПРАВОЧНИКЕ",
+      "other_kind": "Фототранзистор",
+      "published_count": 6,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Kingbright",
+          "count": 5
+        },
+        {
+          "name": "Foryard Optoelectronics",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    },
+    {
+      "id": "edee04fea4377e24a493ccf0",
+      "tnved": "8541490000",
+      "name": "ФОТОТРАНЗИСТОР",
+      "nk_kind": "ФОТОТРАНЗИСТОР",
+      "other_kind": "",
+      "published_count": 2,
+      "category_id": "231267",
+      "category": "Приборы полупроводниковые",
+      "brands": [
+        {
+          "name": "Everlight",
+          "count": 1
+        },
+        {
+          "name": "Kingbright",
+          "count": 1
+        }
+      ],
+      "variable_type": "КОЛИЧЕСТВО"
+    }
+  ]
+}

@@ -15,7 +15,7 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     if(!state.session.organization_ids.includes(org)){org=state.session.organization_ids[0]||'';cursors=[null];page=0;}
     const actions=[button('Обновить накладные',()=>{cursors=[null];page=0;show();})];
     if(can('marking.documents.create'))actions.push(button('+ Новая накладная',()=>renderEditor(null),'primary'));
-    host.replaceChildren(heading('Накладные БМ','Подготовка состава, проверка и архив. Эмиссия, отчёты и АТК ещё не подключены.',actions));
+    host.replaceChildren(heading('Накладные БМ','Подготовка состава, проверка и архив. Эмиссия и нанесение доступны в разделе «Маркировка».',actions));
     const form=node('form',undefined,'filters document-filters'),organizations=node('select');for(const o of state.session.organizations)organizations.append(new Option(o.name,o.id));organizations.value=org;organizations.addEventListener('change',()=>{org=organizations.value;cursors=[null];page=0;show();});
     const search=node('input');search.value=query;search.placeholder='Номер, поставщик или PN';
     const scope=node('select');scope.append(new Option('В работе','active'));if(can('documents.archive.view'))scope.append(new Option('Архив','archived'));if(!can('documents.archive.view'))archived=false;scope.value=archived?'archived':'active';scope.addEventListener('change',()=>{archived=scope.value==='archived';cursors=[null];page=0;show();});

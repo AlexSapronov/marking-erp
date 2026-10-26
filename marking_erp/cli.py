@@ -26,6 +26,7 @@ def main():
     signer_parser.add_argument('--name',required=True)
     signer_parser.add_argument('--certificate-sha256',required=True)
     signer_parser.add_argument('--kind',action='append',required=True)
+    verifier=commands.add_parser('trust-windows-verifier');verifier.add_argument('--device-id',required=True)
     revoke=commands.add_parser('revoke-signer')
     revoke.add_argument('--device-id',required=True)
     commands.add_parser('recover-operations')
@@ -58,6 +59,12 @@ def main():
                 command.upgrade(config, "head")
             elif args.action == "seed":
                 print("initialized" if seed_defaults(connection) else "already_initialized")
+            elif args.action=='trust-windows-verifier':
+                from uuid import UUID
+                from sqlalchemy import text
+                connection.execute(text('INSERT INTO signer_verifiers(device_id) VALUES (:id) ON CONFLICT(device_id) DO UPDATE SET enabled=true'),{'id':UUID(args.device_id)})
+                from .auth import audit
+                audit(connection,None,'signer.verifier_provisioned',args.device_id,{})
             elif args.action=='register-signer':
                 from uuid import UUID
                 from .signer import provision

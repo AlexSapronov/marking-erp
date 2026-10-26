@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "marking-erp"
 version = "0.1.0"
-description = "Marking ERP infrastructure; business modules are not yet enabled"
+description = "Marking ERP workspaces with explicit live adapters and signing verification"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi==0.162.0", "uvicorn==0.54.0", "SQLAlchemy==2.1.6",
@@ -31,7 +31,7 @@ marking-erp-service = "marking_erp.service:main"
 include = ["marking_erp*"]
 
 [tool.setuptools.package-data]
-marking_erp = ["data/*.json", "migrations/*.sql", "migrations/*.mako", "static/*.html", "static/*.css", "static/*.js"]
+marking_erp = ["data/*.json", "data/presets/*.json", "migrations/*.sql", "migrations/*.mako", "static/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
