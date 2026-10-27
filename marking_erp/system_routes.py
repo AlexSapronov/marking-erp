@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import text
 from .migrate import schema_head
 from .service import inspect_runtime
+from .readiness import operational_status
 
 CHECKS = ('non_root', 'https_cookies', 'release_sha', 'private_file_storage', 'mfa_key',
           'schema_revision', 'database_runtime_role', 'seed_initialized', 'administrator_mfa', 'mfa_decrypt')
@@ -22,8 +23,8 @@ def public_status(report):
             'expected_schema_revision': schema_head(), 'checks': checks,
             'technical_ready': report.get('ready') is True and all(v is True for v in checks.values()),
             'business_integrations_verified': False,
-            'components': {'nk': 'pilot_only', 'true_api_oms': 'not_connected',
-                           'gost_signer': 'verifier_not_connected', 'tsd': 'pilot_required',
+            'components': {'nk': 'pilot_required', 'true_api_oms': 'pilot_required',
+                           'gost_signer': 'pilot_required', 'tsd': 'pilot_required',
                            'backup_schedule': 'not_verified'}}
 
 
@@ -34,4 +35,7 @@ def install_system(app, actor, settings, engine):
         organizations = set(current.connection.execute(text('SELECT id FROM organizations WHERE enabled')).scalars())
         if not organizations.issubset(current.organizations()):
             raise HTTPException(403, 'Диагностика системы требует доступа ко всем действующим организациям')
-        return public_status(inspect_runtime(settings, engine))
+        result = public_status(inspect_runtime(settings, engine))
+        result['operational'] = operational_status(current.connection, settings,
+            inspect_credentials=current.grants().get('integrations.manage') == 'all') if result['checks']['schema_revision'] is True else None
+        return result
