@@ -103,7 +103,7 @@ def install_warehouse(app, actor, settings=None):
     @app.get('/api/logistics/warehouse-options')
     def options(organization_id:UUID, current=dep):
         current.require('logistics.warehouse.transfer', organization_id=organization_id, owner_id=current.id)
-        sources=current.connection.execute(text("SELECT id,owner_id,number,supplier,document_date,revision FROM bm_documents d WHERE organization_id=:org AND state='prepared' AND NOT EXISTS(SELECT 1 FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state='completed') ORDER BY updated_at DESC LIMIT 200"), {'org':organization_id}).mappings().all()
+        sources=current.connection.execute(text("SELECT id,owner_id,number,supplier,document_date,revision FROM bm_documents d WHERE organization_id=:org AND state='prepared' AND NOT EXISTS(SELECT 1 FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state='completed') AND NOT EXISTS(SELECT 1 FROM business_items p WHERE p.source_id=d.id AND p.kind='marking' AND p.state<>'archived' AND COALESCE(p.body->'warehouse_composition'->>'state','')<>'ready') ORDER BY updated_at DESC LIMIT 200"), {'org':organization_id}).mappings().all()
         people=current.connection.execute(text("""SELECT u.id,u.display_name,g.name AS group_name FROM users u JOIN groups g ON g.slug=u.group_slug
             JOIN user_organizations o ON o.user_id=u.id WHERE o.organization_id=:org AND u.enabled
             AND u.group_slug IN ('warehouse','tsd','specialist','administrator') ORDER BY u.display_name"""), {'org':organization_id}).mappings().all()
@@ -131,6 +131,8 @@ def install_warehouse(app, actor, settings=None):
                 raise HTTPException(409, 'Повтор запроса отличается от сохранённого')
             return {'id':existing['id'], 'replayed':True}
         if c.execute(text('SELECT EXISTS(SELECT 1 FROM operation_targets WHERE id=:id)'),{'id':body.request_id}).scalar_one(): raise HTTPException(409,'Идентификатор задания уже занят')
+        process=c.execute(text("SELECT body FROM business_items WHERE source_id=:id AND kind='marking' AND state<>'archived'"),{'id':source['id']}).scalar_one_or_none()
+        if process is not None and process.get('warehouse_composition',{}).get('state')!='ready':raise HTTPException(409,'Сначала верните документ в БМ и получите полный Excel поставки')
         expected=[]
         if body.expected_codes:
             import re
@@ -144,11 +146,12 @@ def install_warehouse(app, actor, settings=None):
                 expected.append(cis)
         else:
             expected=list(c.execute(text("SELECT c.cis FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE i.source_id=:id AND i.kind='marking' AND c.state='applied' AND i.state<>'archived'"),{'id':source['id']}).scalars())
-        if live_policy(current,{'organization_id':source['organization_id']}) and not expected:raise HTTPException(409,'Для боевой складской проверки нужен ожидаемый перечень КМ поставки')
+        if any(r.get('marked',True) for r in source['lines']) and live_policy(current,{'organization_id':source['organization_id']}) and not expected:raise HTTPException(409,'Для боевой складской проверки нужен ожидаемый перечень КМ поставки')
         if expected:
             from collections import Counter
             plan=Counter()
-            for line in source['lines']:plan[line['gtin']]+=line['labels']
+            for line in source['lines']:
+                if line.get('marked',True):plan[line['gtin']]+=line['labels']
             if Counter(cis[2:16] for cis in expected)!=plan:raise HTTPException(422,'Ожидаемые КМ по GTIN не совпадают с полным составом накладной')
         from .business.logistics import is_completed
         if is_completed(c,source['id']):raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
@@ -209,7 +212,7 @@ def install_warehouse(app, actor, settings=None):
         writable(current,task)
         duplicate=c.execute(text('SELECT id FROM warehouse_scans WHERE task_id=:id AND cis=:cis AND removed_at IS NULL'), {'id':id,'cis':parsed.cis}).scalar_one_or_none()
         if duplicate: raise HTTPException(409, {'code':'duplicate_scan','message':'Этот КМ уже отсканирован. При ошибке удалите ранее принятый скан.','scan_id':str(duplicate)})
-        candidates=[i for i,r in enumerate(task['lines']) if r['gtin']==parsed.gtin and r['quantity']==quantity]
+        candidates=[i for i,r in enumerate(task['lines']) if r.get('marked',True) and r['gtin']==parsed.gtin and r['quantity']==quantity]
         if not any(r['gtin']==parsed.gtin for r in task['lines']): raise HTTPException(422, 'GTIN отсутствует в задании. Отложите товар и проверьте накладную.')
         if not candidates: raise HTTPException(422, 'Количество в КМ не соответствует упаковкам в задании')
         if body.line_index is None:
@@ -254,7 +257,7 @@ def install_warehouse(app, actor, settings=None):
             writable(current,task)
             if any(r['scanned']!=r['labels'] or r['units']!=r['expected_units'] for r in summary(current,task)): raise HTTPException(409, 'Есть расхождения. Отсканируйте недостающие КМ.')
             config=live_policy(current,task)
-            if config:
+            if config and any(r.get('marked',True) for r in task['lines']):
                 scans=[dict(r) for r in current.connection.execute(text('SELECT cis,gtin,quantity FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL'),{'id':id}).mappings()]
                 verify_codes(current,task,scans,config)
                 current.connection.execute(text('UPDATE warehouse_tasks SET verified_at=now() WHERE id=:id'),{'id':id})
@@ -278,6 +281,10 @@ def install_warehouse(app, actor, settings=None):
         sheet.write_row(0,0,['PN','GTIN','Количество','КМ (GS = <GS>)','Сотрудник','Дата сканирования'])
         rows=current.connection.execute(text('SELECT s.line_index,s.gtin,s.quantity,s.payload,u.display_name,s.created_at FROM warehouse_scans s JOIN users u ON u.id=s.actor_id WHERE s.task_id=:id AND s.removed_at IS NULL ORDER BY s.line_index,s.created_at'), {'id':id}).mappings()
         for i,r in enumerate(rows,1): sheet.write_row(i,0,[task['lines'][r['line_index']]['pn'],r['gtin'],r['quantity'],bytes(r['payload']).decode('ascii').replace('\x1d','<GS>'),r['display_name'],r['created_at'].isoformat()])
+        info=book.add_worksheet('Немаркированные строки')
+        info.write_row(0,0,['PN','Количество по накладной','Примечание'])
+        for i,line in enumerate((r for r in task['lines'] if not r.get('marked',True)),1):info.write_row(i,0,[line['pn'],line['quantity'],'Информационно; не является результатом сверки КМ'])
+        info.freeze_panes(1,0);info.set_column(0,0,30);info.set_column(1,1,25);info.set_column(2,2,65)
         sheet.freeze_panes(1,0);sheet.set_column(0,1,24);sheet.set_column(2,2,14);sheet.set_column(3,3,70);sheet.set_column(4,5,28);book.close()
         auth.audit(current.connection,current.id,'warehouse.export',id,{'kind':task['kind']})
         return Response(out.getvalue(),media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="shipment.xlsx"'})

@@ -3,15 +3,17 @@ from uuid import UUID
 from fastapi import Depends,HTTPException,Query
 from sqlalchemy import text
 from . import store as s
+from .suppliers import expression,canonical
 
 PENDING='''FROM bm_documents d LEFT JOIN business_items m ON m.source_id=d.id AND m.kind='marking' AND m.state<>'archived'
     WHERE d.organization_id=:org AND d.state<>'archived'
+    AND EXISTS(SELECT 1 FROM jsonb_array_elements(d.lines) l WHERE COALESCE((l->>'marked')::boolean,true))
     AND NOT EXISTS(SELECT 1 FROM business_items a WHERE a.organization_id=d.organization_id AND a.kind='atk' AND a.state<>'archived'
         AND a.body->'documents' @> jsonb_build_array(CAST(m.id AS text)))'''
 
 
 def pending(c,org,supplier):
-    return c.execute(text('''SELECT d.id,d.owner_id,d.number,d.state AS source_state,d.revision,m.id AS marking_id,m.state,m.body '''+PENDING+''' AND d.supplier=:supplier ORDER BY d.created_at,d.id'''),{'org':org,'supplier':supplier}).mappings().all()
+    return c.execute(text(f'''SELECT d.id,d.owner_id,d.number,d.state AS source_state,d.revision,m.id AS marking_id,m.state,m.body '''+PENDING+f''' AND {expression('d.supplier','d.organization_id')}=:supplier ORDER BY d.created_at,d.id'''),{'org':org,'supplier':canonical(c,org,supplier)}).mappings().all()
 
 
 def require_ready(c,org,supplier,ids):
@@ -29,9 +31,9 @@ def install_supplier_batches(app,actor):
     def suppliers(organization_id:UUID,after:str=Query('',max_length=200),q:str=Query('',max_length=120),current=dep):
         grant=current.grants().get('marking.atk.create')
         if not grant or organization_id not in current.organizations():raise HTTPException(403,'Раздел недоступен')
-        values=current.connection.execute(text('''SELECT DISTINCT d.supplier '''+PENDING+'''
+        values=current.connection.execute(text(f'''SELECT DISTINCT {expression('d.supplier','d.organization_id')} AS supplier '''+PENDING+f'''
             AND (:grant='all' OR (:grant='own' AND d.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
-            AND d.supplier>:after AND d.supplier ILIKE :q ESCAPE '!' ORDER BY d.supplier LIMIT 101'''),
+            AND {expression('d.supplier','d.organization_id')}>:after AND {expression('d.supplier','d.organization_id')} ILIKE :q ESCAPE '!' ORDER BY supplier LIMIT 101'''),
             {'org':organization_id,'grant':grant,'user':current.id,'after':after,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).scalars().all()
         return {'suppliers':values[:100],'next_cursor':values[99] if len(values)>100 else None}
 

@@ -4,13 +4,14 @@ from hashlib import sha256
 import json
 from uuid import UUID
 from fastapi import Depends, HTTPException, Query, Request, Response
-from pydantic import Field, StrictInt
+from pydantic import Field, StrictInt,StrictBool
 from sqlalchemy import text
 from starlette.concurrency import run_in_threadpool
 from .auth_routes import Body
 from . import auth, invoice_excel as excel
 from .policy import snapshot
 from .operations import cancel_before_dispatch
+from .business.suppliers import expression,canonical
 
 
 class Line(Body):
@@ -19,6 +20,7 @@ class Line(Body):
     tnved: str=Field(default='',max_length=10)
     quantity: str|StrictInt
     labels: str|StrictInt
+    marked:StrictBool=True
 
 
 class Invoice(Body):
@@ -49,6 +51,13 @@ def normalize_lines(lines,merge=True):
     for n,line in enumerate(lines,1):
         try:
             pn=excel.pn_text(line['pn']);gtin=line['gtin'].strip();tnved=line['tnved'].strip()
+            if not line.get('marked',True):
+                if gtin:raise ValueError('В немаркируемой строке GTIN должен быть пустым; она не участвует в сверке КМ')
+                if str(line['labels']).strip()!='0':raise ValueError('У немаркируемой строки количество этикеток должно быть 0')
+                quantity=excel.integer_value(line['quantity'],'Количество товара',99999999)
+                if tnved:tnved,_=excel.identifier(tnved,10,'ТН ВЭД')
+                result[('unmarked',n)]={'pn':pn,'gtin':'','tnved':tnved,'quantity':quantity,'labels':0,'marked':False}
+                continue
             if gtin:
                 gtin,padded=excel.identifier(gtin,14,'GTIN')
                 if not excel.valid_gtin(gtin):raise ValueError('GTIN: неверная контрольная цифра')
@@ -121,11 +130,12 @@ def install_documents(app,actor):
     def content(current,body,id,owner=None):
         for value in (body.number,body.supplier):
             if not value.strip() or any(ord(x)<32 for x in value):raise HTTPException(422,'Заполните номер и поставщика без управляющих символов')
+        if any(not line.marked for line in body.lines):raise HTTPException(409,'Немаркируемые строки добавляются из полного Excel после возврата накладной логистом в БМ')
         policy=snapshot(current.connection,body.organization_id)
         lines,warnings=normalize_lines([r.model_dump() for r in body.lines],policy['values']['bm.lines.merge']!='never')
         check_tnved(current.connection,body.organization_id,lines,id)
-        duplicate=current.connection.execute(text('''SELECT EXISTS(SELECT 1 FROM bm_documents WHERE organization_id=:org AND owner_id=:owner
-            AND supplier=:supplier AND number=:number AND document_date=:date AND id<>:id)'''),{'org':body.organization_id,'owner':owner or current.id,'supplier':body.supplier.strip(),'number':body.number.strip(),'date':body.document_date,'id':id}).scalar_one()
+        duplicate=current.connection.execute(text(f'''SELECT EXISTS(SELECT 1 FROM bm_documents d WHERE organization_id=:org AND owner_id=:owner
+            AND {expression('d.supplier','d.organization_id')}=:supplier AND number=:number AND document_date=:date AND id<>:id)'''),{'org':body.organization_id,'owner':owner or current.id,'supplier':canonical(current.connection,body.organization_id,body.supplier.strip()),'number':body.number.strip(),'date':body.document_date,'id':id}).scalar_one()
         if duplicate:raise HTTPException(409,'У вас уже есть накладная с этим номером, датой и поставщиком')
         return {'number':body.number.strip(),'supplier':body.supplier.strip(),'document_date':body.document_date,'lines':lines,'policy_snapshot':policy},warnings
 
@@ -149,20 +159,23 @@ def install_documents(app,actor):
         return {**result,'policy_versions':policy['versions'],'external_calls':False}
 
     @app.get('/api/documents')
-    def listing(organization_id:UUID,archived:bool=False,q:str=Query('',max_length=120),before_id:UUID|None=None,current=dep):
+    def listing(organization_id:UUID,archived:bool=False,q:str=Query('',max_length=120),before_id:UUID|None=None,stage:str=Query('all',pattern='^(all|composition_requested|warehouse_ready)$'),current=dep):
         permission='documents.archive.view' if archived else 'marking.documents.view'
         grant=current.grants().get(permission)
         view=current.grants().get('marking.documents.view')
         if not grant or not view or organization_id not in current.organizations():raise HTTPException(403,'Нет доступа к накладным')
-        rows=current.connection.execute(text('''SELECT d.id,d.number,d.document_date,d.supplier,d.owner_id,d.revision,d.state,d.updated_at,
+        rows=current.connection.execute(text(f'''SELECT d.id,d.number,d.document_date,d.supplier,d.owner_id,d.revision,d.state,d.updated_at,{expression('d.supplier','d.organization_id')} AS canonical_supplier,
             EXISTS(SELECT 1 FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state='completed') AS logistics_completed,
+            EXISTS(SELECT 1 FROM business_items m WHERE m.source_id=d.id AND m.kind='marking' AND m.state<>'archived') AS marking_started,
+            (SELECT i.body->'warehouse_composition'->>'state' FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state<>'archived') AS warehouse_stage,
             jsonb_array_length(d.lines) AS line_count,(SELECT sum((l->>'labels')::bigint) FROM jsonb_array_elements(d.lines) l) AS labels
             FROM bm_documents d WHERE d.organization_id=:org AND (d.state='archived')=:archived
+            AND (:stage='all' OR EXISTS(SELECT 1 FROM business_items w WHERE w.source_id=d.id AND w.kind='marking' AND w.state<>'archived' AND w.body->'warehouse_composition'->>'state'=CASE WHEN :stage='composition_requested' THEN 'requested' ELSE 'ready' END))
             AND (:grant='all' OR (:grant='own' AND d.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
             AND (:view='all' OR (:view='own' AND d.owner_id=:user) OR (:view='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
             AND (CAST(:before AS uuid) IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM bm_documents WHERE id=CAST(:before AS uuid) AND organization_id=:org))
-            AND (d.number ILIKE :q ESCAPE '!' OR d.supplier ILIKE :q ESCAPE '!' OR EXISTS(SELECT 1 FROM jsonb_array_elements(d.lines) l WHERE l->>'pn' ILIKE :q ESCAPE '!'))
-            ORDER BY d.created_at DESC,d.id DESC LIMIT 26'''),{'org':organization_id,'archived':archived,'grant':grant,'view':view,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            AND (d.number ILIKE :q ESCAPE '!' OR {expression('d.supplier','d.organization_id')} ILIKE :q ESCAPE '!' OR EXISTS(SELECT 1 FROM jsonb_array_elements(d.lines) l WHERE l->>'pn' ILIKE :q ESCAPE '!'))
+            ORDER BY d.created_at DESC,d.id DESC LIMIT 26'''),{'org':organization_id,'archived':archived,'stage':stage,'grant':grant,'view':view,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'documents':[dict(r) for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None,'external_dispatch_available':False}
 
     @app.post('/api/documents')
@@ -190,6 +203,11 @@ def install_documents(app,actor):
         doc=get(current,id)
         from .business.logistics import is_completed
         doc['logistics_completed']=is_completed(current.connection,id)
+        doc['canonical_supplier']=canonical(current.connection,doc['organization_id'],doc['supplier'])
+        process=current.connection.execute(text("SELECT id,revision,body->'warehouse_composition' AS composition FROM business_items WHERE source_id=:id AND kind='marking' AND state<>'archived'"),{'id':id}).mappings().first()
+        doc['marking_id']=process['id'] if process else None
+        doc['marking_revision']=process['revision'] if process else None
+        doc['warehouse_composition']=process['composition'] if process else None
         return {'document':{k:v for k,v in doc.items() if k!='request_sha256'},'external_dispatch_available':False,
                 'notice':'Проверка состава локальная. Для эмиссии и нанесения откройте раздел «Маркировка». Сведения каталога подтверждаются через Национальный каталог.'}
 
@@ -215,7 +233,8 @@ def install_documents(app,actor):
         if action=='prepare':
             if doc['state']!='draft':raise HTTPException(409,'Проверять можно только черновик')
             no_external(current.connection,id)
-            result=excel.validate_rows([[r[k] for k in ('pn','gtin','quantity','labels','tnved')] for r in doc['lines']],merge=False)
+            marked=[r for r in doc['lines'] if r.get('marked',True)]
+            result=excel.validate_rows([[r[k] for k in ('pn','gtin','quantity','labels','tnved')] for r in marked],merge=False) if marked else {'errors':[]}
             if result['errors']:raise HTTPException(422,{'message':'Заполните корректные GTIN и ТН ВЭД во всех строках','errors':result['errors'][:100]})
             check_tnved(current.connection,doc['organization_id'],doc['lines'],id);doc['state']='prepared'
         else:

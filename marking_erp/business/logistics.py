@@ -19,8 +19,10 @@ def facts(c,row):
     """Return local evidence blockers. Reading this does not call an external API."""
     source=c.execute(text('SELECT * FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()
     blockers=[]
+    if row['body'].get('warehouse_composition',{}).get('state')!='ready':blockers.append('Нужен полный Excel поставки: верните накладную в БМ для дополнения немаркируемых строк')
     if source['state']=='archived' or source['revision']!=row['body']['source_revision']:blockers.append('Исходная накладная остановлена или изменена')
-    if row['state'] not in ('applied','completed'):blockers.append('Нет подтверждённого отчёта о нанесении')
+    marked=any(r.get('marked',True) for r in row['body']['lines'])
+    if (marked and row['state'] not in ('applied','awaiting_full_invoice','warehouse_ready','completed')) or (not marked and row['state'] not in ('unmarked_ready','completed')):blockers.append('Нет подтверждённого отчёта о нанесении')
     codes=c.execute(text('SELECT id,state FROM business_codes WHERE item_id=:id'),{'id':row['id']}).mappings().all()
     if len(codes)!=sum(v['labels'] for v in row['body']['lines']) or any(v['state']!='applied' for v in codes):blockers.append('Не все КМ подтверждены как нанесённые')
     wanted={str(v['id']) for v in codes}
@@ -28,22 +30,22 @@ def facts(c,row):
     covered=set()
     for atk in atks:
         if atk['state']=='transferred' and atk['body'].get('atk'):covered.update(atk['body']['codes'])
-    if not wanted or not wanted<=covered:blockers.append('Не все КМ входят в готовые АТК, переданные поставщику')
+    if marked and (not wanted or not wanted<=covered):blockers.append('Не все КМ входят в готовые АТК, переданные поставщику')
     # Every current marking order uses releaseMethodType=IMPORT. Manual dossier
     # preparation is insufficient; require real document and INTRODUCED readback.
     fts=c.execute(text("SELECT id,body FROM business_items WHERE organization_id=:org AND kind='fts' AND state='circulation_confirmed'"),{'org':row['organization_id']}).mappings().all()
     introduced={v['id'] for item in fts if item['body'].get('external_document_id') for v in item['body']['codes']}
-    if not wanted or not wanted<=introduced:blockers.append('Не подтверждён ввод всех КМ в оборот по документу ФТС')
+    if marked and (not wanted or not wanted<=introduced):blockers.append('Не подтверждён ввод всех КМ в оборот по документу ФТС')
     tasks=c.execute(text("SELECT id,state,source_revision,verified_at,kind FROM warehouse_tasks WHERE source_id=:id AND state<>'cancelled'"),{'id':source['id']}).mappings().all()
     required=source['policy_snapshot']['values'].get('logistics.receipt.required',True)
     receipts=[t for t in tasks if t['kind']=='receipt']
     if required and not receipts:blockers.append('Накладная не передана в обязательную приёмку')
     for task in tasks:
         if task['state']!='closed' or task['source_revision']!=source['revision']:blockers.append('Есть незавершённое или устаревшее складское задание');break
-        if task['verified_at'] is None:blockers.append('Склад выполнил физическую сверку без подтверждения ЧЗ');break
+        if marked and task['verified_at'] is None:blockers.append('Склад выполнил физическую сверку без подтверждения ЧЗ');break
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='transform' AND body->>'atk_item'=ANY(CAST(:ids AS text[])) AND state NOT IN ('done','archived','rejected'))"),{'ids':[str(a['id']) for a in atks]}).scalar_one():blockers.append('Есть незавершённая трансформация АТК')
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id AND (o.state NOT IN ('confirmed','rejected','cancelled_before_dispatch') OR (o.state='confirmed' AND NOT l.applied)))"),{'id':row['id']}).scalar_one():blockers.append('Есть неразобранная внешняя операция')
-    return {'blockers':blockers,'can_complete':not blockers,'receipt_required':required,
+    return {'blockers':blockers,'can_complete':not blockers,'composition_request_available':bool(wanted) and wanted<=covered and row['state'] in ('applied','warehouse_ready') and not tasks,'receipt_required':required,
         'atks':[{'id':a['id'],'revision':a['revision'],'state':a['state']} for a in atks],
         'fts':[f['id'] for f in fts if any(v['id'] in wanted for v in f['body']['codes'])],
         'tasks':[dict(t) for t in tasks]}
@@ -79,7 +81,7 @@ def install_logistics(app,actor):
     @app.get('/api/logistics/documents/{id}')
     def detail(id:UUID,current=dep):
         row=s.get(current,id,'marking',permission='logistics.documents.complete')
-        return {'document':{'id':row['id'],'title':row['title'],'state':row['state'],'revision':row['revision'],'supplier':row['body']['supplier'],'completion':row['body'].get('logistics_completion')},**facts(current.connection,row)}
+        return {'document':{'id':row['id'],'title':row['title'],'state':row['state'],'revision':row['revision'],'supplier':row['body']['supplier'],'completion':row['body'].get('logistics_completion'),'composition':row['body'].get('warehouse_composition')},**facts(current.connection,row)}
 
     @app.post('/api/logistics/documents/{id}/complete')
     def complete(id:UUID,body:Complete,current=dep):
@@ -101,5 +103,5 @@ def install_logistics(app,actor):
         if row['state']!='completed' or row['revision']!=body.revision:raise HTTPException(409,'Нужна актуальная завершённая накладная')
         if body.confirmation!=row['title'] or len(body.reason.strip())<8:raise HTTPException(422,'Введите номер и причину от 8 символов')
         s.record(current,row,'logistics_reopened',{'reason':body.reason,'completion':row['body']['logistics_completion']})
-        s.save(current,row,'logistics_returned_to_work',state='applied')
-        return {'id':id,'state':'applied'}
+        updated=s.save(current,row,'logistics_returned_to_work',state='applied' if any(r.get('marked',True) for r in row['body']['lines']) else 'unmarked_ready')
+        return {'id':id,'state':updated['state']}
