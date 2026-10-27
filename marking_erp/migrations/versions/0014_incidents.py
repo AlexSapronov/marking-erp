@@ -6,6 +6,8 @@ branch_labels=None
 depends_on=None
 
 def upgrade():
+    op.execute('ALTER TABLE print_jobs DROP CONSTRAINT print_jobs_state_check')
+    op.execute("ALTER TABLE print_jobs ADD CONSTRAINT print_jobs_state_check CHECK(state IN ('queued','claimed','spooled','unknown','cancelled','held'))")
     op.execute('''CREATE TABLE incidents(id uuid PRIMARY KEY,organization_id uuid NOT NULL REFERENCES organizations(id),
         reporter_id uuid NOT NULL REFERENCES users(id),assignee_id uuid REFERENCES users(id),
         source_kind text NOT NULL CHECK(source_kind IN ('none','task','document','business')),
@@ -27,4 +29,7 @@ def upgrade():
         created_at timestamptz NOT NULL DEFAULT now(),UNIQUE(incident_id,request_id))''')
     op.execute('CREATE TRIGGER incident_events_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON incident_events FOR EACH STATEMENT EXECUTE FUNCTION reject_audit_change()')
 
-def downgrade():op.execute('DROP TABLE incident_events,incidents')
+def downgrade():
+    op.execute('DROP TABLE incident_events,incidents')
+    op.execute('ALTER TABLE print_jobs DROP CONSTRAINT print_jobs_state_check')
+    op.execute("ALTER TABLE print_jobs ADD CONSTRAINT print_jobs_state_check CHECK(state IN ('queued','claimed','spooled','unknown','cancelled')) NOT VALID")

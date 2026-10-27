@@ -150,3 +150,21 @@ def test_unknown_operation_ticket_cannot_replace_real_reconciliation(env,engine)
         id=result.json()['id'];assert action(c,id,1,'resolve').status_code==409
         with engine.begin() as db:db.execute(text("UPDATE external_operations SET state='rejected' WHERE id=:id"),{'id':op['id']})
         assert action(c,id,1,'resolve').status_code==200
+
+def test_prepared_print_is_held_and_resumes_same_job_after_quarantine_release(allocated,engine):
+    from marking_erp.business.printing import register_printer
+    env,item,source,code=allocated
+    with engine.begin() as db:device,token=register_printer(db,env[1],'Warehouse','Label Printer')
+    with client(env) as c,client(env) as agent:
+        login(c,'specialist');rid=str(uuid4());file=c.post('/api/business-codes/'+str(code['id'])+'/reprint',json={'request_id':rid,'reason':'Повреждённая этикетка при доставке'}).json()['file_id']
+        job=c.post('/api/business-files/'+file+'/print',json={'request_id':str(uuid4()),'printer_id':str(device),'reprint_id':rid}).json()['id']
+        result=c.post('/api/incidents',json=incident(env,code=code['cis'],restrictions=['reprint']));assert result.status_code==200,result.text
+        id=result.json()['id'];agent.headers['Authorization']='Bearer '+token
+        assert agent.post('/api/print-agent/claim').json()['job'] is None
+        assert c.get('/api/print-jobs/'+job).json()['state']=='held'
+        assert c.post('/api/print-jobs/'+job+'/resume').status_code==409
+        assert action(c,id,1,'resolve').status_code==200
+        assert c.post('/api/print-jobs/'+job+'/resume').json()['state']=='queued'
+        claimed=agent.post('/api/print-agent/claim').json()['job'];assert claimed['id']==job and claimed['copies']==1
+        assert agent.post('/api/print-agent/claim').json()['job'] is None
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM print_jobs')).scalar_one()==1

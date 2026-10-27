@@ -208,7 +208,7 @@ def _freeze(c,bundle_hash,snapshot_at):
     c.execute(text('DELETE FROM sessions'))
     c.execute(text("UPDATE users SET auth_version=auth_version+1,mfa_last_counter=GREATEST(mfa_last_counter,floor(extract(epoch from clock_timestamp())/30)::bigint)"))
     c.execute(text('UPDATE printer_devices SET enabled=false'))
-    c.execute(text("UPDATE print_jobs SET state=CASE WHEN state='queued' THEN 'cancelled' ELSE 'unknown' END,lease_hash=NULL WHERE state IN ('queued','claimed','unknown')"))
+    c.execute(text("UPDATE print_jobs SET state=CASE WHEN state IN ('queued','held') THEN 'cancelled' ELSE 'unknown' END,lease_hash=NULL WHERE state IN ('queued','held','claimed','unknown')"))
     c.execute(text("UPDATE integration_auth_jobs SET state='expired',lease_hash=NULL,finished_at=now() WHERE state IN ('pending','leased')"))
     c.execute(text("UPDATE integration_settings SET public=public||CAST(:flags AS jsonb),revision=revision+1"),{'flags':json.dumps({'writes_enabled':False,'auto_refresh_tokens':False})})
     c.execute(text('UPDATE signer_devices SET enabled=false'))
