@@ -71,6 +71,28 @@ def install_warehouse(app, actor, settings=None):
         if action in ('scanned','scan_removed','reopen','cancel'):
             c.execute(text('UPDATE warehouse_tasks SET verified_at=NULL,check_result=NULL,check_digest=NULL,check_policy_sha256=NULL WHERE id=:id'),{'id':task['id']})
 
+    def exclusive_codes(current, task, cises, *, scanning=False):
+        """One source may receive and ship a KM; different open sources may not.
+
+        Transfer/reopen use the exclusive authorization fence. Scans share that
+        fence, so a per-organization/CIS lock also coordinates legacy tasks that
+        have no expected list. No network I/O is performed under this lock.
+        """
+        codes=sorted(set(cises))
+        if not codes:return
+        c=current.connection
+        if scanning:
+            c.execute(text('SELECT pg_advisory_xact_lock(hashtextextended(:key,0))'),
+                {'key':'warehouse-cis:'+str(task['organization_id'])+':'+codes[0]})
+        conflict=c.execute(text("""SELECT EXISTS(
+            SELECT 1 FROM warehouse_tasks t
+            WHERE t.organization_id=:org AND t.source_id<>:source AND t.state='open'
+            AND (t.expected_codes ?| CAST(:codes AS text[]) OR EXISTS(
+                SELECT 1 FROM warehouse_scans s WHERE s.task_id=t.id
+                AND s.removed_at IS NULL AND s.cis=ANY(CAST(:codes AS text[])))))"""),
+            {'org':task['organization_id'],'source':task['source_id'],'codes':codes}).scalar_one()
+        if conflict:raise HTTPException(409,'КМ уже закреплён за другой активной накладной. Обратитесь к логисту для сверки состава.')
+
     def summary(current, task):
         counts={r['line_index']:dict(r) for r in current.connection.execute(text('SELECT line_index,count(*) AS scanned,coalesce(sum(quantity),0) AS units FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL GROUP BY line_index'), {'id':task['id']}).mappings()}
         return [{**line, 'line_index':i, 'scanned':int(counts.get(i,{}).get('scanned',0)), 'units':int(counts.get(i,{}).get('units',0)), 'expected_units':line['quantity']*line['labels']} for i,line in enumerate(task['lines'])]
@@ -131,6 +153,7 @@ def install_warehouse(app, actor, settings=None):
 
     def run_check(current,task,request_id,request_hash,scans,config,public):
         from .business.errors import RemoteError
+        exclusive_codes(current,task,task['expected_codes']+[v['cis'] for v in scans])
         counts=summary(current,task);expected=set(task['expected_codes']);accepted={v['cis'] for v in scans}
         differences=[{'line_index':v['line_index'],'pn':v['pn'],'expected':v['labels'],'scanned':v['scanned'],'expected_units':v['expected_units'],'units':v['units']}
             for v in counts if v['scanned']!=v['labels'] or v['units']!=v['expected_units']]
@@ -256,6 +279,7 @@ def install_warehouse(app, actor, settings=None):
             recipient=auth.Actor(c,dict(person),'',None)
             try: recipient.require('warehouse.'+body.kind+'.scan',organization_id=source['organization_id'],owner_id=current.id,assigned=True)
             except HTTPException: raise HTTPException(422,'У выбранного сотрудника нет права сканировать задания этого типа') from None
+        exclusive_codes(current,{'organization_id':source['organization_id'],'source_id':source['id']},expected)
         c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:user,1)'), {'id':body.request_id,'org':source['organization_id'],'user':current.id})
         c.execute(text('''INSERT INTO warehouse_tasks(id,organization_id,owner_id,source_id,source_revision,kind,number,supplier,document_date,lines)
             VALUES (:id,:org,:user,:source,:revision,:kind,:number,:supplier,:date,CAST(:lines AS jsonb))'''), {'id':body.request_id,'org':source['organization_id'],'user':current.id,'source':source['id'],'revision':source['revision'],'kind':body.kind,'number':source['number'],'supplier':source['supplier'],'date':source['document_date'],'lines':json.dumps(source['lines'])})
@@ -323,6 +347,7 @@ def install_warehouse(app, actor, settings=None):
         else: index=body.line_index
         line=summary(current,task)[index]
         if line['scanned']>=line['labels']: raise HTTPException(409, 'Все КМ этой строки уже отсканированы')
+        exclusive_codes(current,task,[parsed.cis],scanning=True)
         c.execute(text('''INSERT INTO warehouse_scans(id,task_id,line_index,cis,gtin,quantity,payload,actor_id)
             VALUES (:id,:task,:line,:cis,:gtin,:quantity,:payload,:user)'''), {'id':body.request_id,'task':id,'line':index,'cis':parsed.cis,'gtin':parsed.gtin,'quantity':quantity,'payload':parsed.normalized,'user':current.id})
         event(current,task,'scanned',{'scan_id':str(body.request_id),'line_index':index})
@@ -356,6 +381,7 @@ def install_warehouse(app, actor, settings=None):
             from .incidents import enforce
             accepted=current.connection.execute(text('SELECT cis FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL'),{'id':id}).scalars().all()
             enforce(current.connection,task['organization_id'],task['kind'],cises=list(accepted)+task['expected_codes'],targets=[task['id'],task['source_id']])
+            exclusive_codes(current,task,list(accepted)+task['expected_codes'])
             config,public=check_context(current,task);scans=active_scans(current,task)
             if not fresh(task,scans,public):
                 if config and any(v.get('marked',True) for v in task['lines']):raise HTTPException(409,'Сначала нажмите «Проверить»: нужна актуальная пакетная сверка ЧЗ')
@@ -367,6 +393,9 @@ def install_warehouse(app, actor, settings=None):
             if len(body.reason.strip())<8: raise HTTPException(422, 'Укажите причину от 8 символов')
             if action=='reopen' and task['state']!='closed': raise HTTPException(409, 'Вернуть можно только закрытое задание')
             if action=='cancel' and task['state']!='open': raise HTTPException(409, 'Отменить можно только открытое задание')
+            if action=='reopen':
+                accepted=current.connection.execute(text('SELECT cis FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL'),{'id':id}).scalars().all()
+                exclusive_codes(current,task,task['expected_codes']+list(accepted))
             state='open' if action=='reopen' else 'cancelled'
             current.connection.execute(text('UPDATE warehouse_tasks SET verified_at=NULL WHERE id=:id'),{'id':id})
         current.connection.execute(text("UPDATE warehouse_tasks SET state=:state,closed_at=CASE WHEN :state='closed' THEN now() ELSE NULL END WHERE id=:id"), {'id':id,'state':state})
