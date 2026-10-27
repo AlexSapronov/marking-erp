@@ -630,3 +630,24 @@ def test_logistics_blockers_and_whole_supplier_batch_ui(page,live_app,engine,gro
     page.set_viewport_size({'width':390,'height':844})
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     capture(page,'workflow-'+group+'-390')
+
+
+def test_catalog_sync_progress_and_report_guidance_ui(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.business.errors import report_problem
+    org=live_app['org'];owner=live_app['users']['specialist']
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':owner}).mappings().one());current=auth.Actor(c,user,'fixture',None)
+        store.create(current,'sync','Sync UI fixture',{'from':'2026-01-01 00:00:00','to':'2026-01-02 00:00:00','windows':[],'count':15001,'offset':0},org,state='done')
+        code,message=report_problem({'error':'Не найдена карточка товара или нет прав'})
+        store.create(current,'marking','REPORT-UI-01',{'supplier':'Поставщик UI','lines':[],'last_rejected_step':'bm.report','last_rejection_code':code,'last_rejection_message':message},org,state='rejected')
+    login(page,'specialist');page.locator('#catalog-link').click();page.get_by_role('button',name='Ход синхронизации',exact=True).click()
+    expect(page.get_by_text('Уникальных карточек обработано: 15001',exact=True)).to_be_visible()
+    capture(page,'catalog-sync-progress')
+    page.locator('#business-dialog [data-close]').click()
+    page.locator('#marking-link').click();page.get_by_role('button',name='Открыть',exact=True).click()
+    expect(page.get_by_text(message,exact=True)).to_be_visible()
+    page.get_by_role('button',name='Повторить отклонённый отчёт',exact=True).click()
+    expect(page.get_by_label('Фактическая дата производства',exact=True)).to_be_visible()
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
