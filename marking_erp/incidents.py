@@ -94,13 +94,18 @@ def record(current,row,request_id,hash,action,body):
 def blockers(c,org,action,*,cises=(),targets=()):
     """Read-only check; replacement ancestry retains a hold until explicitly released."""
     values=list(set(cises));ids=list(set(v for v in targets if v))
-    return c.execute(text('''WITH RECURSIVE ancestors(id,cis) AS (
-        SELECT id,cis FROM business_codes WHERE organization_id=:org AND cis=ANY(CAST(:codes AS text[]))
-        UNION SELECT old.id,old.cis FROM ancestors a JOIN code_replacements r ON r.new_code_id=a.id
-        JOIN business_codes old ON old.id=r.old_code_id AND old.organization_id=:org)
+    return c.execute(text('''WITH RECURSIVE ancestors(id,cis,item_id) AS (
+        SELECT id,cis,item_id FROM business_codes WHERE organization_id=:org AND cis=ANY(CAST(:codes AS text[]))
+        UNION SELECT old.id,old.cis,old.item_id FROM ancestors a JOIN code_replacements r ON r.new_code_id=a.id
+        JOIN business_codes old ON old.id=r.old_code_id AND old.organization_id=:org),
+        scopes(id) AS (SELECT unnest(CAST(:targets AS uuid[])) UNION SELECT item_id FROM ancestors WHERE item_id IS NOT NULL
+            UNION SELECT b.source_id FROM ancestors a JOIN business_items b ON b.id=a.item_id WHERE b.source_id IS NOT NULL)
         SELECT i.id,i.category FROM incidents i WHERE i.organization_id=:org AND i.status<>'resolved'
         AND :action=ANY(i.restrictions) AND (i.cis=ANY(CAST(:codes AS text[])) OR i.cis IN (SELECT cis FROM ancestors)
-        OR (i.cis IS NULL AND i.source_id=ANY(CAST(:targets AS uuid[])))) ORDER BY i.created_at,i.id LIMIT 20'''),{'org':org,'action':action,'codes':values,'targets':ids}).mappings().all()
+        OR (i.cis IS NULL AND (i.source_id IN (SELECT id FROM scopes)
+            OR (i.source_kind='task' AND EXISTS(SELECT 1 FROM warehouse_tasks w WHERE w.id=i.source_id AND w.source_id IN (SELECT id FROM scopes)))
+            OR (i.source_kind='business' AND EXISTS(SELECT 1 FROM business_items b WHERE b.id=i.source_id AND b.source_id IN (SELECT id FROM scopes))))))
+        ORDER BY i.created_at,i.id LIMIT 20'''),{'org':org,'action':action,'codes':values,'targets':ids}).mappings().all()
 
 def enforce(c,org,action,*,cises=(),targets=()):
     if blockers(c,org,action,cises=cises,targets=targets):raise HTTPException(409,{'code':'local_quarantine','message':'Действие заблокировано локальным карантином. Передайте проблему ответственному; статус ЧЗ не изменён.'})

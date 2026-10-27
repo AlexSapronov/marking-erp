@@ -111,7 +111,7 @@ def authorize_job(c,job):
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_codes WHERE item_id=:id AND state='withdrawn')"),{'id':item['id']}).scalar_one():raise HTTPException(409,'В комплекте есть заменённые КМ')
         if latest!=file['id']:raise HTTPException(409,'Версия этикеток изменилась')
     from ..incidents import enforce
-    cises=c.execute(text('SELECT cis FROM business_codes WHERE item_id=:id'),{'id':item['id']}).scalars().all()
+    cises=[code['cis']] if job['reprint_id'] else c.execute(text('SELECT cis FROM business_codes WHERE item_id=:id'),{'id':item['id']}).scalars().all()
     enforce(c,item['organization_id'],'reprint',cises=cises,targets=[item['id'],item['source_id']])
     if sha256(bytes(file['body'])).hexdigest()!=file['sha256']:raise HTTPException(503,'PDF повреждён')
     return file

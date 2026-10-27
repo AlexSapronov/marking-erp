@@ -178,3 +178,32 @@ def test_own_incident_scope_refers_to_reporter_after_independent_source_read_che
     with client(env) as c:
         login(c);result=c.post('/api/incidents',json=incident(env,source_kind='document',source_id=document,code='',category='other'));assert result.status_code==200,result.text
         assert c.get('/api/incidents/'+result.json()['id']).status_code==200
+
+def test_reprint_of_another_code_in_same_invoice_is_not_blocked_by_code_quarantine(allocated,engine):
+    from marking_erp.business.marking import apply
+    from marking_erp.business.printing import register_printer
+    from test_gs1 import sample
+    env,item,source,old=allocated
+    with engine.begin() as c:
+        actor=background(c,env[3]['specialist'],env[1]);row=store.item(c,item);body=dict(row['body']);body['lines'][0]['labels']=2
+        row=store.save(actor,row,'fixture_second_code',body=body)
+        apply(actor,row,{'id':uuid4(),'kind':'bm.fetch'},{'metadata':{'gtin':old['gtin'],'expected':1}},{},{'codes':[sample(37,serial=b'Z'*20).decode()]},None,env[0])
+        fresh=c.execute(text('SELECT id FROM business_codes WHERE item_id=:id AND id<>:old'),{'id':item,'old':old['id']}).scalar_one()
+        device,token=register_printer(c,env[1],'Warehouse','Label Printer')
+    with client(env) as c,client(env) as agent:
+        login(c,'specialist');result=c.post('/api/incidents',json=incident(env,code=old['cis'],restrictions=['reprint']));assert result.status_code==200,result.text
+        rid=str(uuid4());response=c.post('/api/business-codes/'+str(fresh)+'/reprint',json={'request_id':rid,'reason':'Другой товар требует замены этикетки'});assert response.status_code==200,response.text
+        file=response.json()['file_id'];assert c.get('/api/business-files/'+file).status_code==200
+        response=c.post('/api/business-files/'+file+'/print',json={'request_id':str(uuid4()),'printer_id':str(device),'reprint_id':rid});assert response.status_code==200,response.text
+        agent.headers['Authorization']='Bearer '+token;job=agent.post('/api/print-agent/claim').json()['job'];assert job and job['id']==response.json()['id']
+
+def test_document_hold_cannot_be_bypassed_via_registry_pdf_or_split_entrypoint(allocated,engine):
+    env,item,source,code=allocated
+    with client(env) as c:
+        login(c,'specialist');result=c.post('/api/incidents',json=incident(env,source_kind='document',source_id=str(source),code='',restrictions=['reprint','split']));assert result.status_code==200,result.text
+        with engine.connect() as db:pdf=db.execute(text("SELECT id FROM files WHERE code_id=:code AND kind='label_pdf'"),{'code':code['registry_code_id']}).scalar_one()
+        assert c.get('/api/files/'+str(pdf)).status_code==409
+        response=c.post('/api/splits',json={'organization_id':str(env[1]),'request_id':str(uuid4()),'raw':bytes(code['payload']).decode(),'quantity':1,'pn':code['pn'],'tnved':code['tnved']})
+        assert response.status_code==409 and response.json()['detail']['code']=='local_quarantine'
+    with engine.connect() as c:
+        with pytest.raises(HTTPException):enforce(c,env[1],'reprint',cises=[code['cis']])
