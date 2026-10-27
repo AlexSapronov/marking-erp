@@ -57,9 +57,13 @@ def install_warehouse(app, actor, settings=None):
         if not task: raise HTTPException(404, 'Задание не найдено')
         return dict(task)
 
+    def source_status(current,task,lock=False):
+        if task['source_type']=='excel':return {'state':'prepared','revision':1}
+        return current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'+(' FOR UPDATE' if lock else '')),{'id':task['source_id']}).mappings().one()
+
     def writable(current, task):
         if task['state']!='open': raise HTTPException(409, 'Задание закрыто или отменено')
-        source = current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id FOR UPDATE'), {'id':task['source_id']}).mappings().one()
+        source = source_status(current,task,True)
         if source['state']=='archived': raise HTTPException(409, 'Исходная накладная в архиве. Работа остановлена.')
         if source['revision']!=task['source_revision']: raise HTTPException(409, 'Состав исходной накладной изменился. Обратитесь к логисту.')
 
@@ -295,7 +299,7 @@ def install_warehouse(app, actor, settings=None):
         permission='logistics.warehouse.result.view' if logistics else 'warehouse.'+kind+'.view'
         grant=current.grants().get(permission)
         if not grant: raise HTTPException(403, 'Нет доступа к заданиям')
-        rows=current.connection.execute(text('''SELECT t.id,t.organization_id,t.owner_id,t.kind,t.number,t.supplier,t.document_date,t.state,t.revision,
+        rows=current.connection.execute(text('''SELECT t.id,t.organization_id,t.owner_id,t.kind,t.source_type,t.number,t.supplier,t.document_date,t.state,t.revision,
             jsonb_array_length(t.lines) AS line_count,
             (SELECT count(*) FROM warehouse_scans s WHERE s.task_id=t.id AND s.removed_at IS NULL) AS scanned,
             (SELECT sum((l->>'labels')::bigint) FROM jsonb_array_elements(t.lines) l) AS expected
@@ -308,13 +312,20 @@ def install_warehouse(app, actor, settings=None):
     @app.get('/api/warehouse/tasks/{id}')
     def detail(id:UUID, logistics:bool=False, current=dep):
         task=get(current,id);require(current,task,logistics=logistics)
-        source=current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'), {'id':task['source_id']}).mappings().one()
+        source=source_status(current,task)
         scans=current.connection.execute(text('''SELECT s.id,s.line_index,s.gtin,s.quantity,substr(s.cis,19,20) AS serial,u.display_name,s.created_at
             FROM warehouse_scans s JOIN users u ON u.id=s.actor_id WHERE s.task_id=:id AND s.removed_at IS NULL ORDER BY s.created_at DESC,s.id DESC LIMIT 100'''), {'id':id}).mappings().all()
         events=current.connection.execute(text('''SELECT e.action,e.created_at,e.detail->>'reason' AS reason,u.display_name FROM warehouse_events e JOIN users u ON u.id=e.actor_id WHERE e.task_id=:id ORDER BY e.id DESC LIMIT 30'''), {'id':id}).mappings().all()
         assignees=current.connection.execute(text('SELECT u.display_name FROM operation_assignments a JOIN users u ON u.id=a.user_id WHERE a.target_id=:id ORDER BY u.display_name'),{'id':id}).scalars().all()
+        import_source=current.connection.execute(text('SELECT filename,sha256,created_at FROM warehouse_imports WHERE id=:id'),{'id':task['source_id']}).mappings().first() if task['source_type']=='excel' else None
+        source_download=False
+        if import_source:
+            try:
+                current.require('warehouse.import.preview',**context(current,task));source_download=True
+            except HTTPException as error:
+                if error.status_code!=403:raise
         config,public=check_context(current,task);is_fresh=source['state']!='archived' and source['revision']==task['source_revision'] and fresh(task,active_scans(current,task),public)
-        return {'task':{k:v for k,v in task.items() if k not in ('expected_payloads','transfer_request_sha256','check_digest','check_policy_sha256')}, 'assignees':assignees, 'lines':summary(current,task),'scans':[dict(r) for r in scans],'events':[dict(r) for r in events], 'paused':source['state']=='archived' or source['revision']!=task['source_revision'], 'external_verified':bool(task['verified_at']),'live_checks':config is not None,'check_fresh':is_fresh,'expectation_level':checks.level(task),'expected_codes_count':len(task['expected_codes'])}
+        return {'source_download':source_download,'import_source':dict(import_source) if import_source else None,'task':{k:v for k,v in task.items() if k not in ('expected_payloads','transfer_request_sha256','check_digest','check_policy_sha256')}, 'assignees':assignees, 'lines':summary(current,task),'scans':[dict(r) for r in scans],'events':[dict(r) for r in events], 'paused':source['state']=='archived' or source['revision']!=task['source_revision'], 'external_verified':bool(task['verified_at']),'live_checks':config is not None,'check_fresh':is_fresh,'expectation_level':checks.level(task),'expected_codes_count':len(task['expected_codes'])}
 
     @app.post('/api/warehouse/tasks/{id}/scans')
     def scan(id:UUID, body:Scan, current=dep):
@@ -422,3 +433,6 @@ def install_warehouse(app, actor, settings=None):
         sheet.freeze_panes(1,0);sheet.set_column(0,1,24);sheet.set_column(2,2,14);sheet.set_column(3,3,70);sheet.set_column(4,5,28);book.close()
         auth.audit(current.connection,current.id,'warehouse.export',id,{'kind':task['kind']})
         return Response(out.getvalue(),media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="shipment.xlsx"'})
+
+    from .warehouse_imports import install as install_imports
+    install_imports(app,actor,require,get,event,exclusive_codes,context)

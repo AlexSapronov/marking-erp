@@ -33,5 +33,5 @@ def test_packaged_rbac_matches_reviewed_matrix():
 
 
 def test_packaged_migrations_have_one_head():
-    assert schema_head() == "0016_warehouse_overlap"
+    assert schema_head() == "0017_warehouse_import"
 
