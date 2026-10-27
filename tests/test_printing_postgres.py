@@ -107,3 +107,19 @@ def test_restore_quarantine_disables_printers_and_never_requeues_claimed_print(a
         assert c.execute(text('SELECT state FROM print_jobs WHERE id=:id'),{'id':queued}).scalar_one()=='cancelled'
         assert c.execute(text('SELECT state FROM print_jobs WHERE id=:id'),{'id':claimed}).scalar_one()=='unknown'
         assert c.execute(text('SELECT lease_hash FROM print_jobs WHERE id=:id'),{'id':claimed}).scalar_one() is None
+
+def test_fresh_administrator_can_finish_control_for_an_absent_employee(allocated,engine):
+    env,item,source,code=allocated;rid=str(uuid4())
+    with client(env) as c:
+        login(c,'specialist');response=c.post('/api/business-codes/'+str(code['id'])+'/reprint',json={'request_id':rid,'reason':'Damaged label replacement'});assert response.status_code==200,response.text
+    with engine.begin() as c:c.execute(text('UPDATE users SET enabled=false WHERE id=:id'),{'id':env[3]['specialist']})
+    with client(env) as admin:
+        login(admin,'administrator')
+        result=admin.get('/api/reprints',params={'organization_id':str(env[1]),'all_users':'true'})
+        assert result.status_code==200,result.text
+        assert result.json()['items'][0]['id']==rid
+        assert admin.post('/api/reprints/'+rid+'/printed').status_code==200
+        result=admin.post('/api/reprints/'+rid+'/scans',json={'request_id':str(uuid4()),'raw':bytes(code['payload']).decode()})
+        assert result.status_code==200,result.text
+        assert result.json()['state']=='completed'
+    with engine.connect() as c:assert c.execute(text('SELECT actor_id FROM reprint_scans')).scalar_one()==env[3]['administrator']

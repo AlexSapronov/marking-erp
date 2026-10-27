@@ -69,8 +69,8 @@ def reprint_access(current,id):
     row=current.connection.execute(text('SELECT * FROM reprint_requests WHERE id=:id FOR UPDATE'),{'id':id}).mappings().first()
     if not row:raise HTTPException(404,'Задание перепечати не найдено')
     code,item=code_access(current,row['code_id'])
-    # Completion belongs to the initiator, even where the role has organization scope.
-    if row['actor_id']!=current.id:raise HTTPException(403,'Завершить перепечать должен её инициатор')
+    # A fresh administrator can recover a request left by an absent/disabled employee.
+    if row['actor_id']!=current.id:current.require('integrations.manage',organization_id=row['organization_id'],administrative=True)
     return dict(row),code,item
 
 def current_payload(request,code,item):
@@ -139,10 +139,11 @@ def install_printing(app,actor,engine):
     def detail(id:UUID,current=dep):
         row,_,_=reprint_access(current,id);return public(row)
     @app.get('/api/reprints')
-    def requests(organization_id:UUID,current=dep):
+    def requests(organization_id:UUID,all_users:bool=False,current=dep):
+        if all_users:current.require('integrations.manage',organization_id=organization_id,administrative=True)
         if organization_id not in current.organizations():raise HTTPException(403,'Нет доступа')
         rows=current.connection.execute(text('''SELECT r.*,c.pn,c.cis FROM reprint_requests r JOIN business_codes c ON c.id=r.code_id
-            WHERE r.organization_id=:org AND r.actor_id=:actor ORDER BY r.created_at DESC,r.id DESC LIMIT 100'''),{'org':organization_id,'actor':current.id}).mappings().all()
+            WHERE r.organization_id=:org AND (:all_users OR r.actor_id=:actor) ORDER BY r.created_at DESC,r.id DESC LIMIT 100'''),{'org':organization_id,'actor':current.id,'all_users':all_users}).mappings().all()
         out=[]
         for r in rows:
             try:code_access(current,r['code_id'])
@@ -216,6 +217,19 @@ def install_printing(app,actor,engine):
         c.execute(text('''INSERT INTO print_jobs(id,organization_id,actor_id,device_id,artifact_id,reprint_id,copies,request_sha256)
             VALUES (:id,:org,:actor,:device,:file,:reprint,:copies,:sha)'''),{'id':body.request_id,'org':item['organization_id'],'actor':current.id,'device':body.printer_id,'file':id,'reprint':body.reprint_id,'copies':copies,'sha':fingerprint})
         event(c,body.request_id,'print_queued',actor=current.id,body={'copies':copies,'device_id':str(body.printer_id)});return {'id':body.request_id,'state':'queued'}
+    @app.get('/api/print-jobs')
+    def queue(organization_id:UUID,current=dep):
+        if organization_id not in current.organizations():raise HTTPException(403,'Нет доступа к организации')
+        rows=current.connection.execute(text('''SELECT j.*,a.item_id,d.name AS printer_name,u.display_name AS actor_name
+            FROM print_jobs j JOIN business_artifacts a ON a.id=j.artifact_id JOIN printer_devices d ON d.id=j.device_id JOIN users u ON u.id=j.actor_id
+            WHERE j.organization_id=:org ORDER BY CASE j.state WHEN 'unknown' THEN 0 WHEN 'claimed' THEN 1 WHEN 'queued' THEN 2 ELSE 3 END,j.created_at DESC,j.id DESC LIMIT 100'''),{'org':organization_id}).mappings().all()
+        out=[]
+        for row in rows:
+            item=s.item(current.connection,row['item_id'])
+            try:current.require('labels.print.view',**context(current,item))
+            except HTTPException:continue
+            out.append({**public(dict(row)),'title':item['title']})
+        return {'items':out}
     @app.get('/api/print-jobs/{id}')
     def job(id:UUID,current=dep):
         row=current.connection.execute(text('SELECT * FROM print_jobs WHERE id=:id'),{'id':id}).mappings().first()
@@ -229,8 +243,9 @@ def install_printing(app,actor,engine):
         if not row:raise HTTPException(404,'Задание не найдено')
         current.require('integrations.manage',organization_id=row['organization_id'],administrative=True)
         if len(body.reason.strip())<8:raise HTTPException(422,'Укажите содержательную причину сверки')
+        if row['state']=='queued' and body.outcome!='cancelled':raise HTTPException(409,'Ещё не выданное задание можно только отменить')
         if row['state']=='claimed' and not row['stale']:raise HTTPException(409,'Агент ещё выполняет печать. Подождите завершения или истечения пяти минут.')
-        if row['state'] not in ('unknown','claimed'):raise HTTPException(409,'Задание не требует сверки')
+        if row['state'] not in ('unknown','claimed','queued'):raise HTTPException(409,'Задание не требует сверки')
         c.execute(text('UPDATE print_jobs SET state=:state,finished_at=now(),receipt=CAST(:receipt AS jsonb) WHERE id=:id'),{'id':id,'state':body.outcome,'receipt':json.dumps({'operator_resolution':body.reason})})
         event(c,id,'print_resolved',actor=current.id,body=body.model_dump());return {'state':body.outcome}
     @app.post('/api/print-agent/claim')
