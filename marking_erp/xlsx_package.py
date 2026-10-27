@@ -40,5 +40,3 @@ def package(content):
         return archive
     except Exception:
         archive.close();raise
-
-
