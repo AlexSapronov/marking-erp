@@ -323,7 +323,7 @@ curl --fail --silent http://127.0.0.1:8000/health/ready
 sudo ss -ltnp
 ```
 
-`live` — ok, `ready` — ready, schema из `release.json` выбранного пакета (текущий код: `0014_incidents`), build_sha — SHA вашего пакета.
+`live` — ok, `ready` — ready, schema из `release.json` выбранного пакета (текущий код: `0015_warehouse_check`), build_sha — SHA вашего пакета.
 8000 и 5432 доступны только loopback, публичный вход — HTTPS/443.
 
 На рабочем ПК откройте **ваш HTTPS-адрес**. Войдите admin + пароль + свежий TOTP.

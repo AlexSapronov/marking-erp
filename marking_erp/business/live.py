@@ -10,7 +10,7 @@ class Live:
     def __init__(self,config,inn):
         if config.get('environment')!='production':raise RemoteError('Адреса тестового контура ЧЗ/СУЗ требуют отдельного подтверждения; НК sandbox доступен отдельно')
         self.config=config;self.inn=inn
-    def call(self,method,path,params=None,body=None,oms=False,signature=None):
+    def call(self,method,path,params=None,body=None,oms=False,signature=None,timeout=40):
         token=self.config.get('oms_token' if oms else 'true_token')
         if not token:raise RemoteError('Настройте действующий токен '+('СУЗ' if oms else 'ЧЗ'))
         headers={'Accept':'application/json',('clientToken' if oms else 'Authorization'):token if oms else 'Bearer '+token}
@@ -18,7 +18,7 @@ class Live:
         if signature:headers['X-Signature']=base64.b64encode(signature).decode()
         if oms:params={'omsId':self.config.get('oms_id',''),**(params or {})}
         try:
-            with httpx.Client(timeout=httpx.Timeout(40,connect=8),follow_redirects=False,trust_env=False) as c:r=c.request(method,BASES[self.config['environment']][1 if oms else 0]+path,params=params,content=body,headers=headers)
+            with httpx.Client(timeout=httpx.Timeout(timeout,connect=min(8,timeout)),follow_redirects=False,trust_env=False) as c:r=c.request(method,BASES[self.config['environment']][1 if oms else 0]+path,params=params,content=body,headers=headers)
         except httpx.HTTPError:raise RemoteError('Нет подтверждения от ЧЗ/СУЗ; требуется сверка') from None
         try:data=r.json()
         except ValueError:data=r.text.strip()
@@ -31,10 +31,10 @@ class Live:
             if self.config.get(key):data=json.loads(json.dumps(data,ensure_ascii=False).replace(self.config[key],'[secret]'))
         return data
     def oms(self,path,params=None,body=None,signature=None):return self.call('POST' if body is not None else 'GET','/api/v3/'+path,params,body,True,signature)
-    def info(self,cises):
+    def info(self,cises,*,timeout=None):
         out={}
         for start in range(0,len(cises),500):
-            batch=cises[start:start+500];data=self.call('POST','/api/v3/true-api/cises/info',{'pg':'radio'},json.dumps(batch).encode())
+            batch=cises[start:start+500];data=self.call('POST','/api/v3/true-api/cises/info',{'pg':'radio'},json.dumps(batch).encode(),**({'timeout':timeout} if timeout is not None else {}))
             if not isinstance(data,list):raise RemoteError('ЧЗ не вернул сведения о КМ')
             for record in data:
                 value=record.get('cisInfo',{})
