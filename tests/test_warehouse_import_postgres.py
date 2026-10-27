@@ -156,3 +156,27 @@ def test_migration_backfills_existing_bm_sources_without_changing_tasks(env,engi
     with client(env) as c:
         login(c,'tsd');assert c.get('/api/warehouse/tasks/'+id).status_code==200
         assert scan(c,id).status_code==200
+
+
+def test_source_download_honors_assigned_scope_and_current_assignment(env,engine):
+    with client(env) as c:
+        login(c,'specialist');id,_,_=create(c,env)
+    with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='assigned' WHERE group_slug='tsd' AND permission_id='warehouse.import.preview'"))
+    with client(env) as c:
+        login(c,'tsd');url='/api/warehouse/tasks/'+id
+        assert c.get(url).json()['source_download']
+        assert c.get(url+'/source-file').content==content()
+        with engine.begin() as db:db.execute(text('DELETE FROM operation_assignments WHERE target_id=:id AND user_id=:user'),{'id':id,'user':env[3]['tsd']})
+        assert c.get(url+'/source-file').status_code==403
+
+
+def test_logistics_read_scope_allows_source_but_does_not_grant_import(env,engine):
+    with client(env) as c:
+        login(c,'specialist');id,_,_=create(c,env)
+    with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='all' WHERE group_slug='logistics' AND permission_id='warehouse.import.preview'"))
+    with client(env) as c:
+        login(c,'logistics');url='/api/warehouse/tasks/'+id
+        assert c.get(url+'?logistics=true').json()['source_download']
+        assert c.get(url+'/source-file?logistics=true').content==content()
+        assert c.get(url+'/source-file').status_code==403
+        assert preview(c,env).status_code==403

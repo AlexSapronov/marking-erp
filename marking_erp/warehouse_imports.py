@@ -39,7 +39,7 @@ def public(result):
     return {k:v for k,v in result.items() if k not in ('expected_codes','expected_payloads')}
 
 
-def install(app,actor,require_task,get_task,record,exclusive_codes):
+def install(app,actor,require_task,get_task,record,exclusive_codes,task_context):
     dep=Depends(actor,scope='function')
 
     @app.get('/api/warehouse/imports/template')
@@ -110,9 +110,9 @@ def install(app,actor,require_task,get_task,record,exclusive_codes):
         return {'id':body.request_id}
 
     @app.get('/api/warehouse/tasks/{id}/source-file')
-    def source_file(id:UUID,current=dep):
-        task=get_task(current,id);require_task(current,task)
-        current.require('warehouse.import.preview',organization_id=task['organization_id'],owner_id=task['owner_id'])
+    def source_file(id:UUID,logistics:bool=False,current=dep):
+        task=get_task(current,id);require_task(current,task,logistics=logistics)
+        current.require('warehouse.import.preview',**task_context(current,task))
         if task['source_type']!='excel':raise HTTPException(404,'У задания нет резервного Excel')
         preview=current.connection.execute(text('SELECT raw FROM warehouse_imports WHERE id=:id'),{'id':task['source_id']}).scalar_one()
         return Response(bytes(preview),media_type=MIME,headers={'Content-Disposition':'attachment; filename="warehouse-source-'+str(id)+'.xlsx"','Cache-Control':'no-store'})
