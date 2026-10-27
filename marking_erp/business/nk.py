@@ -17,6 +17,7 @@ from . import store as s
 from .connections import load
 from .catalog_worklist import CATALOG_CTE,DUPLICATE_FILTER
 from .errors import RemoteError
+from .catalog_policy import rules,duplicate_filter as resolve_duplicate_filter
 
 BASES={'production':'https://апи.национальный-каталог.рф','sandbox':'https://api.nk.sandbox.crptech.ru'}
 
@@ -92,6 +93,7 @@ class Selection(Body):
     reason:str=Field(default='',max_length=1000)
 
 class Action(Body):
+    publish:bool=False
     revision:StrictInt=Field(ge=1)
     agreement:bool=False
     reason:str=Field(default='',max_length=1000)
@@ -110,19 +112,22 @@ def normalize(body):
 def duplicates(c,org,data,exclude=None):
     rows=c.execute(text("SELECT id,body->>'pn' AS pn,body->>'gtin' AS gtin,state FROM business_items WHERE organization_id=:org AND kind='card' AND id<>:id"),{'org':org,'id':exclude or UUID(int=0)}).mappings()
     def key(v):return re.sub(r'[^\w]','',v.casefold())
-    pn=key(data['pn']);out=[]
+    pn=key(data['pn']);out=[];threshold=rules(c,org)['values']['nk.duplicates.similarity']
     for row in rows:
         other=key(row['pn'] or '')
-        if (data['gtin'] and data['gtin']==row['gtin']) or pn==other or (min(len(pn),len(other))>=5 and SequenceMatcher(None,pn,other).ratio()>=.88):out.append({**row,'id':str(row['id'])})
+        if (data['gtin'] and data['gtin']==row['gtin']) or pn==other or (min(len(pn),len(other))>=5 and SequenceMatcher(None,pn,other).ratio()>=threshold):out.append({**row,'id':str(row['id'])})
         if len(out)>=30:break
     return out
 
 def check_duplicate(c,org,data,reason,exclude=None):
     found=duplicates(c,org,data,exclude)
-    if found and len(reason.strip())<8:raise HTTPException(409,{'code':'duplicate_card','message':'Есть похожий PN или такой GTIN. Просмотрите совпадения и укажите причину продолжения от 8 символов.','candidates':found})
+    required=rules(c,org)['values']['nk.duplicates.reason_required']
+    if found and (not reason.strip() or (required and len(reason.strip())<8)):raise HTTPException(409,{'code':'duplicate_card','message':('Есть похожий PN или такой GTIN. Просмотрите совпадения и укажите причину продолжения от 8 символов.' if required else 'Есть похожий PN или такой GTIN. Просмотрите совпадения и явно подтвердите продолжение.'),'candidates':found})
     return found
 
 def incoming(raw):
+    statuses=list(raw.get('good_detailed_status') or [])
+    if isinstance(raw.get('good_status'),str) and raw['good_status'] not in statuses:statuses.append(raw['good_status'])
     aa={str(a['attr_id']):str(a.get('attr_value') or '') for a in raw.get('good_attrs',[]) if 'attr_id' in a}
     gtins=[str(x.get('value') or '') for x in raw.get('identified_by',[]) if x.get('level')=='trade-unit']
     for a in raw.get('good_attrs',[]):
@@ -133,7 +138,7 @@ def incoming(raw):
     pns=list(dict.fromkeys(str(a.get('attr_value') or '').strip() for a in candidates if str(a.get('attr_value') or '').strip() and str(a.get('attr_value') or '').strip().casefold()!=str(raw.get('brand_name') or '').casefold()))
     return {'pn':pns[0] if len(pns)==1 else '','gtin':gtins[0] if len(set(gtins))==1 else '', 'tnved':aa.get('13933',str(raw.get('tnved') or '')),
         'name':str(raw.get('good_name') or ''),'brand':str(raw.get('brand_name') or aa.get('2504','')),'category_id':int(categories[0]['cat_id']) if categories else 0,'attributes':aa,
-        'external':{'good_id':raw['good_id'],'statuses':raw.get('good_detailed_status',[]),'signed':raw.get('good_signed') is True,'raw':raw,'checked_at':datetime.now(timezone.utc).isoformat()},'dirty':False}
+        'external':{'good_id':raw['good_id'],'statuses':statuses,'signed':raw.get('good_signed') is True,'raw':raw,'checked_at':datetime.now(timezone.utc).isoformat()},'dirty':False}
 
 def apply_remote(current,raw,id=None):
     data=incoming(raw);c=current.connection
@@ -144,7 +149,7 @@ def apply_remote(current,raw,id=None):
     if id:
         row=s.item(c,id)
         if row['body'].get('dirty') or row['state']=='archived':return row
-        return s.save(current,row,'nk_synchronized',body=data,state='active')
+        return s.save(current,row,'nk_synchronized',body=data,state='active',title=data['pn'] or data['name'] or str(raw['good_id']))
     return s.create(current,'card',data['pn'] or data['name'] or str(raw['good_id']),data,current.org,state='active')
 
 def workbook(rows,headers):
@@ -158,8 +163,11 @@ def build_entry(data,schema):
     if raw.get('is_set') or raw.get('is_kit'):raise HTTPException(409,'Комплекты и наборы редактируются отдельным процессом')
     allowed={str(a['attr_id']):a for a in schema};values=dict(data['attributes'])
     model='13914' if '13914' in allowed else next((str(a['attr_id']) for a in schema if re.sub(r'[^\w]','',a.get('attr_name','').casefold()) in ('модель','модельартикул','артикулпроизводителя','модельартикулпроизводителя','pn')),None)
-    if model:values[model]=data['pn']
+    if model:
+        values[model]=data['pn']
+        if not values.get(model+'::unit') and 'Артикул' in (allowed[model].get('attr_value_type') or []):values[model+'::unit']='Артикул'
     else:raise HTTPException(422,'В схеме отсутствует поле модели/PN. Проверьте категорию НК.')
+    if '2478' in allowed:values['2478']=data['name']
     if '2504' in allowed:values['2504']=data['brand']
     original={str(a['attr_id']):a for a in raw.get('good_attrs',[])};attributes=[]
     if raw:
@@ -192,8 +200,15 @@ def build_entry(data,schema):
     if external:return {'good_id':int(external['good_id']),'good_name':data['name'],'moderation':0,'good_attrs':attributes}
     return {'gtin':data['gtin'],'good_name':data['name'],'tnved':data['tnved'],'brand':data['brand'],'categories':[data['category_id']],'moderation':0,'is_set':False,'is_kit':False,'is_tech_gtin':False,'identified_by':[{'value':data['gtin'],'type':'gtin','level':'trade-unit','multiplier':1,'unit':'шт'}],'good_attrs':attributes}
 
+def validate_card(data,config):
+    if not data.get('brand') or not data.get('category_id') or not data.get('pn') or not data.get('name'):
+        raise HTTPException(422,'Заполните PN, название, товарный знак и вид/категорию товара')
+    schema=Client(config).schema(data['category_id'],data.get('external',{}).get('raw',{}))
+    build_entry(data,schema)
+    return {'valid':True,'message':'Обязательные поля проверены по актуальной схеме НК. Внешние операции не выполнялись.'}
+
 def perform_action(current,id,action,body,settings):
-    permission={'gtin':'nk.gtin.generate','save':'nk.cards.edit','moderate':'nk.cards.moderate','publish':'nk.cards.publish','archive':'nk.cards.edit','refresh':'nk.cards.view','restore':'documents.restore'}.get(action)
+    permission={'validate':'nk.cards.view','discard':'nk.cards.edit','gtin':'nk.gtin.generate','save':'nk.cards.edit','moderate':'nk.cards.moderate','publish':'nk.cards.publish','archive':'nk.cards.edit','refresh':'nk.cards.view','restore':'documents.restore'}.get(action)
     if not permission:raise HTTPException(404,'Действие не найдено')
     row=s.get(current,id,'card',True,permission)
     if action=='restore':
@@ -207,6 +222,13 @@ def perform_action(current,id,action,body,settings):
         return s.archive(current,row,body.reason)
     s.idle(current.connection,id)
     config=load(current.connection,settings,row['organization_id'])
+    if action=='validate':return validate_card(data,config)
+    if action=='discard':
+        if not data.get('external') or not body.agreement:raise HTTPException(422,'Нужно подтверждение замены локальных изменений данными НК')
+        raw=Client(config).details(good_id=data['external']['good_id'])
+        s.record(current,row,'local_changes_discarded',{'previous':data,'reason':body.reason})
+        current.connection.execute(text("UPDATE business_items SET body=jsonb_set(body,'{dirty}','false') WHERE id=:id"),{'id':id})
+        current.org=row['organization_id'];return apply_remote(current,raw,id)
     if action=='refresh':
         if data.get('dirty'):raise HTTPException(409,'Есть локальные изменения. Сохраните их в НК перед обновлением.')
         raw=Client(config).details(gtin=data['gtin'],good_id=data.get('external',{}).get('good_id'));current.org=row['organization_id'];return apply_remote(current,raw,id)
@@ -231,34 +253,44 @@ def perform_action(current,id,action,body,settings):
 
 def install_nk(app,actor,settings):
     dep=Depends(actor,scope='function')
+    from .catalog_batch import install
+    install(app,actor,settings)
     @app.get('/api/catalog-options')
     def options(organization_id:UUID,current=dep):
-        current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id)
+        current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id,assigned=True)
         from importlib.resources import files
         values=json.loads(files('marking_erp.data').joinpath('presets/product-kinds.json').read_text())['kinds']
-        return {'kinds':values}
+        return {'kinds':values,'policy':rules(current.connection,organization_id)}
     @app.get('/api/catalog-schema')
     def schema(organization_id:UUID,category_id:int=Query(ge=1),card_id:UUID|None=None,current=dep):
         current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id)
-        raw=s.get(current,card_id,'card')['body'].get('external',{}).get('raw') if card_id else None
+        card=s.get(current,card_id,'card') if card_id else None
+        if card and card['organization_id']!=organization_id:raise HTTPException(422,'Организация карточки отличается')
+        raw=card['body'].get('external',{}).get('raw') if card else None
         result=Client(load(current.connection,settings,organization_id)).schema(category_id,raw)
         return {'attributes':result}
     @app.get('/api/catalog')
-    def listing(organization_id:UUID,kind:str=Query('card',pattern='^(card|template|sync|import)$'),q:str=Query('',max_length=120),archived:bool=False,before_id:UUID|None=None,draft_duplicates:str=Query('hide',pattern='^(hide|include|only)$'),current=dep):
+    def listing(organization_id:UUID,kind:str=Query('card',pattern='^(card|template|sync|import)$'),q:str=Query('',max_length=120),archived:bool=False,before_id:UUID|None=None,draft_duplicates:str|None=Query(None,pattern='^(hide|include|only)$'),status:str=Query('',pattern='^(|local|dirty|draft|errors|moderation|notsigned|published)$'),sort:str=Query('newest',pattern='^(newest|pn)$'),current=dep):
         current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id,assigned=True)
+        draft_duplicates=resolve_duplicate_filter(current.connection,organization_id,draft_duplicates)
         grant=current.grants()['nk.cards.view']
         projection=CATALOG_CTE if kind=='card' else ''
         source='catalog_rows' if kind=='card' else 'business_items'
         duplicate_column='duplicate_draft' if kind=='card' else 'false AS duplicate_draft'
         duplicate_filter=DUPLICATE_FILTER if kind=='card' else ''
+        order="coalesce(i.body->>'pn',''),i.id" if sort=='pn' else 'i.created_at,i.id'
+        cursor_order="coalesce(body->>'pn',''),id" if sort=='pn' else 'created_at,id'
+        direction='ASC' if sort=='pn' else 'DESC';comparison='>' if sort=='pn' else '<'
         rows=current.connection.execute(text(projection+f'''SELECT i.id,i.title,i.state,i.revision,i.body,i.updated_at,{duplicate_column} FROM {source} i WHERE i.organization_id=:org AND kind=:kind
-            AND (state='archived')=:archived AND (CAST(:before AS uuid) IS NULL OR (i.created_at,i.id)<(SELECT created_at,id FROM business_items WHERE id=CAST(:before AS uuid) AND organization_id=:org))
+            AND (state='archived')=:archived AND (CAST(:before AS uuid) IS NULL OR ({order}){comparison}(SELECT {cursor_order} FROM business_items WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (:grant='all' OR (:grant='own' AND owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
             AND (title ILIKE :q ESCAPE '!' OR body->>'pn' ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
-            {duplicate_filter} ORDER BY i.created_at DESC,i.id DESC LIMIT 26'''),{'org':organization_id,'kind':kind,'archived':archived,'draft_duplicates':draft_duplicates,'before':str(before_id) if before_id else None,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            AND (:status='' OR (:status='local' AND NOT body ? 'external') OR (:status='dirty' AND body->>'dirty'='true') OR body#>'{{external,statuses}}' ? :status)
+            {duplicate_filter} ORDER BY {order.split(',i.id')[0]} {direction},i.id {direction} LIMIT 26'''),{'status':status,'org':organization_id,'kind':kind,'archived':archived,'draft_duplicates':draft_duplicates,'before':str(before_id) if before_id else None,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('external','rows','row_links','payloads')},'external_status':r['body'].get('external',{}).get('statuses',[])} for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
     @app.get('/api/catalog/export')
-    def export(organization_id:UUID,q:str=Query('',max_length=120),archived:bool=False,draft_duplicates:str=Query('hide',pattern='^(hide|include|only)$'),current=dep):
+    def export(organization_id:UUID,q:str=Query('',max_length=120),archived:bool=False,draft_duplicates:str|None=Query(None,pattern='^(hide|include|only)$'),status:str=Query('',pattern='^(|local|dirty|draft|errors|moderation|notsigned|published)$'),sort:str=Query('newest',pattern='^(newest|pn)$'),current=dep):
+        draft_duplicates=resolve_duplicate_filter(current.connection,organization_id,draft_duplicates)
         export_grant=current.require('nk.export',organization_id=organization_id,owner_id=current.id,assigned=True)
         grant=current.grants().get('nk.cards.view')
         if not grant:raise HTTPException(403,'Нет доступа к карточкам каталога')
@@ -268,13 +300,14 @@ def install_nk(app,actor,settings):
             AND (:export_grant='all' OR (:export_grant='own' AND i.owner_id=:user)
                 OR (:export_grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
             AND (title ILIKE :q ESCAPE '!' OR body->>'pn' ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
-            '''+DUPLICATE_FILTER+''' ORDER BY i.created_at,i.id LIMIT 50001'''),{'org':organization_id,'grant':grant,'export_grant':export_grant,'user':current.id,'archived':archived,'draft_duplicates':draft_duplicates,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            AND (:status='' OR (:status='local' AND NOT body ? 'external') OR (:status='dirty' AND body->>'dirty'='true') OR body#>'{external,statuses}' ? :status)
+            '''+DUPLICATE_FILTER+''' ORDER BY i.created_at,i.id LIMIT 50001'''),{'status':status,'org':organization_id,'grant':grant,'export_grant':export_grant,'user':current.id,'archived':archived,'draft_duplicates':draft_duplicates,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         if len(rows)>50000:raise HTTPException(422,'В выгрузке больше 50000 карточек. Уточните фильтр PN, GTIN или ТН ВЭД; неполный файл не формируется.')
         data=workbook([[r[k] or '' for k in ('pn','gtin','tnved','name','brand','category_id')]+[', '.join(r['statuses'] or []),'Есть опубликованная карточка с точным PN' if r['duplicate_draft'] else ''] for r in rows],['PN','GTIN','ТН ВЭД','Название','Товарный знак','ID категории','Статус НК','Совпадение PN'])
         return Response(data,media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="catalog.xlsx"'})
     @app.get('/api/catalog/{id}')
     def detail(id:UUID,current=dep):
-        row=s.get(current,id);events=current.connection.execute(text('SELECT e.action,e.created_at,u.display_name FROM business_events e JOIN users u ON u.id=e.actor_id WHERE e.item_id=:id ORDER BY e.id DESC LIMIT 50'),{'id':id}).mappings().all()
+        row=s.get(current,id);events=current.connection.execute(text('SELECT e.action,e.created_at,e.body,u.display_name FROM business_events e JOIN users u ON u.id=e.actor_id WHERE e.item_id=:id ORDER BY e.id DESC LIMIT 50'),{'id':id}).mappings().all()
         ops=current.connection.execute(text('SELECT o.id,o.kind,o.state,o.reason,o.external_id FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id ORDER BY o.created_at DESC LIMIT 30'),{'id':id}).mappings().all()
         return {'item':row,'events':[dict(r) for r in events],'operations':[dict(r) for r in ops]}
     @app.post('/api/catalog')
@@ -325,9 +358,8 @@ def install_nk(app,actor,settings):
     def sync(organization_id:UUID,current=dep):
         current.require('nk.sync.execute',organization_id=organization_id,owner_id=current.id)
         load(current.connection,settings,organization_id)
-        if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='sync' AND organization_id=:org AND state IN ('draft','processing'))"),{'org':organization_id}).scalar_one():raise HTTPException(409,'Синхронизация уже выполняется')
-        end=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-        return s.create(current,'sync','Синхронизация НК',{'from':'1980-01-01 00:00:00','to':end,'windows':[['1980-01-01 00:00:00',end,0]],'sync_actor':str(current.id),'offset':0,'count':0},organization_id,state='processing')
+        from .catalog_schedule import start
+        return start(current,organization_id)
     @app.post('/api/catalog-sync/{id}/resume')
     def resume_sync(id:UUID,body:Action,current=dep):
         row=s.get(current,id,'sync',True,'nk.sync.execute');s.version(row,body.revision)
@@ -378,7 +410,15 @@ def install_nk(app,actor,settings):
         if row['revision']!=body.revision or row['state'] not in ('done','blocked'):raise HTTPException(409,'Нужна сохранённая партия импорта')
         if not row['body'].get('card_ids') or not body.agreement:raise HTTPException(422,'Подтвердите получение GTIN, сохранение и модерацию карточек')
         if not load(current.connection,settings,row['organization_id']).get('writes_enabled'):raise HTTPException(409,'Отправка отключена')
-        return s.save(current,row,'pipeline_started',body={**row['body'],'pipeline_actor':str(current.id),'pipeline':True,'results':{}},state='processing')
+        for card_id in row['body']['card_ids']:
+            card=s.get(current,UUID(card_id),'card')
+            for permission in ['nk.gtin.generate','nk.cards.edit','nk.cards.moderate']+(['nk.cards.publish'] if body.publish else []):s.require(current,card,permission)
+        return s.save(current,row,'pipeline_started',body={**row['body'],'pipeline_actor':str(current.id),'pipeline':True,'publish':body.publish,'policy':rules(current.connection,row['organization_id']),'results':{},'polls':{}},state='processing')
+    @app.post('/api/catalog-import/{id}/pause')
+    def pause_pipeline(id:UUID,body:Action,current=dep):
+        row=s.get(current,id,'import',True,'nk.bulk_creation.execute');s.version(row,body.revision)
+        if row['state']!='processing' or not row['body'].get('pipeline'):raise HTTPException(409,'Партия не выполняется')
+        return s.save(current,row,'pipeline_paused',body={**row['body'],'pipeline':False,'error':'Остановлено сотрудником. Уже поставленные операции требуют отдельной сверки.'},state='blocked')
     @app.get('/api/catalog-import/{id}/export')
     def export_import(id:UUID,current=dep):
         row=s.get(current,id,'import',permission='nk.export');values=[]
@@ -430,5 +470,5 @@ def install_nk(app,actor,settings):
                 card=s.create(current,'card',data['pn'],{**data,'dirty':True},row['organization_id']);card_id=str(card['id']);ids.append(card_id);seen[key]=card_id
                 s.record(current,card,'imported',{'source':str(id),'duplicate_reason':body.reason})
             links.append({'row':r['row'],'card_id':seen[key],'identity':{k:data.get(k,'') for k in ('pn','brand','tnved')}})
-        s.save(current,row,'import_committed',body={**row['body'],'card_ids':ids,'row_links':links,'commit_sha256':request_hash},state='done')
+        s.save(current,row,'import_committed',body={**row['body'],'card_ids':ids,'row_links':links,'commit_sha256':request_hash,'duplicate_reason':body.reason},state='done')
         return {'card_ids':ids,'row_links':links}
