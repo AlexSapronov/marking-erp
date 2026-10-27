@@ -68,7 +68,7 @@ def install_auth(app, engine, settings):
                     # exclusive fence and wait for all active scans to finish.
                     path=request.url.path
                     warehouse_scan=(path.startswith('/api/warehouse/tasks/') and
-                                    ((request.method=='POST' and path.endswith('/scans')) or
+                                    ((request.method=='POST' and (path.endswith('/scans') or path.endswith('/check'))) or
                                      (request.method=='DELETE' and '/scans/' in path)))
                     lock='pg_advisory_xact_lock_shared' if warehouse_scan else 'pg_advisory_xact_lock'
                     connection.execute(text('SELECT '+lock+'(683273529)'))

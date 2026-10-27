@@ -867,3 +867,40 @@ def test_catalog_import_original_workbook_history_and_real_downloads(page,live_a
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     capture(page,'catalog-import-result-390')
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_tsd_checks_expected_payloads_and_invalidates_result_after_edit(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.policy import snapshot
+    from marking_erp.warehouse_check import payload_evidence
+    from test_warehouse_postgres import raw,GTIN
+    org=live_app['org'];source=uuid4();task=uuid4();number='BATCH-UI-01';codes=[raw('a'),raw('b')]
+    with engine.begin() as c:
+        lines=[{'pn':'PN-BATCH','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':2}]
+        for id,owner in ((source,live_app['users']['bm']),(task,live_app['users']['logistics'])):
+            c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,2)'),{'id':id,'org':org,'owner':owner})
+        c.execute(text('''INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256)
+            VALUES (:id,:org,:owner,:number,'2026-10-27','Поставщик UI',2,'prepared',CAST(:lines AS jsonb),CAST(:policy AS jsonb),:sha)'''),{'id':source,'org':org,'owner':live_app['users']['bm'],'number':number,'lines':json.dumps(lines),'policy':json.dumps(snapshot(c,org),default=str),'sha':'1'*64})
+        c.execute(text('''INSERT INTO warehouse_tasks(id,organization_id,owner_id,source_id,source_revision,kind,number,supplier,document_date,lines,expected_codes,expected_payloads)
+            VALUES (:id,:org,:owner,:source,2,'receipt',:number,'Поставщик UI','2026-10-27',CAST(:lines AS jsonb),CAST(:codes AS jsonb),CAST(:evidence AS jsonb))'''),{'id':task,'org':org,'owner':live_app['users']['logistics'],'source':source,'number':number,'lines':json.dumps(lines),'codes':json.dumps([v[:38] for v in codes]),'evidence':json.dumps(dict(payload_evidence(v) for v in codes))})
+        c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES (:id,:user)'),{'id':task,'user':live_app['users']['tsd']})
+    login(page,'tsd');page.locator('#receipt-link').click();page.get_by_role('button',name='Открыть задание',exact=True).click()
+    page.get_by_role('button',name='Проверить',exact=True).click()
+    expect(page.locator('#warehouse-content')).to_contain_text('Недостающих КМ: 2')
+    capture(page,'warehouse-check-incomplete-desktop')
+    for value in (raw('c'),raw('a').replace('93ABCD','93WXYZ')):
+        page.get_by_label('Сканируйте Data Matrix',exact=True).fill(value);page.get_by_role('button',name='Принять скан',exact=True).click()
+        expect(page.locator('#warehouse-content .warehouse-scan .error-message')).to_be_visible()
+    for value in codes:
+        page.get_by_label('Сканируйте Data Matrix',exact=True).fill(value);page.get_by_role('button',name='Принять скан',exact=True).click()
+        expect(page.get_by_label('Сканируйте Data Matrix',exact=True)).to_have_value('')
+    page.get_by_role('button',name='Проверить',exact=True).click()
+    expect(page.locator('#warehouse-content')).to_contain_text('Локальная сверка пройдена; сведения ЧЗ не проверялись')
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'warehouse-check-full-390')
+    page.get_by_role('button',name='Удалить ошибочный скан',exact=True).first.click();page.locator('#confirm-ok').click()
+    expect(page.locator('#warehouse-content').get_by_role('heading',name='Результат проверки',exact=True)).to_have_count(0)
+    expect(page.get_by_role('button',name='Закрыть задание после сверки',exact=True)).to_be_disabled()
+    with engine.connect() as c:
+        data=c.execute(text('SELECT check_result,verified_at FROM warehouse_tasks WHERE id=:id'),{'id':task}).mappings().one()
+        assert data['check_result'] is None and data['verified_at'] is None
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
