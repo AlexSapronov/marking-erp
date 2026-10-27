@@ -49,6 +49,8 @@ def test_real_pg_dump_restore_files_auth_and_dispatch_quarantine(registry_env,qu
         login(user);cookie=user.cookies.get('__Host-erp_session')
     with engine.begin() as c:
         op=prepare(c,queue_env);schema=c.execute(text('SELECT current_schema()')).scalar_one()
+        from marking_erp.business.printing import register_printer
+        printer,_=register_printer(c,env[1],'Restore quarantine fixture','Label Printer')
     bundle=tmp_path/'backup.zip';summary=create_backup(env[0],engine,bundle,db_schema=schema)
     assert summary['file_count']==2 and bundle.stat().st_mode&0o777==0o600
     manifest=verify_backup(bundle);assert manifest['mfa_key_required']
@@ -73,6 +75,7 @@ def test_real_pg_dump_restore_files_auth_and_dispatch_quarantine(registry_env,qu
             assert c.execute(text('SELECT count(*) FROM sessions')).scalar_one()==1 # Only the NEW login.
             assert c.execute(text('SELECT state FROM external_operations WHERE id=:id'),{'id':op['id']}).scalar_one()=='blocked'
             assert c.execute(text('SELECT count(*) FROM operation_contracts WHERE approved')).scalar_one()==0
+            assert c.execute(text('SELECT enabled FROM printer_devices WHERE id=:id'),{'id':printer}).scalar_one() is False
             assert c.execute(text("SELECT count(*) FROM audit_events WHERE action='system.restored'")).scalar_one()==1
         with engine.connect() as c:
             assert c.execute(text('SELECT state FROM external_operations WHERE id=:id'),{'id':op['id']}).scalar_one()=='queued'

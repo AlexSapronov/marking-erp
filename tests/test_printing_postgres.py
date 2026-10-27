@@ -92,3 +92,18 @@ def test_revoked_print_confirmation_cancels_a_queued_reprint_before_agent_delive
         agent.headers['Authorization']='Bearer '+token
         assert agent.post('/api/print-agent/claim').json()['job'] is None
     with engine.connect() as db:assert db.execute(text('SELECT state FROM print_jobs')).scalar_one()=='cancelled'
+
+def test_restore_quarantine_disables_printers_and_never_requeues_claimed_print(allocated,engine):
+    from marking_erp.backup import _freeze
+    env,item,source,code=allocated;queued,claimed=uuid4(),uuid4()
+    with engine.begin() as c:
+        device,_=register_printer(c,env[1],'Restore fixture','Label Printer')
+        file=c.execute(text("SELECT id FROM business_artifacts WHERE item_id=:id AND kind='labels_pdf'"),{'id':item}).scalar_one()
+        for id,state in ((queued,'queued'),(claimed,'claimed')):
+            c.execute(text('''INSERT INTO print_jobs(id,organization_id,actor_id,device_id,artifact_id,copies,request_sha256,state,lease_hash)
+                VALUES (:id,:org,:actor,:device,:file,1,:sha,:state,:lease)'''),{'id':id,'org':env[1],'actor':env[3]['specialist'],'device':device,'file':file,'sha':'1'*64,'state':state,'lease':'2'*64})
+        _freeze(c,'1'*64,'fixture-snapshot')
+        assert c.execute(text('SELECT enabled FROM printer_devices WHERE id=:id'),{'id':device}).scalar_one() is False
+        assert c.execute(text('SELECT state FROM print_jobs WHERE id=:id'),{'id':queued}).scalar_one()=='cancelled'
+        assert c.execute(text('SELECT state FROM print_jobs WHERE id=:id'),{'id':claimed}).scalar_one()=='unknown'
+        assert c.execute(text('SELECT lease_hash FROM print_jobs WHERE id=:id'),{'id':claimed}).scalar_one() is None

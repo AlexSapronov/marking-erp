@@ -716,7 +716,7 @@ def test_reprint_reason_print_acknowledgement_and_exact_control_scan_ui(page,liv
         register_product(c,org,GTIN,'REPRINT-UI-PN','8542399000',source='external_verified',source_ref='fixture:nk',evidence_sha256='1'*64)
         item=store.create(current,'marking','REPRINT-UI-INVOICE',{'supplier':'Fixture','lines':[{'pn':'REPRINT-UI-PN','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':1}]},org,state='receiving')
         from marking_erp.config import Settings
-        settings=Settings(file_storage_path=live_app['file_storage_path'])
+        settings=Settings(database_url='postgresql+psycopg://unused@localhost/test',file_storage_path=live_app['file_storage_path'])
         apply(current,item,{'id':uuid4(),'kind':'bm.fetch'},{'metadata':{'gtin':GTIN,'expected':1}},{},{'codes':[sample(37).decode()]},None,settings)
     login(page,'specialist');page.goto(live_app['base']+'/reprint')
     page.get_by_label('PN, GTIN или серийный номер',exact=True).fill('REPRINT-UI-PN');page.get_by_role('button',name='Найти',exact=True).click()
