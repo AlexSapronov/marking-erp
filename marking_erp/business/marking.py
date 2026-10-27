@@ -440,7 +440,7 @@ def install_marking(app,actor,settings):
             current_payload(request,code,row)
             if request['state']=='cancelled':raise HTTPException(409,'Перепечать отменена')
         else:s.require(current,row)
-        permission='labels.remarking.create' if row['kind']=='remark' else 'logistics.fts.prepare' if file['kind'].startswith('fts') else 'logistics.atk.download' if file['kind']=='atk' else 'marking.labels.download' if row['kind']=='marking' else 'split.operations.view'
+        permission='nk.export' if file['kind']=='catalog_import_source' else 'labels.remarking.create' if row['kind']=='remark' else 'logistics.fts.prepare' if file['kind'].startswith('fts') else 'logistics.atk.download' if file['kind']=='atk' else 'marking.labels.download' if row['kind']=='marking' else 'split.operations.view'
         if file['kind'] not in ('reprint','warehouse_invoice'):s.require(current,row,permission)
         if row['body'].get('codes_released') and file['kind'].startswith('labels'):raise HTTPException(409,'КМ возвращены в общий пул; прежние этикетки больше не используются')
         if file['kind'].startswith('labels') and current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_codes WHERE item_id=:id AND state='withdrawn')"),{'id':row['id']}).scalar_one():raise HTTPException(409,'В документе есть заменённый КМ. Прежний комплект этикеток использовать нельзя.')
