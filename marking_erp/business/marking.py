@@ -15,7 +15,8 @@ from . import store as s
 from . import registry as registry_bridge
 from .connections import load
 from .live import Live
-from .nk import workbook
+from .nk import workbook,Client
+from .split_eligibility import check as check_split_eligibility
 from .suppliers import canonical,expression
 
 class Reallocate(Body):
@@ -293,7 +294,8 @@ def install_marking(app,actor,settings):
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE organization_id=:org AND ((kind='split' AND body->>'source_cis'=:cis AND state NOT IN ('applied','archived','cancelled')) OR (kind='remark' AND body->>'old_cis'=:cis AND state NOT IN ('done','archived'))))"),{'org':body.organization_id,'cis':code.cis}).scalar_one():raise HTTPException(409,'По этому КМ есть незавершённое разделение')
         if body.quantity>=int(baseline):raise HTTPException(422,'Отделяемое количество должно быть меньше остатка исходного КМ')
         if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND r.gtin=:gtin AND p.pn=:pn AND p.tnved=:tnved LIMIT 1'),{'org':body.organization_id,'gtin':code.gtin,'pn':body.pn,'tnved':body.tnved}).scalar():raise HTTPException(409,'PN/GTIN/ТН ВЭД не подтверждены в каталоге')
-        row=s.create(current,'split',body.pn,{'source_raw':code.normalized.decode(),'source_base':code.base.decode(),'source_cis':code.cis,'gtin':code.gtin,'baseline':int(baseline),'quantity':body.quantity,'pn':body.pn,'tnved':body.tnved},body.organization_id,id=body.request_id,state='ordering')
+        eligibility=check_split_eligibility(Client(config),code.gtin)
+        row=s.create(current,'split',body.pn,{'catalog_eligibility':eligibility,'source_raw':code.normalized.decode(),'source_base':code.base.decode(),'source_cis':code.cis,'gtin':code.gtin,'baseline':int(baseline),'quantity':body.quantity,'pn':body.pn,'tnved':body.tnved},body.organization_id,id=body.request_id,state='ordering')
         s.queue(current,row,'split.order',order_payload(code.gtin,1,config,row['id'],True));return {'id':row['id'],'state':row['state']}
     @app.post('/api/business/{id}/{action}')
     def action(id:UUID,action:str,body:Step,current=dep):

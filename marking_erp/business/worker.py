@@ -129,6 +129,10 @@ class BusinessWorker:
             if str(link['metadata']['good_id']) not in set(map(str,result.get('signed',[]))):raise ValueError('НК не подтвердил принятие подписи')
             external=str(link['metadata']['good_id'])
         elif step.endswith('.order'):
+            if step=='split.order':
+                from .split_eligibility import check
+                try:check(nk,row['body']['gtin'])
+                except Exception:raise operations.DispatchBlocked('НК не подтвердил характеристику количества перед эмиссией разделения') from None
             result=live.oms('order',body=ticket['payload'],signature=ticket['signature']);external=live.external_id(result.get('orderId'))
         elif step.endswith('.fetch'):
             # Consuming GET remains a durable mutation. Never automatically retry it.
