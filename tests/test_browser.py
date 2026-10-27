@@ -955,6 +955,8 @@ def test_nk_cross_page_selection_saved_status_and_sidebar(page,live_app,engine):
     page.get_by_role('button',name='Открыть',exact=True).first.click()
     expect(page.locator('#business-dialog')).to_have_class(__import__('re').compile('catalog-sidebar'))
     expect(page.get_by_role('button',name='Проверить обязательные поля',exact=True)).to_be_visible()
+    expect(page.locator('#business-dialog').get_by_role('button',name='Сохранить в НК',exact=True)).to_be_disabled()
+    expect(page.locator('#business-dialog').get_by_role('button',name='Опубликовать',exact=True)).to_be_disabled()
     expect(page.get_by_text('Следующий шаг:',exact=False)).to_be_visible()
     capture(page,'nk-card-sidebar')
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
