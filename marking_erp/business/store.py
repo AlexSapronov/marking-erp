@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import text
 from .. import auth,operations
 
-VIEW={'card':'nk.cards.view','template':'nk.cards.view','import':'nk.cards.view','sync':'nk.cards.view','marking':'marking.documents.view','atk':'logistics.atk.view','transform':'logistics.atk.view','split':'split.operations.view','fts':'logistics.atk.view'}
+VIEW={'card':'nk.cards.view','template':'nk.cards.view','import':'nk.cards.view','sync':'nk.cards.view','marking':'marking.documents.view','atk':'logistics.atk.view','transform':'logistics.atk.view','split':'split.operations.view','fts':'logistics.atk.view','remark':'labels.remarking.create'}
 
 def item(c,id,kind=None,lock=False):
     row=c.execute(text('SELECT * FROM business_items WHERE id=:id'+(' FOR UPDATE' if lock else '')),{'id':id}).mappings().first()
@@ -47,6 +47,8 @@ def idle(c,id):
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_links l JOIN external_operations o ON o.id=l.operation_id WHERE l.item_id=:id AND o.state NOT IN ('confirmed','rejected','cancelled_before_dispatch'))"),{'id':id}).scalar_one():raise HTTPException(409,'Есть незавершённая внешняя операция. Сначала проверьте её результат.')
 
 def queue(current,row,step,payload,metadata=None):
+    from .contracts import register
+    register(current.connection)
     id=uuid4();c=current.connection
     c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,1)'),{'id':id,'org':row['organization_id'],'owner':row['owner_id']})
     for user in c.execute(text('SELECT user_id FROM operation_assignments WHERE target_id=:id'),{'id':row['id']}).scalars().all():c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES (:id,:user)'),{'id':id,'user':user})

@@ -51,6 +51,8 @@ class BusinessWorker:
             except SyncProblem as error:self.pause_sync(id,str(error))
             except Exception:self.pause_sync(id,'Синхронизация остановлена. Проверьте доступ, структуру ответа НК и настройки подключения.')
         self.pipeline_tick()
+        from .token_auth import refresh_tick
+        refresh_tick(self.engine,self.settings)
     def pause_sync(self,id,message):
         with self.engine.begin() as c:
             c.execute(text('SELECT pg_advisory_xact_lock(683273529)'));row=s.item(c,id,lock=True)
@@ -94,7 +96,7 @@ class BusinessWorker:
                 source=c.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()
                 if source['state']=='archived' or source['revision']!=row['body']['source_revision']:raise operations.DispatchBlocked('Исходная накладная остановлена/изменена')
         step=ticket['kind'];payload=json.loads(ticket['payload']) if step!='nk.publish' else None;external=None;result=None;nk=Client(config);live=Live(config,inn) if not step.startswith('nk.') else None
-        required=('nk_key',) if step.startswith('nk.') else ('true_token',) if step in ('bm.atk','bm.transform') else ('oms_token','true_token') if step.endswith('.report') else ('oms_token',)
+        required=('nk_key',) if step.startswith('nk.') else ('true_token',) if step in ('bm.atk','bm.transform','fts.submit','remark.submit') else ('oms_token','true_token') if step.endswith('.report') else ('oms_token',)
         if any(not config.get(key) for key in required):raise operations.DispatchBlocked('Настройте действующие токены интеграции')
         if step=='nk.gtin':
             result=nk.call('GET','/v3/generate-gtins',{'quantity':1});drafts=result.get('drafts',[])
@@ -130,6 +132,18 @@ class BusinessWorker:
         elif step.endswith('.report'):
             codes=[{'cis':gs1.parse(x.split('\x1e')[0].encode()).cis,'gtin':gs1.parse(x.split('\x1e')[0].encode()).gtin} for x in payload['sntins']];live.verify(codes,'EMITTED')
             result=live.oms('utilisation',body=ticket['payload'],signature=ticket['signature']);external=live.external_id(result.get('reportId'))
+        elif step in ('fts.submit','remark.submit'):
+            try:
+                if step=='fts.submit':
+                    from .fts import validate_import
+                    validate_import(live,row)
+                else:
+                    from .remarking import validate_dispatch
+                    validate_dispatch(live,payload)
+            except (RemoteError,ValueError):raise operations.DispatchBlocked('Не подтверждены условия операции в ЧЗ') from None
+            except Exception:raise operations.DispatchBlocked('Условия документа изменились; требуется сверка до отправки') from None
+            envelope={'document_format':'MANUAL','product_document':base64.b64encode(ticket['payload']).decode(),'type':'LP_FTS_INTRODUCE' if step=='fts.submit' else 'LK_REMARK','signature':base64.b64encode(ticket['signature']).decode()}
+            result=live.call('POST','/api/v3/true-api/lk/documents/create',{'pg':'radio'},json.dumps(envelope).encode());external=live.external_id(result)
         elif step in ('bm.atk','bm.transform'):
             checked=live.verify([{'cis':p['ki'],'gtin':p['ki'][2:16]} for p in payload['products_list']],'APPLIED',parent=payload.get('atk') if payload.get('transformation_type')=='REMOVING' else None)
             if step=='bm.transform' and payload.get('transformation_type')=='ADDING' and any(r.get('parent') for r in checked.values()):raise operations.DispatchBlocked('Добавляемые КМ уже входят в другой АТК')
@@ -172,12 +186,25 @@ class BusinessWorker:
                 receipt=live.oms('receipts/receipt',params={'resultDocId':op['external_id']});results=receipt.get('results',[])
                 if not results or any(r.get('resultDocId')!=op['external_id'] or r.get('state')!='SUCCESS' or r.get('code')!=0 for r in results):return
                 codes=[{'cis':gs1.parse(x.split('\x1e')[0].encode()).cis,'gtin':gs1.parse(x.split('\x1e')[0].encode()).gtin} for x in payload['sntins']];live.verify(codes,'APPLIED');result={'report':result,'receipt':receipt}
-        elif step in ('bm.atk','bm.transform'):
+        elif step in ('bm.atk','bm.transform','fts.submit','remark.submit'):
             result=live.call('GET','/api/v4/true-api/doc/'+op['external_id']+'/info',{'pg':'radio','body':'true','content':'true'})
             if not isinstance(result,list) or len(result)!=1 or result[0].get('number')!=op['external_id']:return
             d=result[0];rejected=bool(d.get('errors') or d.get('commonErrors') or d.get('status') in ('CHECKED_NOT_OK','PARSE_ERROR'))
             if not rejected and d.get('status')!='CHECKED_OK':return
-            if not rejected:
+            if not rejected and step=='fts.submit':
+                from .fts import strings
+                contents=strings(result)
+                if row['body']['declaration_number'] not in contents:return
+                expected={r['cis'] for r in row['body']['codes']}
+                if not expected<={v[:38] for v in contents} and not set(row['body']['atk_codes'])<=contents:return
+                registry=live.verify(row['body']['codes'],'INTRODUCED')
+                if any(registry[v['cis']].get('parent')!=v['atk'] for v in row['body']['codes']):return
+                result={'document':result,'registry':registry}
+            elif not rejected and step=='remark.submit':
+                from .remarking import verify_result
+                if not verify_result(live,payload,row['body']['quantity']):return
+                result={'document':result,'registry':live.info([p[k] for p in payload['products'] for k in ('last_uin','new_uin')])}
+            elif not rejected:
                 registry=live.verify([{'cis':p['ki'],'gtin':p['ki'][2:16]} for p in payload['products_list']],'APPLIED')
                 if step=='bm.transform':
                     expected=payload['atk'] if payload['transformation_type']=='ADDING' else None
@@ -206,6 +233,15 @@ class BusinessWorker:
                     register_product(c,op['organization_id'],data['gtin'],data['pn'],data['tnved'],source='nk_confirmed',source_ref='nk:'+str(result['good_id']),evidence_sha256=sha256(outcome.raw).hexdigest())
             elif step=='nk.document':
                 xml=initial['xmls'][0]['xml'].encode();s.queue(current,latest,'nk.publish',xml,{'good_id':payload['good_id']})
+            elif step=='fts.submit':
+                s.artifact(current,latest,'fts_receipt','FTS-receipt.json',outcome.raw,'application/json',{'external_document_id':op['external_id']})
+                s.save(current,latest,'circulation_confirmed',body={**latest['body'],'external_document_id':op['external_id'],'verified_at':datetime.now(timezone.utc).isoformat(),'verification':'signed_document_and_codes_introduced'},state='circulation_confirmed')
+            elif step=='remark.submit':
+                new_id=c.execute(text('SELECT id FROM business_codes WHERE item_id=:id AND cis=:cis'),{'id':latest['id'],'cis':latest['body']['new_cis']}).scalar_one()
+                c.execute(text('INSERT INTO code_replacements(old_code_id,new_code_id,remark_id,external_document_id) VALUES (:old,:new,:remark,:external)'),{'old':latest['body']['old_code_id'],'new':new_id,'remark':latest['id'],'external':op['external_id']})
+                c.execute(text("UPDATE business_codes SET state='withdrawn' WHERE id=:id AND organization_id=:org"),{'id':latest['body']['old_code_id'],'org':op['organization_id']})
+                s.artifact(current,latest,'remark_receipt','remark-receipt.json',outcome.raw,'application/json',{'external_document_id':op['external_id'],'old_cis':latest['body']['old_cis'],'new_cis':latest['body']['new_cis']})
+                s.save(current,latest,'official_remark_confirmed',body={**latest['body'],'external_document_id':op['external_id'],'verified_at':datetime.now(timezone.utc).isoformat()},state='done')
             else:
                 from .marking import apply
                 apply(current,latest,op,link,payload,result,live,self.settings)

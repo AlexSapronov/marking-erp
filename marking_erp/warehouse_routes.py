@@ -145,7 +145,9 @@ def install_warehouse(app, actor, settings=None):
                 if cis in expected:raise HTTPException(422,'Ожидаемый состав содержит повтор КМ')
                 expected.append(cis)
         else:
-            expected=list(c.execute(text("SELECT c.cis FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE i.source_id=:id AND i.kind='marking' AND c.state='applied' AND i.state<>'archived'"),{'id':source['id']}).scalars())
+            from .business.replacements import effective
+            original=list(c.execute(text("SELECT c.id FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE i.source_id=:id AND i.kind='marking' AND i.state<>'archived'"),{'id':source['id']}).scalars())
+            expected=[v['cis'] for v in effective(c,original).values() if v['state']=='applied']
         if any(r.get('marked',True) for r in source['lines']) and live_policy(current,{'organization_id':source['organization_id']}) and not expected:raise HTTPException(409,'Для боевой складской проверки нужен ожидаемый перечень КМ поставки')
         if expected:
             from collections import Counter

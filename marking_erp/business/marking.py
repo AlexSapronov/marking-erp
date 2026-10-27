@@ -90,7 +90,7 @@ def apply(current,row,op,link,payload,result,live,settings):
     if step.endswith('.order'):
         # Fetch every GTIN separately. Each consuming request has a unique durable command.
         for product in payload['products']:
-            s.queue(current,row,'split.fetch' if row['kind']=='split' else 'bm.fetch',{'orderId':op['external_id'],'gtin':product['gtin'],'quantity':product['quantity']},{'gtin':product['gtin'],'expected':product['quantity'],'order_id':op['external_id']})
+            s.queue(current,row,'remark.fetch' if row['kind']=='remark' else 'split.fetch' if row['kind']=='split' else 'bm.fetch',{'orderId':op['external_id'],'gtin':product['gtin'],'quantity':product['quantity']},{'gtin':product['gtin'],'expected':product['quantity'],'order_id':op['external_id']})
         s.save(current,row,'order_accepted',state='receiving')
     elif step.endswith('.fetch'):
         gtin=link['metadata']['gtin'];expected=link['metadata']['expected'];raws=result['codes']
@@ -98,7 +98,7 @@ def apply(current,row,op,link,payload,result,live,settings):
         parsed=[gs1.parse(raw.encode()) for raw in raws]
         if len({p.cis for p in parsed})!=len(parsed) or any(p.gtin!=gtin or p.quantity is not None for p in parsed):raise ValueError('СУЗ вернул другой GTIN, повтор КМ или неожиданный AI30')
         allocations=[]
-        if row['kind']=='split':allocations=[(0,body['pn'],body['tnved'],body['quantity'])]
+        if row['kind'] in ('split','remark'):allocations=[(body.get('line_index',0),body['pn'],body['tnved'],body['quantity'])]
         else:
             for index,line in enumerate(body['lines']):
                 if line['gtin']!=gtin:continue
@@ -115,7 +115,7 @@ def apply(current,row,op,link,payload,result,live,settings):
             registry_bridge.capture(current,row,code,settings)
         if len(parsed)<expected:
             s.queue(current,row,step,{'orderId':link['metadata']['order_id'],'gtin':gtin,'quantity':expected-len(parsed)},{**link['metadata'],'expected':expected-len(parsed)})
-        expected_total=1 if row['kind']=='split' else sum(r['labels'] for r in body['lines'])
+        expected_total=1 if row['kind'] in ('split','remark') else sum(r['labels'] for r in body['lines'])
         if len(rows(c,row['id']))==expected_total:
             file=labels(current,row,settings);s.save(current,row,'codes_received',body={**body,'label_file_id':str(file)},state='labels_ready')
     elif step.endswith('.report'):
@@ -172,7 +172,7 @@ def install_marking(app,actor,settings):
     @app.get('/api/reprint-codes')
     def reprints(organization_id:UUID,q:str=Query('',max_length=120),current=dep):
         if organization_id not in current.organizations():raise HTTPException(403,'Нет доступа к организации')
-        values=current.connection.execute(text('''SELECT c.id,c.cis,c.pn,c.quantity,c.item_id FROM business_codes c WHERE c.organization_id=:org
+        values=current.connection.execute(text('''SELECT c.id,c.cis,c.pn,c.quantity,c.item_id FROM business_codes c WHERE c.organization_id=:org AND c.item_id IS NOT NULL AND c.state<>'withdrawn'
             AND (c.pn ILIKE :q ESCAPE '!' OR c.gtin LIKE :q ESCAPE '!' OR c.cis LIKE :q ESCAPE '!') ORDER BY c.id DESC LIMIT 100'''),{'org':organization_id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         out=[]
         for code in values:
@@ -182,7 +182,7 @@ def install_marking(app,actor,settings):
             out.append({k:code[k] for k in ('id','cis','pn','quantity')})
         return {'codes':out}
     @app.get('/api/business')
-    def listing(organization_id:UUID,kind:str=Query('marking',pattern='^(marking|atk|transform|split|fts)$'),q:str=Query('',max_length=120),archived:bool=False,before_id:UUID|None=None,current=dep):
+    def listing(organization_id:UUID,kind:str=Query('marking',pattern='^(marking|atk|transform|split|fts|remark)$'),q:str=Query('',max_length=120),archived:bool=False,before_id:UUID|None=None,current=dep):
         permission=s.VIEW[kind];grant=current.grants().get(permission)
         if not grant or organization_id not in current.organizations():raise HTTPException(403,'Раздел недоступен')
         values=current.connection.execute(text('''SELECT i.id,i.title,i.state,i.revision,i.body,i.updated_at FROM business_items i WHERE organization_id=:org AND kind=:kind AND (state='archived')=:archived
@@ -288,7 +288,7 @@ def install_marking(app,actor,settings):
         if info.get('status')!='INTRODUCED' or info.get('ownerInn')!=live.inn:raise HTTPException(409,'ЧЗ не подтвердил ваш КМ со статусом «В обороте»')
         baseline=info.get('quantityInPack')
         if baseline is None or not str(baseline).isdigit():raise HTTPException(409,'ЧЗ не подтвердил текущее количество исходного КМ')
-        if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE organization_id=:org AND kind='split' AND body->>'source_cis'=:cis AND state NOT IN ('applied','archived','cancelled'))"),{'org':body.organization_id,'cis':code.cis}).scalar_one():raise HTTPException(409,'По этому КМ есть незавершённое разделение')
+        if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE organization_id=:org AND ((kind='split' AND body->>'source_cis'=:cis AND state NOT IN ('applied','archived','cancelled')) OR (kind='remark' AND body->>'old_cis'=:cis AND state NOT IN ('done','archived'))))"),{'org':body.organization_id,'cis':code.cis}).scalar_one():raise HTTPException(409,'По этому КМ есть незавершённое разделение')
         if body.quantity>=int(baseline):raise HTTPException(422,'Отделяемое количество должно быть меньше остатка исходного КМ')
         if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND r.gtin=:gtin AND p.pn=:pn AND p.tnved=:tnved LIMIT 1'),{'org':body.organization_id,'gtin':code.gtin,'pn':body.pn,'tnved':body.tnved}).scalar():raise HTTPException(409,'PN/GTIN/ТН ВЭД не подтверждены в каталоге')
         row=s.create(current,'split',body.pn,{'source_raw':code.normalized.decode(),'source_base':code.base.decode(),'source_cis':code.cis,'gtin':code.gtin,'baseline':int(baseline),'quantity':body.quantity,'pn':body.pn,'tnved':body.tnved},body.organization_id,id=body.request_id,state='ordering')
@@ -296,6 +296,7 @@ def install_marking(app,actor,settings):
     @app.post('/api/business/{id}/{action}')
     def action(id:UUID,action:str,body:Step,current=dep):
         row=s.get(current,id,lock=True);c=current.connection
+        if row['kind']=='remark' and action not in ('archive','restore'):raise HTTPException(404,'Используйте действия официальной перемаркировки')
         if row['state']=='completed':raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
         if action=='restore':
             s.require(current,row,'documents.restore')
@@ -317,6 +318,7 @@ def install_marking(app,actor,settings):
         if not permission:raise HTTPException(404,'Действие не найдено')
         s.require(current,row,permission)
         if action=='archive':
+            if row['kind']=='atk' and c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items f WHERE f.kind='fts' AND f.body->'atks' @> CAST(:id AS jsonb) AND f.state IN ('prepared','fts_submitted','circulation_confirmed'))"),{'id':json.dumps([str(id)])}).scalar_one():raise HTTPException(409,'АТК включён в пакет ФТС. Сначала разберите или остановите пакет.')
             from .logistics import has_completed_dependents
             if has_completed_dependents(c,row):raise HTTPException(409,'Документ связан с завершёнными накладными. Сначала верните их в работу.')
             current.require('documents.stop',**s.context(current,row))
@@ -387,7 +389,7 @@ def install_marking(app,actor,settings):
         if has_completed_dependents(current.connection,parent):raise HTTPException(409,'АТК связан с завершёнными накладными. Сначала верните их в работу.')
         if parent['state'] not in ('ready','transferred') or not parent['body'].get('atk'):raise HTTPException(409,'Нужен зарегистрированный АТК')
         wanted=set(map(str,body.codes));included=set(parent['body']['codes'])
-        if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='fts' AND state IN ('prepared','circulation_confirmed') AND body->'atks' @> CAST(:id AS jsonb))"),{'id':json.dumps([str(id)])}).scalar_one():raise HTTPException(409,'АТК включён в пакет ФТС. Требуется сначала разобрать таможенные сведения.')
+        if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='fts' AND state IN ('prepared','fts_submitted','circulation_confirmed') AND body->'atks' @> CAST(:id AS jsonb))"),{'id':json.dumps([str(id)])}).scalar_one():raise HTTPException(409,'АТК включён в пакет ФТС. Требуется сначала разобрать таможенные сведения.')
         if body.kind=='REMOVING' and not wanted<=included:raise HTTPException(422,'Изымать можно только КМ из состава этого АТК')
         if body.kind=='ADDING' and wanted&included:raise HTTPException(422,'КМ уже входят в АТК')
         codes=current.connection.execute(text("SELECT c.*,i.body->>'supplier' AS supplier FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE c.id=ANY(CAST(:ids AS uuid[])) AND c.organization_id=:org AND c.state='applied'"),{'ids':list(wanted),'org':parent['organization_id']}).mappings().all()
@@ -429,24 +431,18 @@ def install_marking(app,actor,settings):
             except HTTPException as error:
                 if error.status_code!=403:raise
                 s.require(current,row,'logistics.warehouse.result.view')
-        elif file['kind']=='reprint':current.require('labels.reprint',**label_context(current,row))
+        elif file['kind']=='reprint':
+            from .printing import reprint_access,current_payload
+            if not file['snapshot'].get('request_id'):raise HTTPException(409,'Создайте задание перепечати с причиной и контролем')
+            request,code,_=reprint_access(current,UUID(file['snapshot']['request_id']))
+            current_payload(request,code,row)
+            if request['state']=='cancelled':raise HTTPException(409,'Перепечать отменена')
         else:s.require(current,row)
-        permission='logistics.fts.prepare' if file['kind'].startswith('fts') else 'logistics.atk.download' if file['kind']=='atk' else 'marking.labels.download' if row['kind']=='marking' else 'split.operations.view'
+        permission='labels.remarking.create' if row['kind']=='remark' else 'logistics.fts.prepare' if file['kind'].startswith('fts') else 'logistics.atk.download' if file['kind']=='atk' else 'marking.labels.download' if row['kind']=='marking' else 'split.operations.view'
         if file['kind'] not in ('reprint','warehouse_invoice'):s.require(current,row,permission)
         if row['body'].get('codes_released') and file['kind'].startswith('labels'):raise HTTPException(409,'КМ возвращены в общий пул; прежние этикетки больше не используются')
+        if file['kind'].startswith('labels') and current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_codes WHERE item_id=:id AND state='withdrawn')"),{'id':row['id']}).scalar_one():raise HTTPException(409,'В документе есть заменённый КМ. Прежний комплект этикеток использовать нельзя.')
         data=bytes(file['body'])
         if sha256(data).hexdigest()!=file['sha256']:raise HTTPException(503,'Файл повреждён')
         s.record(current,row,'file_downloaded',{'artifact':str(id),'version':file['version']})
         return Response(data,media_type=file['media_type'],headers={'Content-Disposition':'attachment; filename="'+file['filename']+'"'})
-    @app.post('/api/business-codes/{id}/reprint')
-    def reprint(id:UUID,current=dep):
-        code=current.connection.execute(text('SELECT * FROM business_codes WHERE id=:id'),{'id':id}).mappings().first()
-        if not code:raise HTTPException(404,'КМ не найден')
-        row=s.item(current.connection,code['item_id']);current.require('labels.reprint',**label_context(current,row))
-        # Exact saved payload/PN/quantity. Zero emission, no alteration of AI30.
-        saved=current.connection.execute(text("SELECT body,snapshot FROM business_artifacts WHERE item_id=:id AND kind='labels' ORDER BY version DESC LIMIT 1"),{'id':row['id']}).mappings().first()
-        if not saved:raise HTTPException(409,'Нет сохранённой версии этикетки')
-        index=next((i for i,v in enumerate(saved['snapshot']['codes']) if v['cis']==code['cis']),None)
-        if index is None:raise HTTPException(409,'КМ отсутствует в последней версии этикеток')
-        with zipfile.ZipFile(BytesIO(bytes(saved['body']))) as archive:data=archive.read(f'{index+1:05d}.pdf')
-        file=s.artifact(current,row,'reprint','label-58x40.pdf',data,'application/pdf',{'code_id':str(id),'payload_sha256':sha256(bytes(code['payload'])).hexdigest(),'pn':code['pn'],'quantity':code['quantity']});return {'file_id':file}

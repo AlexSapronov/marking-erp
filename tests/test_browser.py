@@ -703,3 +703,51 @@ def test_supplier_alias_admin_ui(page,live_app,engine):
     page.get_by_role('button',name='Объединить выбранные варианты',exact=True).click()
     expect(page.get_by_label('SUPPLIER-A → Единый поставщик',exact=True)).to_be_visible()
     capture(page,'suppliers-aliases-desktop');page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'suppliers-aliases-390')
+
+def test_reprint_reason_print_acknowledgement_and_exact_control_scan_ui(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.business.marking import apply
+    from marking_erp.registry import register_product
+    from test_gs1 import sample,GTIN
+    org=live_app['org'];specialist=live_app['users']['specialist']
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':specialist}).mappings().one());current=auth.Actor(c,user,'fixture',None)
+        register_product(c,org,GTIN,'REPRINT-UI-PN','8542399000',source='external_verified',source_ref='fixture:nk',evidence_sha256='1'*64)
+        item=store.create(current,'marking','REPRINT-UI-INVOICE',{'supplier':'Fixture','lines':[{'pn':'REPRINT-UI-PN','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':1}]},org,state='receiving')
+        from marking_erp.config import Settings
+        settings=Settings(database_url='postgresql+psycopg://unused@localhost/test',file_storage_path=live_app['file_storage_path'])
+        apply(current,item,{'id':uuid4(),'kind':'bm.fetch'},{'metadata':{'gtin':GTIN,'expected':1}},{},{'codes':[sample(37).decode()]},None,settings)
+    login(page,'specialist');page.goto(live_app['base']+'/reprint')
+    page.get_by_label('PN, GTIN или серийный номер',exact=True).fill('REPRINT-UI-PN');page.get_by_role('button',name='Найти',exact=True).click()
+    page.get_by_role('button',name='REPRINT-UI-PN · 10 шт.',exact=False).click()
+    page.get_by_label('Причина перепечати',exact=True).fill('Повреждена этикетка при приёмке')
+    page.get_by_role('button',name='Подготовить точную этикетку',exact=True).click()
+    expect(page.get_by_role('button',name='Подтверждаю: экземпляры напечатаны',exact=True)).to_be_visible();capture(page,'reprint-prepared-desktop')
+    page.get_by_role('button',name='Подтверждаю: экземпляры напечатаны',exact=True).click()
+    page.get_by_label('Контрольный скан полного КМ',exact=True).fill(sample(37,quantity=10).decode())
+    page.get_by_role('button',name='Проверить экземпляр',exact=True).click()
+    expect(page.get_by_text('Перепечать завершена.',exact=True)).to_be_visible()
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'reprint-completed-390')
+    with engine.connect() as c:
+        assert c.execute(text('SELECT state FROM reprint_requests')).scalar_one()=='completed'
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_official_remark_workspace_and_fts_submission_ui_without_external_send(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from test_gs1 import sample,GTIN
+    org=live_app['org'];specialist=live_app['users']['specialist']
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':specialist}).mappings().one());current=auth.Actor(c,user,'fixture',None)
+        row=store.create(current,'remark','Замена · UI-PN',{'old_cis':sample(37)[:38].decode(),'pn':'UI-PN','quantity':10,'reason':'Повреждение этикетки в пути'},org,state='applied')
+        store.create(current,'fts','ФТС · UI-DT',{'declaration_number':'12345678/271026/1234567','declaration_date':'2026-10-27','codes':[],'atks':[]},org,state='prepared')
+    login(page,'specialist');page.goto(live_app['base']+'/remarking')
+    expect(page.get_by_role('heading',name='Официальная перемаркировка',exact=True)).to_be_visible()
+    page.get_by_role('button',name='Открыть',exact=True).click();page.get_by_role('button',name='Подписать официальную перемаркировку',exact=True).click()
+    expect(page.get_by_label('Дата перемаркировки',exact=True)).to_be_visible();capture(page,'official-remark-confirmation')
+    page.goto(live_app['base']+'/fts');page.get_by_role('button',name='Открыть',exact=True).click()
+    expect(page.get_by_role('button',name='Подписать и подать в ЧЗ',exact=True)).to_be_visible();capture(page,'fts-submit-desktop')
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'fts-submit-390')
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0

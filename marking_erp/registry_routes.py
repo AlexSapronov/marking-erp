@@ -73,7 +73,7 @@ def install_registry(app,actor,settings):
         allowed_code(current,row['code_id'],row['organization_id'],permission)
         if row['kind']=='label_pdf':
             allocation=current.connection.execute(text('SELECT state,registry_payload_id FROM business_codes WHERE registry_code_id=:code AND organization_id=:org'),{'code':row['code_id'],'org':row['organization_id']}).mappings().first()
-            if allocation and (allocation['state']=='free' or allocation['registry_payload_id']!=row['payload_id']):
+            if allocation and (allocation['state'] in ('free','withdrawn') or allocation['registry_payload_id']!=row['payload_id']):
                 raise HTTPException(409,'Состав этикетки изменён или КМ возвращён в пул. Используйте последнюю сохранённую этикетку.')
         try:data=FileStore(settings.file_storage_path).read(row)
         except StorageError:raise HTTPException(503,'Файл недоступен или повреждён') from None

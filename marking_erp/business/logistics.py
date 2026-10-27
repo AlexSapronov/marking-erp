@@ -24,7 +24,10 @@ def facts(c,row):
     marked=any(r.get('marked',True) for r in row['body']['lines'])
     if (marked and row['state'] not in ('applied','awaiting_full_invoice','warehouse_ready','completed')) or (not marked and row['state'] not in ('unmarked_ready','completed')):blockers.append('Нет подтверждённого отчёта о нанесении')
     codes=c.execute(text('SELECT id,state FROM business_codes WHERE item_id=:id'),{'id':row['id']}).mappings().all()
-    if len(codes)!=sum(v['labels'] for v in row['body']['lines']) or any(v['state']!='applied' for v in codes):blockers.append('Не все КМ подтверждены как нанесённые')
+    from .replacements import effective
+    current_codes=effective(c,[v['id'] for v in codes])
+    if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='remark' AND source_id=:id AND state NOT IN ('done','archived'))"),{'id':source['id']}).scalar_one():blockers.append('Есть незавершённая официальная перемаркировка')
+    if len(codes)!=sum(v['labels'] for v in row['body']['lines']) or any(v['state']!='applied' for v in current_codes.values()):blockers.append('Не все КМ подтверждены как нанесённые')
     wanted={str(v['id']) for v in codes}
     atks=c.execute(text("SELECT id,state,revision,body FROM business_items WHERE organization_id=:org AND kind='atk' AND state<>'archived' AND body->'documents' @> CAST(:doc AS jsonb)"),{'org':row['organization_id'],'doc':'["'+str(row['id'])+'"]'}).mappings().all()
     covered=set()

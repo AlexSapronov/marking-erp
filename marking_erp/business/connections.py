@@ -17,6 +17,7 @@ class Connection(Body):
     fias_id:str=Field(default='',max_length=36)
     template_id:StrictInt=Field(default=36,ge=36,le=37)
     writes_enabled:StrictBool=False
+    auto_refresh_tokens:StrictBool=False
     warehouse_live_checks:StrictBool=True
     ignore_legal_entity:StrictBool=False
     nk_key:SecretStr|None=None
@@ -58,9 +59,11 @@ def install_connections(app,actor,settings):
                 if len(raw)>8192 or any(ord(v)<33 for v in raw):raise HTTPException(422,'Проверьте формат токена')
                 secret[k]=raw
         public=body.model_dump(exclude={'organization_id','revision','nk_key','true_token','oms_token'})
+        if body.auto_refresh_tokens:public['token_refresh_actor']=str(current.id)
         encrypted=Fernet(settings.mfa_encryption_key.get_secret_value().encode()).encrypt(json.dumps(secret).encode())
         c.execute(text('''INSERT INTO integration_settings(organization_id,public,secret) VALUES (:org,CAST(:public AS jsonb),:secret)
             ON CONFLICT(organization_id) DO UPDATE SET public=EXCLUDED.public,secret=EXCLUDED.secret,revision=integration_settings.revision+1,updated_at=now()'''),{'org':body.organization_id,'public':json.dumps(public),'secret':encrypted})
+        if body.auto_refresh_tokens:c.execute(text('UPDATE integration_auth_state SET next_refresh_at=now() WHERE organization_id=:org'),{'org':body.organization_id})
         from .contracts import register
         register(c)
         auth.audit(c,current.id,'integrations.updated',body.organization_id,{'writes_enabled':body.writes_enabled})
