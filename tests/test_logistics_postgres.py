@@ -19,7 +19,7 @@ pytestmark=[pytest.mark.postgres,pytest.mark.usefixtures('fresh_schema')]
 def evidence(env,engine,item,code,*,fts=True):
     with engine.begin() as c:
         actor=background(c,env[3]['specialist'],env[1])
-        c.execute(text("UPDATE business_items SET state='applied' WHERE id=:id"),{'id':item})
+        c.execute(text("UPDATE business_items SET state='applied',body=jsonb_set(body,'{warehouse_composition}',CAST(:composition AS jsonb)) WHERE id=:id"),{'id':item,'composition':'{"state":"ready","unmarked_lines":0}'})
         c.execute(text("UPDATE business_codes SET state='applied' WHERE item_id=:id"),{'id':item})
         atk=store.create(actor,'atk','ATK fixture',{'supplier':'Поставщик А','tnved':'8542399000','atk':'1'*25,'documents':[str(item)],'codes':[str(code['id'])]},env[1],state='transferred')
         if fts:store.create(actor,'fts','FTS fixture',{'atks':[str(atk['id'])],'external_document_id':str(uuid4()),'codes':[{'id':str(code['id'])}]},env[1],state='circulation_confirmed')
@@ -75,7 +75,7 @@ def test_complete_replay_freezes_workflow_then_privileged_reopen(allocated,engin
 
 def test_supplier_batch_waits_all_invoices_and_not_first_page(allocated,engine):
     env,item,source,code=allocated
-    with engine.begin() as c:c.execute(text("UPDATE business_items SET state='applied' WHERE id=:id"),{'id':item})
+    with engine.begin() as c:c.execute(text("UPDATE business_items SET state='applied',body=jsonb_set(body,'{warehouse_composition}',CAST(:composition AS jsonb)) WHERE id=:id"),{'id':item,'composition':'{"state":"ready","unmarked_lines":0}'})
     with client(env) as c:
         login(c)
         for n in range(26):

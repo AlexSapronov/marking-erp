@@ -16,6 +16,7 @@ from . import registry as registry_bridge
 from .connections import load
 from .live import Live
 from .nk import workbook
+from .suppliers import canonical,expression
 
 class Reallocate(Body):
     revision:StrictInt=Field(ge=1)
@@ -201,6 +202,7 @@ def install_marking(app,actor,settings):
         from ..document_routes import Line,normalize_lines
         from pydantic import ValidationError
         row=s.get(current,id,'marking',True,'marking.documents.edit');s.version(row,body.revision);s.idle(current.connection,id);validate_source(current,row)
+        if any(v.get('marked',True) is False for v in body.lines):raise HTTPException(409,'Немаркируемые строки добавляются после возврата логистом через полный Excel')
         if row['state'] not in ('labels_ready','application_confirmed') or not body.confirmed:raise HTTPException(409,'Перераспределение разрешено до отчёта с подтверждением замены этикеток')
         try:lines,_=normalize_lines([Line(**v).model_dump() for v in body.lines])
         except ValidationError:raise HTTPException(422,'Проверьте строки распределения') from None
@@ -208,12 +210,14 @@ def install_marking(app,actor,settings):
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM warehouse_tasks WHERE source_id=:id AND state<>'cancelled')"),{'id':row['source_id']}).scalar_one():raise HTTPException(409,'Сначала отмените складские задания с прежним составом')
         codes=rows(c,id);available=Counter(v['gtin'] for v in codes);requested=Counter()
         for line in lines:
+            if not line.get('marked',True):continue
             requested[line['gtin']]+=line['labels']
             if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND p.pn=:pn AND r.gtin=:gtin AND p.tnved=:tnved LIMIT 1'),{'org':row['organization_id'],'pn':line['pn'],'gtin':line['gtin'],'tnved':line['tnved']}).scalar():raise HTTPException(409,'PN/GTIN/ТН ВЭД не подтверждены в НК: '+line['pn'])
         if available!=requested:raise HTTPException(409,'Количество КМ каждого GTIN должно совпадать с полученным пулом. Новая эмиссия не выполняется.')
         pool={}
         for code in codes:pool.setdefault(code['gtin'],[]).append(code)
         for index,line in enumerate(lines):
+            if not line.get('marked',True):continue
             for _ in range(line['labels']):
                 code=pool[line['gtin']].pop(0);payload=gs1.with_quantity(bytes(code['base']),line['quantity'])
                 c.execute(text('UPDATE business_codes SET line_index=:line,pn=:pn,tnved=:tnved,quantity=:quantity,payload=:payload WHERE id=:id'),{'id':code['id'],'line':index,'pn':line['pn'],'tnved':line['tnved'],'quantity':line['quantity'],'payload':payload})
@@ -234,18 +238,21 @@ def install_marking(app,actor,settings):
         existing=c.execute(text("SELECT * FROM business_items WHERE source_id=:source AND kind='marking' AND state<>'archived'"),{'source':body.source_id}).mappings().first()
         if existing:s.require(current,existing);return dict(existing)
         if sum(r['labels'] for r in source['lines'])>1000:raise HTTPException(422,'Для этого выпуска разделите накладную на документы до 1000 КМ')
+        marked=[line for line in source['lines'] if line.get('marked',True)]
+        if not marked:raise HTTPException(409,'В исходной накладной нет маркируемых строк')
         config=load(c,settings,source['organization_id'])
         if not config.get('writes_enabled'):raise HTTPException(409,'Отправка внешних операций отключена')
         # PN/GTIN must be known from a confirmed catalogue source before paid emission.
-        for line in source['lines']:
+        for line in marked:
             if c.execute(text('SELECT EXISTS(SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND r.gtin=:gtin AND p.tnved<>:tnved)'),{'org':source['organization_id'],'gtin':line['gtin'],'tnved':line['tnved']}).scalar_one():raise HTTPException(409,'В каталоге есть конфликт ТН ВЭД для GTIN: '+line['gtin'])
             if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND p.pn=:pn AND r.gtin=:gtin AND p.tnved=:tnved LIMIT 1'),{'org':source['organization_id'],'pn':line['pn'],'gtin':line['gtin'],'tnved':line['tnved']}).scalar():raise HTTPException(409,'Сначала подтвердите PN/GTIN/ТН ВЭД в НК: '+line['pn'])
-        pool=[dict(r) for r in c.execute(text("SELECT * FROM business_codes WHERE organization_id=:org AND state='free' AND gtin=ANY(CAST(:gtins AS text[])) ORDER BY created_at,id FOR UPDATE"),{'org':source['organization_id'],'gtins':list({r['gtin'] for r in source['lines']})}).mappings()]
+        pool=[dict(r) for r in c.execute(text("SELECT * FROM business_codes WHERE organization_id=:org AND state='free' AND gtin=ANY(CAST(:gtins AS text[])) ORDER BY created_at,id FOR UPDATE"),{'org':source['organization_id'],'gtins':list({r['gtin'] for r in marked})}).mappings()]
         if pool:Live(config,organization(c,source['organization_id'])).verify(pool,'EMITTED')
         row=s.create(current,'marking',source['number'],{'source_revision':source['revision'],'supplier':source['supplier'],'lines':source['lines']},source['organization_id'],source['id'],body.request_id,state='ordering',owner=source['owner_id'])
         totals={}
-        for line in source['lines']:totals[line['gtin']]=totals.get(line['gtin'],0)+line['labels']
+        for line in marked:totals[line['gtin']]=totals.get(line['gtin'],0)+line['labels']
         for index,line in enumerate(source['lines']):
+            if not line.get('marked',True):continue
             available=[v for v in pool if v['gtin']==line['gtin']]
             for code in available[:line['labels']]:
                 payload=gs1.with_quantity(bytes(code['base']),line['quantity'])
@@ -355,9 +362,10 @@ def install_marking(app,actor,settings):
         for id in sorted(set(body.ids)):
             row=s.get(current,id,'marking',True,'marking.atk.create');s.idle(c,id);validate_source(current,row)
             if row['organization_id']!=body.organization_id or row['state']!='applied':raise HTTPException(409,'Нужны накладные одной организации с успешным отчётом')
-            if supplier and supplier!=row['body']['supplier']:raise HTTPException(422,'Один АТК — один поставщик')
+            resolved=canonical(c,body.organization_id,row['body']['supplier'])
+            if supplier and supplier!=resolved:raise HTTPException(422,'Один АТК — один поставщик')
             if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='atk' AND state<>'archived' AND body->'documents' @> CAST(:id AS jsonb))"),{'id':json.dumps([str(id)])}).scalar_one():raise HTTPException(409,'Накладная уже включена в АТК')
-            supplier=row['body']['supplier'];documents.append(str(id))
+            supplier=resolved;documents.append(str(id))
             for code in rows(c,id):buckets.setdefault(code['tnved'],[]).append(code)
         from .supplier_batches import require_ready
         sources=require_ready(c,body.organization_id,supplier,set(body.ids))
@@ -370,7 +378,7 @@ def install_marking(app,actor,settings):
     @app.get('/api/atks/{id}/candidates')
     def candidates(id:UUID,kind:str=Query(pattern='^(ADDING|REMOVING)$'),current=dep):
         row=s.get(current,id,'atk',permission='marking.atk.transform.prepare');body=row['body']
-        values=current.connection.execute(text("SELECT c.id,c.cis,c.pn,c.gtin,c.quantity FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE c.organization_id=:org AND c.state='applied' AND c.tnved=:tnved AND i.body->>'supplier'=:supplier ORDER BY c.id LIMIT 1000"),{'org':row['organization_id'],'tnved':body['tnved'],'supplier':body['supplier']}).mappings().all()
+        values=current.connection.execute(text(f"SELECT c.id,c.cis,c.pn,c.gtin,c.quantity FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE c.organization_id=:org AND c.state='applied' AND c.tnved=:tnved AND {expression("i.body->>'supplier'",'i.organization_id')}=:supplier ORDER BY c.id LIMIT 1000"),{'org':row['organization_id'],'tnved':body['tnved'],'supplier':canonical(current.connection,row['organization_id'],body['supplier'])}).mappings().all()
         included=set(body['codes']);return {'codes':[dict(r) for r in values if (str(r['id']) in included)==(kind=='REMOVING')]}
     @app.post('/api/atks/{id}/transform')
     def transform(id:UUID,body:Transform,current=dep):
@@ -383,7 +391,7 @@ def install_marking(app,actor,settings):
         if body.kind=='REMOVING' and not wanted<=included:raise HTTPException(422,'Изымать можно только КМ из состава этого АТК')
         if body.kind=='ADDING' and wanted&included:raise HTTPException(422,'КМ уже входят в АТК')
         codes=current.connection.execute(text("SELECT c.*,i.body->>'supplier' AS supplier FROM business_codes c JOIN business_items i ON i.id=c.item_id WHERE c.id=ANY(CAST(:ids AS uuid[])) AND c.organization_id=:org AND c.state='applied'"),{'ids':list(wanted),'org':parent['organization_id']}).mappings().all()
-        if len(codes)!=len(wanted) or any(c['tnved']!=parent['body']['tnved'] or c['supplier']!=parent['body']['supplier'] for c in codes):raise HTTPException(422,'КМ должны быть нанесены, с тем же поставщиком и ТН ВЭД')
+        if len(codes)!=len(wanted) or any(c['tnved']!=parent['body']['tnved'] or canonical(current.connection,parent['organization_id'],c['supplier'])!=canonical(current.connection,parent['organization_id'],parent['body']['supplier']) for c in codes):raise HTTPException(422,'КМ должны быть нанесены, с тем же поставщиком и ТН ВЭД')
         row=s.create(current,'transform','Трансформация '+parent['title'],{'atk_item':str(id),'kind':body.kind,'codes':sorted(wanted),'reason':body.reason,'base_revision':parent['revision']},parent['organization_id'],state='awaiting_approval');return row
     @app.post('/api/atks/transforms/{id}/approve')
     def approve(id:UUID,body:Step,current=dep):
@@ -416,10 +424,15 @@ def install_marking(app,actor,settings):
         file=current.connection.execute(text('SELECT * FROM business_artifacts WHERE id=:id'),{'id':id}).mappings().first()
         if not file:raise HTTPException(404,'Файл не найден')
         row=s.item(current.connection,file['item_id'])
-        if file['kind']=='reprint':current.require('labels.reprint',**label_context(current,row))
+        if file['kind']=='warehouse_invoice':
+            try:s.require(current,row,'marking.documents.view')
+            except HTTPException as error:
+                if error.status_code!=403:raise
+                s.require(current,row,'logistics.warehouse.result.view')
+        elif file['kind']=='reprint':current.require('labels.reprint',**label_context(current,row))
         else:s.require(current,row)
         permission='logistics.fts.prepare' if file['kind'].startswith('fts') else 'logistics.atk.download' if file['kind']=='atk' else 'marking.labels.download' if row['kind']=='marking' else 'split.operations.view'
-        if file['kind']!='reprint':s.require(current,row,permission)
+        if file['kind'] not in ('reprint','warehouse_invoice'):s.require(current,row,permission)
         if row['body'].get('codes_released') and file['kind'].startswith('labels'):raise HTTPException(409,'КМ возвращены в общий пул; прежние этикетки больше не используются')
         data=bytes(file['body'])
         if sha256(data).hexdigest()!=file['sha256']:raise HTTPException(503,'Файл повреждён')

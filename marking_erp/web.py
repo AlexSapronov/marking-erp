@@ -89,6 +89,10 @@ def create_app(settings=None, engine=None):
     install_logistics(app,app.state.auth_dependency)
     from .business.supplier_batches import install_supplier_batches
     install_supplier_batches(app,app.state.auth_dependency)
+    from .business.suppliers import install_suppliers
+    install_suppliers(app,app.state.auth_dependency)
+    from .business.composition import install_composition
+    install_composition(app,app.state.auth_dependency)
     static = files("marking_erp").joinpath("static")
     app.mount("/assets", StaticFiles(directory=str(static)), name="assets")
 

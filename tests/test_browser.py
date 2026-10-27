@@ -651,3 +651,55 @@ def test_catalog_sync_progress_and_report_guidance_ui(page,live_app,engine):
     page.get_by_role('button',name='Повторить отклонённый отчёт',exact=True).click()
     expect(page.get_by_label('Фактическая дата производства',exact=True)).to_be_visible()
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_logistics_handback_full_excel_in_bm_ui(page,browser,live_app,engine):
+    """Local upstream fixtures; browser performs the real handback/upload APIs."""
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.policy import snapshot
+    from test_gs1 import sample
+    from test_suppliers_composition_postgres import full_excel
+    org=live_app['org'];owner=live_app['users']['bm'];source=uuid4();code=uuid4()
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':owner}).mappings().one());current=auth.Actor(c,user,'fixture',None)
+        lines=[{'pn':'PN/A-1','gtin':'04640638349704','tnved':'8542399000','quantity':10,'labels':1}]
+        c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,2)'),{'id':source,'org':org,'owner':owner})
+        c.execute(text('''INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256)
+            VALUES (:id,:org,:owner,'FULL-UI-01','2026-10-26','Поставщик UI',2,'prepared',CAST(:lines AS jsonb),CAST(:policy AS jsonb),:sha)'''),{'id':source,'org':org,'owner':owner,'lines':json.dumps(lines),'policy':json.dumps(snapshot(c,org),default=str),'sha':'0'*64})
+        item=store.create(current,'marking','FULL-UI-01',{'supplier':'Поставщик UI','lines':lines,'source_revision':2},org,source,state='applied')
+        c.execute(text('''INSERT INTO business_codes(id,organization_id,cis,gtin,base,payload,item_id,line_index,quantity,state,tnved,pn,evidence_ref)
+            VALUES (:id,:org,:cis,:gtin,:base,:payload,:item,0,10,'applied','8542399000','PN/A-1','fixture')'''),{'id':code,'org':org,'cis':sample(37)[:38].decode(),'gtin':'04640638349704','base':sample(37),'payload':sample(37,quantity=10),'item':item['id']})
+        store.create(current,'atk','ATK UI fixture',{'supplier':'Поставщик UI','tnved':'8542399000','documents':[str(item['id'])],'codes':[str(code)],'atk':'1'*25},org,state='transferred')
+    login(page,'logistics');page.locator('#logistics-link').click();page.get_by_role('button',name='Закрытие накладных',exact=True).click();page.get_by_role('button',name='Проверить этапы',exact=True).click()
+    page.get_by_role('button',name='Вернуть в БМ для полного Excel',exact=True).click();page.get_by_role('button',name='Вернуть в БМ',exact=True).click()
+    expect(page.get_by_text('Документ возвращён в БМ. Ожидается полный Excel поставки.',exact=True)).to_be_visible()
+    context=browser.new_context(viewport={'width':1440,'height':900},locale='ru-RU');bm=context.new_page();errors=[];bm.on('pageerror',lambda e:errors.append(str(e)))
+    try:
+        bm.goto(live_app['base']);login(bm,'bm');bm.locator('#documents-link').click();expect(bm.get_by_text('Дополнить состав для склада',exact=True)).to_be_visible();bm.get_by_role('button',name='Открыть',exact=True).click()
+        bm.get_by_label('Полный Excel поставки',exact=True).set_input_files({'name':'full.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':full_excel()})
+        bm.get_by_role('button',name='Проверить полный Excel',exact=True).click()
+        expect(bm.get_by_text('Маркированных позиций сверено: 1. Немаркируемых строк: 2.',exact=True)).to_be_visible()
+        capture(bm,'bm-full-invoice-preview')
+        bm.get_by_role('button',name='Сохранить полный состав и вернуть логисту',exact=True).click();expect(bm.locator('#document-dialog')).to_be_hidden();expect(bm.get_by_text('Полный состав готов',exact=True)).to_be_visible()
+        bm.set_viewport_size({'width':390,'height':844});assert bm.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(bm,'bm-full-invoice-390')
+        assert not errors,errors
+    finally:context.close()
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_supplier_alias_admin_ui(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.policy import snapshot
+    org=live_app['org'];owner=live_app['users']['bm']
+    with engine.begin() as c:
+        for n,name in enumerate(['SUPPLIER-A','SUPPLIER-B']):
+            id=uuid4();c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,1)'),{'id':id,'org':org,'owner':owner})
+            c.execute(text('''INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256)
+                VALUES (:id,:org,:owner,:number,'2026-10-26',:supplier,1,'draft',CAST(:lines AS jsonb),CAST(:policy AS jsonb),:sha)'''),{'id':id,'org':org,'owner':owner,'number':'SUP-'+str(n),'supplier':name,'lines':json.dumps([{'pn':'PN','gtin':'','tnved':'','quantity':1,'labels':1}]),'policy':json.dumps(snapshot(c,org),default=str),'sha':'0'*64})
+    login(page);page.locator('#connections-link').click();page.get_by_role('button',name='Поставщики и алиасы',exact=True).click()
+    page.get_by_label('SUPPLIER-A',exact=True).check();page.get_by_label('SUPPLIER-B',exact=True).check()
+    page.get_by_label('Единое название поставщика',exact=True).fill('Единый поставщик');page.get_by_label('Причина объединения',exact=True).fill('Два написания одного поставщика')
+    page.get_by_role('button',name='Объединить выбранные варианты',exact=True).click()
+    expect(page.get_by_label('SUPPLIER-A → Единый поставщик',exact=True)).to_be_visible()
+    capture(page,'suppliers-aliases-desktop');page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'suppliers-aliases-390')

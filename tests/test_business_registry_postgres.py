@@ -29,7 +29,7 @@ def allocated(env,engine,tmp_path):
     with engine.begin() as c:
         register_product(c,env[1],GTIN,'PN/A-1','8542399000',source='external_verified',source_ref='fixture:nk',evidence_sha256='1'*64)
         actor=background(c,env[3]['specialist'],env[1])
-        row=store.create(actor,'marking','INV-01',{'supplier':value['supplier'],'lines':value['lines'],'source_revision':2},env[1],UUID(id),state='receiving',owner=env[3]['bm'])
+        row=store.create(actor,'marking','INV-01',{'supplier':value['supplier'],'lines':value['lines'],'source_revision':2,'warehouse_composition':{'state':'ready','unmarked_lines':0}},env[1],UUID(id),state='receiving',owner=env[3]['bm'])
         apply(actor,row,{'id':uuid4(),'kind':'bm.fetch'},{'metadata':{'gtin':GTIN,'expected':1}},{},{'codes':[sample(37).decode()]},None,env[0])
         code=dict(c.execute(text('SELECT * FROM business_codes WHERE item_id=:id'),{'id':row['id']}).mappings().one())
     return env,row['id'],UUID(id),code

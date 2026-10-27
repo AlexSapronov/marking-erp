@@ -62,7 +62,7 @@ def install_auth(app, engine, settings):
             if request.method not in ("GET", "HEAD", "OPTIONS"):
                 # The bounded Excel preview is read-only; do not hold the global
                 # mutation lock while a client streams its file. CSRF still applies.
-                if request.url.path != "/api/documents/import-preview":
+                if request.url.path != "/api/documents/import-preview" and not (request.url.path.startswith("/api/documents/") and request.url.path.endswith("/warehouse-composition/preview")):
                     # Independent scan transactions may proceed concurrently.
                     # RBAC/session edits, archive, close and dispatch retain the
                     # exclusive fence and wait for all active scans to finish.
