@@ -594,3 +594,39 @@ def test_documents_dirty_close_network_and_live_revoke(page,live_app,engine):
     expect(page.locator('#documents-link')).to_be_hidden()
     expect(page.locator('#document-dialog')).to_be_hidden()
     expect(page.locator('#document-content')).to_be_empty()
+
+
+@pytest.mark.parametrize('group',['logistics','bm'])
+def test_logistics_blockers_and_whole_supplier_batch_ui(page,live_app,engine,group):
+    """Synthetic local document; UI reads real API/DB, no external success fixture."""
+    from playwright.sync_api import expect
+    from marking_erp.policy import snapshot
+    from marking_erp.business import store
+    org=live_app['org'];owner=live_app['users']['bm'];source=uuid4()
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':owner}).mappings().one())
+        current=auth.Actor(c,user,'fixture',None)
+        lines=[{'pn':'PN-UI','gtin':'04640638349704','tnved':'8542399000','quantity':10,'labels':1}]
+        c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,1)'),{'id':source,'org':org,'owner':owner})
+        c.execute(text('''INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256)
+            VALUES (:id,:org,:owner,'UI-LOG-01','2026-10-26','Поставщик UI',1,'prepared',CAST(:lines AS jsonb),CAST(:policy AS jsonb),:sha)'''),
+            {'id':source,'org':org,'owner':owner,'lines':json.dumps(lines),'policy':json.dumps(snapshot(c,org),default=str),'sha':'0'*64})
+        store.create(current,'marking','UI-LOG-01',{'supplier':'Поставщик UI','lines':lines,'source_revision':1},org,source,state='labels_ready')
+    login(page,group)
+    if group=='logistics':
+        page.locator('#logistics-link').click()
+        page.get_by_role('button',name='Закрытие накладных',exact=True).click()
+        page.get_by_role('button',name='Проверить этапы',exact=True).click()
+        expect(page.get_by_text('До закрытия нужно выполнить',exact=True)).to_be_visible()
+        expect(page.get_by_text('Нет подтверждённого отчёта о нанесении',exact=True)).to_be_visible()
+        expect(page.get_by_role('button',name='Закрыть накладную',exact=True)).to_have_count(0)
+    else:
+        page.locator('#atks-link').click()
+        page.get_by_role('button',name='+ Сформировать АТК',exact=True).click()
+        page.get_by_label('Поставщик',exact=True).select_option('Поставщик UI')
+        expect(page.get_by_text('UI-LOG-01 · Этикетки готовы · Ожидается отчёт',exact=True)).to_be_visible()
+        expect(page.get_by_role('button',name='Сформировать АТК всей партии',exact=True)).to_be_disabled()
+    capture(page,'workflow-'+group+'-desktop')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    capture(page,'workflow-'+group+'-390')
