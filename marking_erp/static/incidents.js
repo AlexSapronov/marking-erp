@@ -8,7 +8,7 @@ export function createIncidents({state,$,api,node,button,heading,notice,report,o
  const select=values=>{const n=node('select');for(const [value,title]of values)n.append(new Option(title,value));return n;};
  function input(form,title,value='',type='text'){const n=node('input');n.type=type;n.value=value;form.append(label(title,n));return n;}
  function reset(){generation++;dialogGeneration++;$('incident-content').replaceChildren();}
- $('incident-dialog').addEventListener('close',()=>{dialogGeneration++;$('incident-content').replaceChildren();});
+ $('incident-dialog').addEventListener('close',()=>{dialogGeneration++;$('incident-content').replaceChildren();if(state.session&&state.route==='/incidents')show();});
  function begin(title){const seq=++dialogGeneration;openDialog('incident-dialog');$('incident-title').textContent=title;const host=$('incident-content');host.replaceChildren();return {host,seq};}
  function error(host,e){host.querySelector('.error-message')?.remove();const n=node('p',e.message,'error-message');n.setAttribute('role','alert');host.append(n);report(e);}
  async function saving(form,work){if(form.dataset.busy)return;form.dataset.busy='true';const seq=dialogGeneration;const controls=[...form.querySelectorAll('input,select,textarea,button')];const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);$('incident-dialog').dataset.saving='true';try{await work();}catch(e){if(seq===dialogGeneration)error(form,e);}finally{delete form.dataset.busy;delete $('incident-dialog').dataset.saving;controls.forEach((c,i)=>c.disabled=disabled[i]);}}

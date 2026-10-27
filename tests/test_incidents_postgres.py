@@ -168,3 +168,13 @@ def test_prepared_print_is_held_and_resumes_same_job_after_quarantine_release(al
         claimed=agent.post('/api/print-agent/claim').json()['job'];assert claimed['id']==job and claimed['copies']==1
         assert agent.post('/api/print-agent/claim').json()['job'] is None
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM print_jobs')).scalar_one()==1
+
+def test_own_incident_scope_refers_to_reporter_after_independent_source_read_check(env,engine):
+    from test_documents_postgres import body as invoice
+    with client(env) as c:
+        login(c,'specialist');result=c.post('/api/documents',json=invoice(env));assert result.status_code==200,result.text
+        document=result.json()['id']
+    with engine.begin() as c:c.execute(text("UPDATE group_grants SET scope='all' WHERE group_slug='bm' AND permission_id='marking.documents.view'"))
+    with client(env) as c:
+        login(c);result=c.post('/api/incidents',json=incident(env,source_kind='document',source_id=document,code='',category='other'));assert result.status_code==200,result.text
+        assert c.get('/api/incidents/'+result.json()['id']).status_code==200

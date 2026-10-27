@@ -136,7 +136,9 @@ def install_incidents(app,actor):
             allowed(current,prior)
             if prior['reporter_id']!=current.id or prior['request_sha256']!=hash:raise HTTPException(409,'Идентификатор запроса уже использован')
             return receipt(prior)
-        ctx,title=source_context(current,body.source_kind,body.source_id,body.organization_id,creation=True);current.require('incidents.create',**ctx)
+        ctx,title=source_context(current,body.source_kind,body.source_id,body.organization_id,creation=True)
+        ctx={**ctx,'owner_id':current.id} # Own scope belongs to the new incident's reporter, not its source owner.
+        current.require('incidents.create',**ctx)
         if len(body.description.strip())<8:raise HTTPException(422,'Опишите проблему (от 8 символов)')
         holds=restrictions(body.restrictions)
         if holds or body.assignee_id:current.require('incidents.manage',**ctx)
