@@ -323,7 +323,7 @@ curl --fail --silent http://127.0.0.1:8000/health/ready
 sudo ss -ltnp
 ```
 
-`live` — ok, `ready` — ready, schema из `release.json` выбранного пакета (текущий код: `0016_warehouse_overlap`), build_sha — SHA вашего пакета.
+`live` — ok, `ready` — ready, schema из `release.json` выбранного пакета (текущий код: `0017_warehouse_import`), build_sha — SHA вашего пакета.
 8000 и 5432 доступны только loopback, публичный вход — HTTPS/443.
 
 На рабочем ПК откройте **ваш HTTPS-адрес**. Войдите admin + пароль + свежий TOTP.
@@ -403,3 +403,12 @@ TOTP-ключи/коды, cookie или токены.
 [PostgreSQL для Ubuntu](https://www.postgresql.org/download/linux/ubuntu/),
 [systemd credentials](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html),
 [Nginx](https://nginx.org/en/docs/beginners_guide.html).
+
+
+Миграция `0017_warehouse_import` вводит типизированные складские источники БМ/Excel.
+Существующие документы БМ регистрируются без изменения их состава и ревизий.
+После появления заданий из Excel откат приложения к версии без этой модели
+не поддерживается: старый код не сможет открыть самостоятельный источник.
+Для восстановления используйте совместимый релиз и резервную копию. `downgrade`
+удаляет данные добавленного импорта и сохраняет старые внешние ключи БМ как
+`NOT VALID`; это не процедура производственного отката.

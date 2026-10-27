@@ -13,12 +13,13 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
     if(!can(isLog?'logistics.warehouse.result.view':`warehouse.${kind}.view`)){host.replaceChildren(heading('Раздел недоступен','Нет права на просмотр заданий.'));return;}
     if(!state.session.organization_ids.includes(org)){org=state.session.organization_ids[0]||'';page=0;cursors=[null];}
     const actions=[button('Обновить',()=>{page=0;cursors=[null];show();})];
+    if(!isLog&&can('warehouse.import.preview'))actions.push(button('Резервный Excel',importForm));
     if(isLog&&can('logistics.documents.complete'))actions.push(button('Закрытие накладных',()=>completionList()));
     if(isLog&&can('logistics.warehouse.transfer'))actions.push(button('+ Передать на склад',transferForm,'primary'));
     host.replaceChildren(heading(isLog?'Логистика · задания складу':names[kind],isLog?'Передача проверенных накладных сотрудникам и контроль результата.':'Откройте задание и отсканируйте маркировку каждой упаковки.',actions));
     const form=node('form',undefined,'filters'),organizations=select(state.session.organizations.map(o=>[o.id,o.name]));organizations.value=org;
     organizations.addEventListener('change',()=>{org=organizations.value;page=0;cursors=[null];show();});
-    const search=node('input');search.value=query;search.placeholder='Номер или поставщик';
+    const search=node('input');search.value=query;search.placeholder='Номер или контрагент';
     const scope=select([['open','Скрыть завершённые'],['all','Все задания']]);scope.value=closed?'all':'open';scope.addEventListener('change',()=>{closed=scope.value==='all';page=0;cursors=[null];show();});
     form.append(label('Организация',organizations),label('Поиск',search),label('Состояние',scope));
     if(isLog){const type=select([['receipt','Приёмка'],['shipment','Отгрузка']]);type.value=kind;type.addEventListener('change',()=>{kind=type.value;page=0;cursors=[null];show();});form.append(label('Тип задания',type));}
@@ -28,10 +29,52 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
       const params=new URLSearchParams({organization_id:org,kind,logistics:isLog,closed,q:query});if(cursors[page])params.set('before_id',cursors[page]);const data=await api('/api/warehouse/tasks?'+params);
       if(seq!==generation)return;panel.replaceChildren();
       if(!data.tasks.length)panel.append(node('p',isLog?'Заданий пока нет. Передайте проверенную накладную на склад.':'Нет назначенных заданий. Обратитесь к логисту.','empty'));
-      for(const task of data.tasks){const card=node('article',undefined,'warehouse-task');const text=node('div');text.append(node('h2',task.number),node('p',`${task.document_date} · ${task.supplier}`,'muted'),node('span',states[task.state],'badge'));const progress=node('progress');progress.max=Math.max(1,Number(task.expected));progress.value=Number(task.scanned);progress.setAttribute('aria-label','Отсканировано КМ');text.append(node('p',`${task.scanned} / ${task.expected} КМ · ${task.line_count} строк`),progress);card.append(text,button(isLog?'Результат и действия':'Открыть задание',()=>open(task.id),'primary'));panel.append(card);}
+      for(const task of data.tasks){const card=node('article',undefined,'warehouse-task');const text=node('div');text.append(node('h2',task.number),node('p',`${task.document_date} · ${task.supplier}`,'muted'),node('span',states[task.state],'badge'));if(task.source_type==='excel')text.append(node('span','Резервный Excel','badge')); const progress=node('progress');progress.max=Math.max(1,Number(task.expected));progress.value=Number(task.scanned);progress.setAttribute('aria-label','Отсканировано КМ');text.append(node('p',`${task.scanned} / ${task.expected} КМ · ${task.line_count} строк`),progress);card.append(text,button(isLog?'Результат и действия':'Открыть задание',()=>open(task.id),'primary'));panel.append(card);}
       const footer=node('div',undefined,'table-footer'),actions=node('div',undefined,'actions');const prev=button('Назад',()=>{page--;show();}),next=button('Далее',()=>{cursors[++page]=data.next_cursor;show();});prev.disabled=page===0;next.disabled=!data.next_cursor;actions.append(prev,next);footer.append(node('span','Страница '+(page+1)),actions);panel.append(footer);
     }catch(e){if(seq===generation){panel.replaceChildren(node('p','Не удалось загрузить задания. Нажмите «Обновить».','empty'));report(e);}}
   }
+  async function importForm(){
+    const seq=++detailGeneration,content=$('warehouse-content'),importKind=kind,importOrg=org;
+    openDialog('warehouse-dialog');$('warehouse-title').textContent=names[importKind]+' · резервный Excel';content.replaceChildren(node('p','Загружаем сотрудников…'));
+    try{
+      const data=await api('/api/warehouse/imports/options?'+new URLSearchParams({organization_id:importOrg,kind:importKind}));if(seq!==detailGeneration)return;
+      const form=node('form',undefined,'business-form'),number=node('input'),date=node('input'),supplier=node('input'),reason=node('textarea'),file=node('input'),preview=button('Проверить Excel',previewFile),result=node('section',undefined,'section-gap'),save=node('button','Создать складское задание');
+      number.required=true;number.maxLength=120;date.type='date';date.required=true;date.value=new Date().toISOString().slice(0,10);supplier.required=true;supplier.maxLength=200;reason.required=true;reason.minLength=8;reason.maxLength=1000;reason.rows=2;file.type='file';file.accept='.xlsx';file.required=true;save.type='submit';save.className='primary';save.disabled=true;
+      const template=node('a','Скачать шаблон склада');template.href='/api/warehouse/imports/template?organization_id='+encodeURIComponent(importOrg);template.setAttribute('download','warehouse-template.xlsx');
+      form.append(node('p','Резервный путь по отдельному разрешению. Основные поставки передавайте из логистики. Каждая маркируемая строка Excel содержит один полный ожидаемый КМ. Ничего не отправляется в ЧЗ и не эмитируется.','notice warning'),template,label('Номер документа',number),label('Дата документа',date),label(importKind==='receipt'?'Поставщик':'Получатель',supplier),label('Причина резервного импорта',reason));
+      const people=node('fieldset');people.append(node('legend','Назначить сотрудникам'));
+      for(const person of data.assignees){const input=node('input');input.type='checkbox';input.value=person.id;const row=node('label',undefined,'check-row');row.append(input,node('span',person.display_name+' · '+person.group_name));people.append(row);}
+      form.append(people,label('Файл склада XLSX',file),preview,result,save);content.replaceChildren(form);
+      let saved=null,pending=null,previewSeq=0;
+      file.addEventListener('change',()=>{previewSeq++;saved=null;pending=null;save.disabled=true;preview.disabled=false;result.replaceChildren();});
+      async function previewFile(){
+        if(!file.files[0]){notice('Выберите XLSX по шаблону склада.','warning');return;}
+        const request=++previewSeq;saved=null;pending=null;save.disabled=true;preview.disabled=true;result.replaceChildren(node('p','Проверяем исходный файл…'));
+        try{const value=await api('/api/warehouse/imports/preview?'+new URLSearchParams({organization_id:importOrg,kind:importKind,filename:file.files[0].name}),{method:'POST',raw:file.files[0]});if(seq!==detailGeneration||request!==previewSeq)return;
+          result.replaceChildren(node('h3','Предпросмотр состава'),node('p',`Ожидаемых КМ: ${value.expected_count}. Строк товаров: ${value.lines.length}. Немаркируемых строк: ${value.unmarked_lines}.`,'notice'));
+          for(const warning of value.warnings)result.append(node('p',warning,'notice warning'));
+          for(const error of value.errors)result.append(node('p',`Строка ${error.row}: ${error.message}`,'error-message'));
+          if(value.error_count>value.errors.length)result.append(node('p',`Всего ошибок: ${value.error_count}. Показаны первые ${value.errors.length}.`,'error-message'));
+          if(value.preview_id){saved=value;result.append(node('p','Файл сохранён. Проверьте состав, номер, контрагента и назначения перед созданием задания.','notice success'));save.disabled=!can('warehouse.import.commit');}
+          const table=node('table',undefined,'data-table'),head=node('tr');for(const title of ['PN','GTIN','В одном КМ','КМ'])head.append(node('th',title));table.append(head);
+          for(const line of value.lines.slice(0,50)){const row=node('tr');for(const text of [line.pn,line.gtin||'Без маркировки',line.quantity,line.labels])row.append(node('td',String(text)));table.append(row);}const wrap=node('div',undefined,'table-wrap');wrap.append(table);result.append(wrap);if(value.lines.length>50)result.append(node('p','Показаны первые 50 строк. При создании будет использован весь проверенный состав.','muted'));
+        }catch(e){if(seq===detailGeneration&&request===previewSeq){result.replaceChildren(node('p',e.message,'error-message'));report(e);}}
+        finally{if(seq===detailGeneration&&request===previewSeq)preview.disabled=false;}
+      }
+      form.addEventListener('submit',async e=>{
+        e.preventDefault();if(!saved||save.disabled)return;const assignees=[...people.querySelectorAll('input:checked')].map(n=>n.value);
+        if(!assignees.length){notice('Выберите хотя бы одного сотрудника.','warning');return;}
+        const input={preview_id:saved.preview_id,number:number.value,document_date:date.value,supplier:supplier.value,reason:reason.value,assignees};
+        const key=JSON.stringify(input);if(!pending||pending.key!==key)pending={key,body:{...input,request_id:crypto.randomUUID()}};
+        save.disabled=true;if(!await ask('Создать задание из резервного Excel?',`${number.value}: ${saved.expected_count} ожидаемых КМ. Эмиссия и документы ЧЗ не выполняются.`,'Создать задание')){save.disabled=false;return;}
+        const controls=[...form.querySelectorAll('input,textarea,button')];controls.forEach(n=>n.disabled=true);$('warehouse-dialog').dataset.saving='true';
+        try{const response=await api('/api/warehouse/imports/commit',{method:'POST',body:pending.body});if(seq!==detailGeneration)return;notice('Задание создано из проверенного Excel.');await open(response.id);}
+        catch(error){if(seq===detailGeneration){result.append(node('p',error.message,'error-message'));report(error);}}
+        finally{delete $('warehouse-dialog').dataset.saving;controls.forEach(n=>n.disabled=false);}
+      });
+    }catch(error){if(seq===detailGeneration){content.replaceChildren(node('p',error.message,'error-message'));report(error);}}
+  }
+
   async function transferForm(){
     const seq=++detailGeneration,content=$('warehouse-content');openDialog('warehouse-dialog');$('warehouse-title').textContent='Передать накладную на склад';content.replaceChildren(node('p','Загружаем накладные и сотрудников…'));
     try{const data=await api('/api/logistics/warehouse-options?organization_id='+encodeURIComponent(org));if(seq!==detailGeneration)return;content.replaceChildren();
@@ -55,6 +98,7 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
   function render(data){
     const {task,lines,scans,events}=data,content=$('warehouse-content'),seq=detailGeneration,isLog=logistics(),writable=task.state==='open'&&!data.paused;content.replaceChildren();$('warehouse-title').textContent=names[task.kind]+' · '+task.number;
     content.append(node('p',`${task.document_date} · ${task.supplier} · ${states[task.state]}`,'muted'),node('p','Назначено: '+data.assignees.join(', '),'muted'));
+    if(task.source_type==='excel'){content.append(node('p','Резервный Excel · самостоятельное складское задание, без накладной БМ.','notice warning'));if(data.import_source)content.append(node('p','Источник: '+data.import_source.filename,'muted'));if(can('warehouse.import.preview')){const source=node('a','Скачать исходный Excel');source.href='/api/warehouse/tasks/'+task.id+'/source-file';source.setAttribute('download','warehouse-source.xlsx');content.append(source);}}
     const marked=lines.some(r=>r.marked!==false),confirmed=data.external_verified&&(task.state==='closed'||data.check_fresh);
     content.append(node('p',!marked?'В накладной только немаркированные строки; сверка КМ не требуется':confirmed?(task.state==='closed'?'Сверка ЧЗ подтверждена при закрытии':'Пакетная сверка ЧЗ подтверждена'):data.external_verified?'Сведения ЧЗ устарели. Нажмите «Проверить» повторно.':data.live_checks?`Проверка ЧЗ выполняется по кнопке «Проверить» · ожидаемых КМ ${data.expected_codes_count}`:'Физическая сверка: подключение ЧЗ для склада ещё не настроено',confirmed?'notice success':'notice warning'));
     const levels={full:'Ожидается полный КМ: проверяются КИ, криптохвост и фасовка.',cis:'В ожидаемом составе только КИ. Криптохвост сверить нельзя; для проверки ЧЗ логисту нужно передать полные КМ.',count_only:'Нет ожидаемого перечня КМ. Доступна только физическая сверка GTIN, фасовки и количества.',not_required:'Строки без КМ показаны информационно.'};content.append(node('p',levels[data.expectation_level]||'Ожидаемый состав не определён.','muted'));
@@ -88,7 +132,7 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
     if(!isLog&&writable&&can(`warehouse.${task.kind}.complete`))transitionForm('close','Закрыть задание после сверки',done!==total||(data.live_checks&&marked&&!data.check_fresh),done!==total?'Сначала отсканируйте все недостающие КМ.':'Сначала нажмите «Проверить» и устраните расхождения.');
     if(!isLog&&task.state==='closed'&&can('warehouse.documents.reopen'))transitionForm('reopen','Вернуть в работу');
     if(isLog&&task.state==='open'&&can('logistics.warehouse.refresh'))transitionForm('cancel','Отменить задание');
-    const history=node('details',undefined,'section-gap');history.append(node('summary','История действий'));const actionsMap={checked:'Состав проверен',transferred:'Передано на склад',scanned:'КМ принят',scan_removed:'Скан удалён',close:'Задание закрыто',reopen:'Возвращено в работу',cancel:'Задание отменено'};for(const e of events)history.append(node('p',`${actionsMap[e.action]||'Действие'} · ${e.display_name} · ${new Date(e.created_at).toLocaleString('ru-RU')}${e.reason?' · '+e.reason:''}`));content.append(history,node('p','Сверка отражает фактическое сканирование. Проверка статусов и владельца выполняется при включённой настройке ЧЗ для склада.','muted'));
+    const history=node('details',undefined,'section-gap');history.append(node('summary','История действий'));const actionsMap={imported:'Создано из резервного Excel',checked:'Состав проверен',transferred:'Передано на склад',scanned:'КМ принят',scan_removed:'Скан удалён',close:'Задание закрыто',reopen:'Возвращено в работу',cancel:'Задание отменено'};for(const e of events)history.append(node('p',`${actionsMap[e.action]||'Действие'} · ${e.display_name} · ${new Date(e.created_at).toLocaleString('ru-RU')}${e.reason?' · '+e.reason:''}`));content.append(history,node('p','Сверка отражает фактическое сканирование. Проверка статусов и владельца выполняется при включённой настройке ЧЗ для склада.','muted'));
     function transitionForm(action,title,disabled=false,disabledMessage='Сначала отсканируйте все недостающие КМ.'){const form=node('form',undefined,'warehouse-transition section-gap'),confirmation=node('input');confirmation.required=true;confirmation.maxLength=120;form.append(node('h3',title),label('Введите номер накладной для подтверждения',confirmation));const reason=node('input');if(action!=='close'){reason.required=true;reason.minLength=8;reason.maxLength=1000;form.append(label('Причина',reason));}const submit=node('button',title);submit.type='submit';submit.className=action==='cancel'?'danger':'primary';submit.disabled=disabled;form.append(submit);if(disabled)form.append(node('p',disabledMessage,'notice warning'));form.addEventListener('submit',async e=>{e.preventDefault();await mutate('/api/warehouse/tasks/'+task.id+'/'+action,{method:'POST',body:{revision:task.revision,confirmation:confirmation.value,reason:reason.value}},task.id);});content.append(form);}
   }
   async function mutate(path,options,id){const seq=detailGeneration,controls=[...$('warehouse-content').querySelectorAll('button,input,select')].map(n=>[n,n.disabled]);controls.forEach(([n])=>n.disabled=true);$('warehouse-dialog').dataset.saving='true';try{await api(path,options);if(seq===detailGeneration){notice('Изменения сохранены.');await open(id);show();}}catch(e){if(seq===detailGeneration)report(e);}finally{delete $('warehouse-dialog').dataset.saving;if(seq===detailGeneration)controls.forEach(([n,disabled])=>n.disabled=disabled);}}

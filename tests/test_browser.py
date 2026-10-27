@@ -904,3 +904,30 @@ def test_tsd_checks_expected_payloads_and_invalidates_result_after_edit(page,liv
         data=c.execute(text('SELECT check_result,verified_at FROM warehouse_tasks WHERE id=:id'),{'id':task}).mappings().one()
         assert data['check_result'] is None and data['verified_at'] is None
         assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_warehouse_fallback_excel_preview_commit_and_exact_source(page,live_app,engine):
+    from playwright.sync_api import expect
+    from test_warehouse_import_postgres import content
+    login(page,'specialist');page.goto(live_app['base']+'/receipt')
+    page.get_by_role('button',name='Резервный Excel',exact=True).click()
+    page.get_by_label('Номер документа',exact=True).fill('RESERVE-UI-01')
+    page.get_by_label('Поставщик',exact=True).fill('Поставщик резервной поставки')
+    page.get_by_label('Причина резервного импорта',exact=True).fill('Историческая поставка без исходной накладной ERP')
+    page.locator('#warehouse-content fieldset input[value="'+str(live_app['users']['tsd'])+'"]').check()
+    page.get_by_label('Файл склада XLSX',exact=True).set_input_files({'name':'reserve.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':content()})
+    page.get_by_role('button',name='Проверить Excel',exact=True).click()
+    expect(page.get_by_role('heading',name='Предпросмотр состава',exact=True)).to_be_visible()
+    expect(page.locator('#warehouse-content')).to_contain_text('Ожидаемых КМ: 1')
+    capture(page,'warehouse-import-preview-desktop')
+    page.get_by_role('button',name='Создать складское задание',exact=True).click()
+    expect(page.locator('#confirm-dialog')).to_be_visible();page.locator('#confirm-ok').click()
+    expect(page.locator('#warehouse-title')).to_contain_text('RESERVE-UI-01')
+    expect(page.locator('#warehouse-content')).to_contain_text('самостоятельное складское задание')
+    with page.expect_download() as response:page.get_by_role('link',name='Скачать исходный Excel',exact=True).click()
+    assert Path(response.value.path()).read_bytes()==content()
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'warehouse-import-created-390')
+    with engine.connect() as c:
+        assert c.execute(text('SELECT count(*) FROM bm_documents')).scalar_one()==0
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+        assert c.execute(text("SELECT count(*) FROM warehouse_tasks WHERE source_type='excel'")).scalar_one()==1
