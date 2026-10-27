@@ -10,7 +10,7 @@ def assignment_sql(code,org):
     return f'''(EXISTS(SELECT 1 FROM code_assignments x WHERE x.code_id={code} AND x.organization_id={org} AND x.user_id=:user)
         OR EXISTS(SELECT 1 FROM business_codes bc JOIN business_items bi ON bi.id=bc.item_id
             JOIN warehouse_tasks w ON w.source_id=bi.source_id AND w.organization_id=bi.organization_id
-            JOIN operation_assignments a ON a.target_id=w.id AND a.user_id=:user
+            JOIN operation_assignments wa ON wa.target_id=w.id AND wa.user_id=:user
             WHERE bc.registry_code_id={code} AND bc.organization_id={org} AND w.state<>'cancelled'))'''
 
 
