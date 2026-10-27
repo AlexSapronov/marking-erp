@@ -26,6 +26,9 @@ def main():
     signer_parser.add_argument('--name',required=True)
     signer_parser.add_argument('--certificate-sha256',required=True)
     signer_parser.add_argument('--kind',action='append',required=True)
+    printer=commands.add_parser('register-printer')
+    printer.add_argument('--organization-id',required=True);printer.add_argument('--name',required=True);printer.add_argument('--printer-name',required=True)
+    revoke_printer=commands.add_parser('revoke-printer');revoke_printer.add_argument('--device-id',required=True)
     verifier=commands.add_parser('trust-windows-verifier');verifier.add_argument('--device-id',required=True)
     revoke=commands.add_parser('revoke-signer')
     revoke.add_argument('--device-id',required=True)
@@ -67,6 +70,16 @@ def main():
                 connection.execute(text('INSERT INTO signer_verifiers(device_id) VALUES (:id) ON CONFLICT(device_id) DO UPDATE SET enabled=true'),{'id':UUID(args.device_id)})
                 from .auth import audit
                 audit(connection,None,'signer.verifier_provisioned',args.device_id,{})
+            elif args.action=='register-printer':
+                from uuid import UUID
+                from .business.printing import register_printer
+                id,token=register_printer(connection,UUID(args.organization_id),args.name,args.printer_name)
+            elif args.action=='revoke-printer':
+                from uuid import UUID
+                from sqlalchemy import text
+                from .auth import audit
+                connection.execute(text('UPDATE printer_devices SET enabled=false WHERE id=:id'),{'id':UUID(args.device_id)})
+                audit(connection,None,'printer.revoked',args.device_id)
             elif args.action=='register-signer':
                 from uuid import UUID
                 from .signer import provision
@@ -95,7 +108,7 @@ def main():
                 from .auth import bootstrap_admin
                 bootstrap_admin(connection, settings, args.username, args.display_name, password, totp_secret, code, args.inn, args.organization_name)
                 print("Администратор создан. Для входа используйте следующий код TOTP.")
-        if args.action=='register-signer':
+        if args.action in ('register-signer','register-printer'):
             print('Device:',id)
             print('Bearer token (save privately; shown once):',token)
         elif args.action=='sync-code-registry':

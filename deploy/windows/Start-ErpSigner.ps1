@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$BaseUrl,
     [Parameter(Mandatory=$true)][string]$Thumbprint,
-    [switch]$Use32Bit
+    [switch]$Use32Bit,
+    [switch]$EnableTokenRefresh
 )
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -25,6 +26,34 @@ function Invoke-Erp([string]$Path, $Body) {
 Write-Host 'ERP signer started. Stop with Ctrl+C. Private key stays on the token.'
 while ($true) {
     try {
+        if ($EnableTokenRefresh) {
+            $authAnswer = Invoke-Erp '/api/integration-auth/claim' @{}
+            $authJob = $authAnswer.job
+            if ($authJob) {
+                if ($authJob.certificate_sha256 -ne $certSha) { throw 'Auth certificate mismatch.' }
+                $authBytes = [Convert]::FromBase64String($authJob.payload_base64)
+                $authSha = ([BitConverter]::ToString($hasher.ComputeHash($authBytes))).Replace('-','').ToLowerInvariant()
+                if ($authSha -ne $authJob.payload_sha256) { throw 'Auth challenge hash mismatch.' }
+                $authStart = New-Object Diagnostics.ProcessStartInfo
+                $authStart.FileName = $cscript
+                $authStart.Arguments = '//nologo "' + $helper + '" ' + $Thumbprint + ' attached'
+                $authStart.UseShellExecute = $false; $authStart.CreateNoWindow = $true
+                $authStart.RedirectStandardInput = $true; $authStart.RedirectStandardOutput = $true; $authStart.RedirectStandardError = $true
+                $authProcess = New-Object Diagnostics.Process
+                $authProcess.StartInfo = $authStart
+                $null = $authProcess.Start()
+                $authProcess.StandardInput.WriteLine($authJob.payload_base64); $authProcess.StandardInput.Close()
+                $authSignature = $authProcess.StandardOutput.ReadToEnd().Trim()
+                $null = $authProcess.StandardError.ReadToEnd(); $authProcess.WaitForExit()
+                if ($authProcess.ExitCode -ne 0) { throw 'Attached CAdES verification failed.' }
+                $null = Invoke-Erp '/api/integration-auth/result' @{
+                    job_id=$authJob.id;lease=$authJob.lease;payload_sha256=$authSha;certificate_sha256=$certSha;
+                    signature_base64=$authSignature;cades_valid=$true;chain_valid=$true
+                }
+                Write-Host ('Organization access renewed: ' + $authJob.service)
+                continue
+            }
+        }
         $answer = Invoke-Erp '/api/signer/claim' @{}
         $job = $answer.job
         if (-not $job) { Start-Sleep -Seconds 2; continue }

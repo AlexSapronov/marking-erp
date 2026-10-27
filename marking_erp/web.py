@@ -80,11 +80,17 @@ def create_app(settings=None, engine=None):
     from .business.marking import install_marking
     from .business.verifier import install_verifier
     install_connections(app,app.state.auth_dependency,settings)
+    from .business.token_auth import install_token_auth
+    install_token_auth(app,app.state.auth_dependency,engine,settings)
     install_nk(app,app.state.auth_dependency,settings)
     install_marking(app,app.state.auth_dependency,settings)
+    from .business.printing import install_printing
+    install_printing(app,app.state.auth_dependency,engine)
     install_verifier(app,engine)
     from .business.fts import install_fts
     install_fts(app,app.state.auth_dependency,settings)
+    from .business.remarking import install_remarking
+    install_remarking(app,app.state.auth_dependency,settings)
     from .business.logistics import install_logistics
     install_logistics(app,app.state.auth_dependency)
     from .business.supplier_batches import install_supplier_batches
@@ -116,6 +122,7 @@ def create_app(settings=None, engine=None):
     @app.get("/split")
     @app.get("/connections")
     @app.get("/verify")
+    @app.get("/remarking")
     @app.get("/reprint")
     @app.get("/fts")
     def shell():
