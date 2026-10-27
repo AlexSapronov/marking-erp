@@ -77,3 +77,15 @@ def test_user_session_cannot_attest_signature_verification(env):
     with client(env) as c:
         login(c,'administrator');response=c.post('/api/signer/verification',json={'job_id':str(uuid4()),'fence':1,'payload_sha256':'0'*64,'signature_sha256':'0'*64,'certificate_sha256':'0'*64,'cades_valid':True,'chain_valid':True})
         assert response.status_code==401
+
+
+def test_catalog_export_uses_filter_and_literal_wildcards(env):
+    with client(env) as c:
+        login(c)
+        for pn in ['EXPORT-ONE','EXPORT-TWO']:
+            response=c.post('/api/catalog',json=card(env,pn=pn,duplicate_reason='Separate model fixture'));assert response.status_code==200,response.text
+        response=c.get('/api/catalog/export',params={'organization_id':str(env[1]),'q':'EXPORT-ONE'})
+        values=list(load_workbook(BytesIO(response.content)).active.values)
+        assert len(values)==2 and values[1][0]=='EXPORT-ONE'
+        response=c.get('/api/catalog/export',params={'organization_id':str(env[1]),'q':'%'})
+        assert len(list(load_workbook(BytesIO(response.content)).active.values))==1

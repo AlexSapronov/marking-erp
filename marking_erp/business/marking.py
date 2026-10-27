@@ -306,7 +306,7 @@ def install_marking(app,actor,settings):
             c.execute(text('UPDATE operation_targets SET stopped=false WHERE id=:id'),{'id':id})
             return s.save(current,row,'restored',body=data,state=state)
         s.version(row,body.revision);validate_source(current,row)
-        permission={'labels':'marking.labels.download' if row['kind']=='marking' else 'split.operations.view','applied':'marking.application.confirm' if row['kind']=='marking' else 'split.application.confirm','report':'marking.reports.submit' if row['kind']=='marking' else 'split.reports.submit','retry-report':'marking.reports.submit','archive':'documents.archive','transferred':'logistics.documents.complete'}.get(action)
+        permission={'labels':'marking.labels.download' if row['kind']=='marking' else 'split.operations.view','applied':'marking.application.confirm' if row['kind']=='marking' else 'split.application.confirm','report':'marking.reports.submit' if row['kind']=='marking' else 'split.reports.submit','retry-report':'marking.reports.submit' if row['kind']=='marking' else 'split.reports.submit','archive':'documents.archive','transferred':'logistics.documents.complete'}.get(action)
         if not permission:raise HTTPException(404,'Действие не найдено')
         s.require(current,row,permission)
         if action=='archive':

@@ -9,7 +9,8 @@ from . import store as s
 from .connections import load
 from .contracts import VERSION,CONTRACTS
 from .nk import Client,apply_remote,incoming,perform_action,Action
-from .errors import RemoteError
+from .errors import RemoteError,report_problem
+from .catalog_sync import SyncProblem,progress,split_window
 from .live import Live
 
 
@@ -46,13 +47,16 @@ class BusinessWorker:
         for id in syncs:
             try:self.sync(id)
             except RemoteError as error:
-                if error.status!=429:
-                    with self.engine.begin() as c:
-                        row=s.item(c,id);current=background(c,row['owner_id'],row['organization_id']);s.save(current,row,'sync_paused',state='blocked')
-            except Exception:
-                with self.engine.begin() as c:
-                    row=s.item(c,id);current=background(c,row['owner_id'],row['organization_id']);s.save(current,row,'sync_paused',state='blocked')
+                if error.status!=429:self.pause_sync(id,str(error))
+            except SyncProblem as error:self.pause_sync(id,str(error))
+            except Exception:self.pause_sync(id,'Синхронизация остановлена. Проверьте доступ, структуру ответа НК и настройки подключения.')
         self.pipeline_tick()
+    def pause_sync(self,id,message):
+        with self.engine.begin() as c:
+            c.execute(text('SELECT pg_advisory_xact_lock(683273529)'));row=s.item(c,id,lock=True)
+            if row['state']!='processing':return
+            current=background(c,UUID(row['body'].get('sync_actor',str(row['owner_id']))),row['organization_id'],include_disabled=True)
+            s.save(current,row,'sync_paused',body={**row['body'],'error':message},state='blocked')
     def pipeline_tick(self):
         with self.engine.begin() as c:
             c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
@@ -185,7 +189,12 @@ class BusinessWorker:
             c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
             if not operations.reconcile(c,id,outcome,expected_fence=op['fence']):return
             latest=s.item(c,row['id'],lock=True);current=background(c,op['actor_id'],op['organization_id'],include_disabled=True)
-            if rejected:s.save(current,latest,'remote_rejected',body={**latest['body'],'last_rejected_step':step},state='rejected')
+            if rejected:
+                data={**latest['body'],'last_rejected_step':step}
+                if step.endswith('.report'):
+                    code,message=report_problem(result);data.update(last_rejection_code=code,last_rejection_message=message)
+                    c.execute(text('UPDATE external_operations SET reason=:reason WHERE id=:id'),{'id':id,'reason':message})
+                s.save(current,latest,'remote_rejected',body=data,state='rejected')
             elif step=='nk.gtin':
                 gtin=str(initial['drafts'][0]['gtin'])
                 if latest['body'].get('gtin') not in ('',gtin):raise ValueError('Поле GTIN изменилось')
@@ -204,15 +213,36 @@ class BusinessWorker:
             c.execute(text('UPDATE business_links SET applied=true WHERE operation_id=:id'),{'id':id})
     def sync(self,id):
         with self.engine.connect() as c:
-            row=s.item(c,id);config,_=self.config(c,row['organization_id']);body=row['body']
-        client=Client(config);listing=client.call('GET','/v4/product-list',{'from_date':body['from'],'to_date':body['to'],'offset':body['offset'],'limit':25});goods=listing.get('goods',[])
-        if not isinstance(goods,list) or body['offset']>=10000:raise ValueError('Каталог больше окна; требуется разбить период синхронизации')
+            row=s.item(c,id)
+            if row['state']!='processing':return
+            current=background(c,UUID(row['body'].get('sync_actor',str(row['owner_id']))),row['organization_id']);current.require('nk.sync.execute',organization_id=row['organization_id'],owner_id=row['owner_id'])
+            config,_=self.config(c,row['organization_id']);original=row['body'];body=progress(original)
+        if not body['windows']:return
+        start,end,offset=body['windows'][0];client=Client(config)
+        try:listing=client.call('GET','/v4/product-list',{'from_date':start,'to_date':end,'offset':offset,'limit':25})
+        except RemoteError as error:
+            if error.status!=413:raise
+            return self.save_sync_progress(id,original,split_window(body),[])
+        if not isinstance(listing,dict):raise SyncProblem('НК не вернул список карточек. Обновление остановлено без отметки об успехе.')
+        goods=listing.get('goods');total=listing.get('total')
+        if not isinstance(goods,list) or len(goods)>25 or isinstance(total,bool) or not str(total).isdigit():raise SyncProblem('НК не подтвердил полный состав и размер каталога.')
+        total=int(total)
+        if total>10000 or offset>=10000:return self.save_sync_progress(id,original,split_window(body),[])
+        if any(not isinstance(r,dict) or not str(r.get('good_id','')).isdigit() for r in goods):raise SyncProblem('НК вернул карточку без подтверждённого идентификатора.')
+        if len({str(r['good_id']) for r in goods})!=len(goods) or offset+len(goods)>total or (not goods and offset<total):raise SyncProblem('НК вернул неполную или повторяющуюся страницу. Синхронизация остановлена.')
         details=client.call('GET','/v3/feed-product',{'good_ids':';'.join(str(r['good_id']) for r in goods)}) if goods else []
-        if not isinstance(details,list) or {str(r['good_id']) for r in details}!={str(r['good_id']) for r in goods}:raise ValueError('Не полный ответ НК')
+        if not isinstance(details,list) or len(details)!=len(goods) or {str(r['good_id']) for r in details}!={str(r['good_id']) for r in goods}:raise SyncProblem('НК не вернул полный состав запрошенных карточек. Проверьте права и статусы.')
+        if offset+len(goods)>=total:body['windows'].pop(0)
+        else:body['windows'][0][2]+=len(goods)
+        self.save_sync_progress(id,original,body,details)
+    def save_sync_progress(self,id,original,body,details):
         with self.engine.begin() as c:
             c.execute(text('SELECT pg_advisory_xact_lock(683273529)'));row=s.item(c,id,lock=True)
-            if row['body']!=body or row['state']!='processing':return
-            current=background(c,row['owner_id'],row['organization_id']);current.require('nk.sync.execute',organization_id=row['organization_id'],owner_id=row['owner_id'])
-            for raw in details:apply_remote(current,raw)
-            count=body['count']+len(goods);offset=body['offset']+len(goods);done=not goods or offset>=int(listing.get('total',offset))
-            s.save(current,row,'sync_progress',body={**body,'count':count,'offset':offset},state='done' if done else 'processing')
+            if row['body']!=original or row['state']!='processing':return
+            current=background(c,UUID(row['body'].get('sync_actor',str(row['owner_id']))),row['organization_id']);current.require('nk.sync.execute',organization_id=row['organization_id'],owner_id=row['owner_id'])
+            count=body['count']
+            for raw in details:
+                apply_remote(current,raw)
+                added=c.execute(text('INSERT INTO catalog_sync_entries(item_id,good_id) VALUES (:id,:good) ON CONFLICT DO NOTHING RETURNING good_id'),{'id':id,'good':str(raw['good_id'])}).scalar()
+                if added is not None:count+=1
+            s.save(current,row,'sync_progress',body={**body,'count':count,'offset':body['windows'][0][2] if body['windows'] else 0,'error':''},state='processing' if body['windows'] else 'done')

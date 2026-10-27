@@ -252,10 +252,18 @@ def install_nk(app,actor,settings):
             AND (title ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!') ORDER BY i.created_at DESC,i.id DESC LIMIT 26'''),{'org':organization_id,'kind':kind,'archived':archived,'before':str(before_id) if before_id else None,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('external','rows','payloads')},'external_status':r['body'].get('external',{}).get('statuses',[])} for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
     @app.get('/api/catalog/export')
-    def export(organization_id:UUID,current=dep):
+    def export(organization_id:UUID,q:str=Query('',max_length=120),current=dep):
         current.require('nk.export',organization_id=organization_id,owner_id=current.id)
-        grant=current.grants().get('nk.cards.view');rows=current.connection.execute(text("SELECT * FROM business_items WHERE organization_id=:org AND kind='card' AND state<>'archived' AND (:grant='all' OR owner_id=:user) ORDER BY id LIMIT 10000"),{'org':organization_id,'grant':grant,'user':current.id}).mappings()
-        data=workbook([[r['body'].get(k,'') for k in ('pn','gtin','tnved','name','brand','category_id')]+[', '.join(r['body'].get('external',{}).get('statuses',[]))] for r in rows],['PN','GTIN','ТН ВЭД','Название','Товарный знак','ID категории','Статус НК'])
+        grant=current.grants().get('nk.cards.view')
+        if not grant:raise HTTPException(403,'Нет доступа к карточкам каталога')
+        rows=current.connection.execute(text("""SELECT i.body->>'pn' AS pn,i.body->>'gtin' AS gtin,i.body->>'tnved' AS tnved,
+            i.body->>'name' AS name,i.body->>'brand' AS brand,i.body->'category_id' AS category_id,i.body->'external'->'statuses' AS statuses
+            FROM business_items i WHERE organization_id=:org AND kind='card' AND state<>'archived'
+            AND (:grant='all' OR (:grant='own' AND owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
+            AND (title ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
+            ORDER BY i.created_at,i.id LIMIT 50001"""),{'org':organization_id,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+        if len(rows)>50000:raise HTTPException(422,'В выгрузке больше 50000 карточек. Уточните фильтр PN, GTIN или ТН ВЭД; неполный файл не формируется.')
+        data=workbook([[r[k] or '' for k in ('pn','gtin','tnved','name','brand','category_id')]+[', '.join(r['statuses'] or [])] for r in rows],['PN','GTIN','ТН ВЭД','Название','Товарный знак','ID категории','Статус НК'])
         return Response(data,media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="catalog.xlsx"'})
     @app.get('/api/catalog/{id}')
     def detail(id:UUID,current=dep):
@@ -311,7 +319,14 @@ def install_nk(app,actor,settings):
         current.require('nk.sync.execute',organization_id=organization_id,owner_id=current.id)
         load(current.connection,settings,organization_id)
         if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='sync' AND organization_id=:org AND state IN ('draft','processing'))"),{'org':organization_id}).scalar_one():raise HTTPException(409,'Синхронизация уже выполняется')
-        return s.create(current,'sync','Синхронизация НК',{'from':'1980-01-01 00:00:00','to':datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),'offset':0,'count':0},organization_id,state='processing')
+        end=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        return s.create(current,'sync','Синхронизация НК',{'from':'1980-01-01 00:00:00','to':end,'windows':[['1980-01-01 00:00:00',end,0]],'sync_actor':str(current.id),'offset':0,'count':0},organization_id,state='processing')
+    @app.post('/api/catalog-sync/{id}/resume')
+    def resume_sync(id:UUID,body:Action,current=dep):
+        row=s.get(current,id,'sync',True,'nk.sync.execute');s.version(row,body.revision)
+        if row['state']!='blocked':raise HTTPException(409,'Продолжить можно остановленную синхронизацию')
+        if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='sync' AND organization_id=:org AND state='processing' AND id<>:id)"),{'org':row['organization_id'],'id':id}).scalar_one():raise HTTPException(409,'Другая синхронизация уже выполняется')
+        return s.save(current,row,'sync_resumed',body={**row['body'],'error':'','sync_actor':str(current.id)},state='processing')
     @app.post('/api/catalog-import/preview')
     async def preview(request:Request,organization_id:UUID,current=dep):
         current.require('nk.import.preview',organization_id=organization_id,owner_id=current.id)

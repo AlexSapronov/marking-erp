@@ -6,7 +6,7 @@ from .migrate import schema_head
 READ_ONLY = frozenset(('alembic_version', 'permissions', 'seed_state', 'organizations','signer_verifiers'))
 APPEND_ONLY = frozenset(('audit_events', 'configuration_changes', 'products', 'codes',
     'product_pns', 'code_payload_versions', 'code_events', 'files', 'operation_attempts',
-    'operation_receipts', 'operation_events', 'signer_leases', 'signer_receipts', 'bm_document_versions', 'warehouse_events','business_events','business_artifacts'))
+    'operation_receipts', 'operation_events', 'signer_leases', 'signer_receipts', 'bm_document_versions', 'warehouse_events','business_events','business_artifacts','catalog_sync_entries'))
 
 
 def _identifier(value):
