@@ -131,15 +131,24 @@ def apply(current,row,op,link,payload,result,live,settings):
         import re
         if not isinstance(atk,str) or re.fullmatch(r'[0-9]{20}[0-9A-Za-z]{5}',atk) is None:raise ValueError('ЧЗ не подтвердил единый АТК')
         body['atk']=atk;body['document_id']=op['external_id']
-        data=workbook([[code['pn'],code['gtin'],code['quantity'],code['cis'],atk] for id in body['documents'] for code in rows(c,UUID(id))],['PN','GTIN','Количество','КМ','АТК'])
-        file=s.artifact(current,row,'atk','ATK.xlsx',data,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',{'atk':atk,'documents':body['documents']})
-        s.save(current,row,'atk_confirmed',body={**body,'file_id':str(file)},state='ready')
+        updated=s.save(current,row,'atk_confirmed',body=body,state='ready')
+        atk_export(current,updated)
     elif step=='bm.transform':
         parent=s.item(c,UUID(body['atk_item']),lock=True);parentbody=dict(parent['body']);ids=set(parentbody['codes'])
         if body['kind']=='ADDING':ids.update(body['codes'])
         else:ids.difference_update(body['codes'])
-        s.save(current,parent,'atk_transformed',body={**parentbody,'codes':sorted(ids)})
+        updated=s.save(current,parent,'atk_transformed',body={**parentbody,'codes':sorted(ids)})
+        atk_export(current,updated)
         s.save(current,row,'transformation_confirmed',state='done')
+
+
+def atk_export(current,row):
+    codes=current.connection.execute(text('SELECT * FROM business_codes WHERE organization_id=:org AND id=ANY(CAST(:ids AS uuid[])) ORDER BY pn,cis'),{'org':row['organization_id'],'ids':row['body']['codes']}).mappings().all()
+    if len(codes)!=len(set(row['body']['codes'])) or any(v['tnved']!=row['body']['tnved'] for v in codes):raise ValueError('Состав АТК не совпадает с зарегистрированными КМ')
+    atk=row['body']['atk']
+    data=workbook([[v['pn'],v['gtin'],v['quantity'],v['cis'],atk] for v in codes],['PN','GTIN','Количество','КМ','АТК'])
+    file=s.artifact(current,row,'atk','ATK.xlsx',data,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',{'atk':atk,'codes':row['body']['codes'],'documents':row['body']['documents']})
+    return s.save(current,row,'atk_export_saved',body={**row['body'],'file_id':str(file)})
 
 
 def advance(worker):
@@ -280,6 +289,7 @@ def install_marking(app,actor,settings):
     @app.post('/api/business/{id}/{action}')
     def action(id:UUID,action:str,body:Step,current=dep):
         row=s.get(current,id,lock=True);c=current.connection
+        if row['state']=='completed':raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
         if action=='restore':
             s.require(current,row,'documents.restore')
             if body.revision!=row['revision'] or row['state']!='archived':raise HTTPException(409,'Нужен актуальный архивный документ')
@@ -300,6 +310,8 @@ def install_marking(app,actor,settings):
         if not permission:raise HTTPException(404,'Действие не найдено')
         s.require(current,row,permission)
         if action=='archive':
+            from .logistics import has_completed_dependents
+            if has_completed_dependents(c,row):raise HTTPException(409,'Документ связан с завершёнными накладными. Сначала верните их в работу.')
             current.require('documents.stop',**s.context(current,row))
             if body.reason!=row['title']:raise HTTPException(422,'Введите номер/название документа в поле подтверждения')
             return s.archive(current,row,body.reason)
@@ -347,9 +359,12 @@ def install_marking(app,actor,settings):
             if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='atk' AND state<>'archived' AND body->'documents' @> CAST(:id AS jsonb))"),{'id':json.dumps([str(id)])}).scalar_one():raise HTTPException(409,'Накладная уже включена в АТК')
             supplier=row['body']['supplier'];documents.append(str(id))
             for code in rows(c,id):buckets.setdefault(code['tnved'],[]).append(code)
+        from .supplier_batches import require_ready
+        sources=require_ready(c,body.organization_id,supplier,set(body.ids))
+        numbers=[v['number'] for v in sources]
         created=[]
         for tnved,codes in buckets.items():
-            row=s.create(current,'atk','АТК-'+supplier+'-'+tnved,{'supplier':supplier,'tnved':tnved,'documents':sorted(documents),'request_id':str(body.request_id),'codes':[str(v['id']) for v in codes]},body.organization_id,state='aggregating')
+            row=s.create(current,'atk',('АТК-'+supplier+'-'+','.join(numbers))[:280]+'-'+tnved,{'supplier':supplier,'numbers':numbers,'tnved':tnved,'documents':sorted(documents),'request_id':str(body.request_id),'codes':[str(v['id']) for v in codes]},body.organization_id,state='aggregating')
             s.queue(current,row,'bm.atk',{'trade_participant_inn':organization(c,body.organization_id),'products_list':[{'ki':v['cis']} for v in codes]});created.append(row['id'])
         return {'ids':created}
     @app.get('/api/atks/{id}/candidates')
@@ -360,6 +375,8 @@ def install_marking(app,actor,settings):
     @app.post('/api/atks/{id}/transform')
     def transform(id:UUID,body:Transform,current=dep):
         parent=s.get(current,id,'atk',True,'marking.atk.transform.prepare');s.version(parent,body.revision);s.idle(current.connection,id)
+        from .logistics import has_completed_dependents
+        if has_completed_dependents(current.connection,parent):raise HTTPException(409,'АТК связан с завершёнными накладными. Сначала верните их в работу.')
         if parent['state'] not in ('ready','transferred') or not parent['body'].get('atk'):raise HTTPException(409,'Нужен зарегистрированный АТК')
         wanted=set(map(str,body.codes));included=set(parent['body']['codes'])
         if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='fts' AND state IN ('prepared','circulation_confirmed') AND body->'atks' @> CAST(:id AS jsonb))"),{'id':json.dumps([str(id)])}).scalar_one():raise HTTPException(409,'АТК включён в пакет ФТС. Требуется сначала разобрать таможенные сведения.')

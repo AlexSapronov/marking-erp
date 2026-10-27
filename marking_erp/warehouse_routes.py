@@ -103,7 +103,7 @@ def install_warehouse(app, actor, settings=None):
     @app.get('/api/logistics/warehouse-options')
     def options(organization_id:UUID, current=dep):
         current.require('logistics.warehouse.transfer', organization_id=organization_id, owner_id=current.id)
-        sources=current.connection.execute(text("SELECT id,owner_id,number,supplier,document_date,revision FROM bm_documents WHERE organization_id=:org AND state='prepared' ORDER BY updated_at DESC LIMIT 200"), {'org':organization_id}).mappings().all()
+        sources=current.connection.execute(text("SELECT id,owner_id,number,supplier,document_date,revision FROM bm_documents d WHERE organization_id=:org AND state='prepared' AND NOT EXISTS(SELECT 1 FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state='completed') ORDER BY updated_at DESC LIMIT 200"), {'org':organization_id}).mappings().all()
         people=current.connection.execute(text("""SELECT u.id,u.display_name,g.name AS group_name FROM users u JOIN groups g ON g.slug=u.group_slug
             JOIN user_organizations o ON o.user_id=u.id WHERE o.organization_id=:org AND u.enabled
             AND u.group_slug IN ('warehouse','tsd','specialist','administrator') ORDER BY u.display_name"""), {'org':organization_id}).mappings().all()
@@ -150,6 +150,8 @@ def install_warehouse(app, actor, settings=None):
             plan=Counter()
             for line in source['lines']:plan[line['gtin']]+=line['labels']
             if Counter(cis[2:16] for cis in expected)!=plan:raise HTTPException(422,'Ожидаемые КМ по GTIN не совпадают с полным составом накладной')
+        from .business.logistics import is_completed
+        if is_completed(c,source['id']):raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
         if source['state']!='prepared' or source['revision']!=body.source_revision: raise HTTPException(409, 'Обновите список: нужен актуальный проверенный состав')
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM warehouse_tasks WHERE source_id=:id AND kind=:kind AND state<>'cancelled')"), {'id':body.source_id,'kind':body.kind}).scalar_one(): raise HTTPException(409, 'Задание этого типа уже существует')
         people=c.execute(text("""SELECT u.id,u.group_slug FROM users u JOIN user_organizations o ON o.user_id=u.id
@@ -246,6 +248,8 @@ def install_warehouse(app, actor, settings=None):
         else: require(current,task,'complete')
         if body.revision!=task['revision']: raise HTTPException(409, 'Задание изменено. Обновите данные.')
         if body.confirmation!=task['number']: raise HTTPException(422, 'Введите точный номер накладной')
+        from .business.logistics import is_completed
+        if is_completed(current.connection,task['source_id']):raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
         if action=='close':
             writable(current,task)
             if any(r['scanned']!=r['labels'] or r['units']!=r['expected_units'] for r in summary(current,task)): raise HTTPException(409, 'Есть расхождения. Отсканируйте недостающие КМ.')

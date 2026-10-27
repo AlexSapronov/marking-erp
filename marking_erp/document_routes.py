@@ -155,6 +155,7 @@ def install_documents(app,actor):
         view=current.grants().get('marking.documents.view')
         if not grant or not view or organization_id not in current.organizations():raise HTTPException(403,'Нет доступа к накладным')
         rows=current.connection.execute(text('''SELECT d.id,d.number,d.document_date,d.supplier,d.owner_id,d.revision,d.state,d.updated_at,
+            EXISTS(SELECT 1 FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state='completed') AS logistics_completed,
             jsonb_array_length(d.lines) AS line_count,(SELECT sum((l->>'labels')::bigint) FROM jsonb_array_elements(d.lines) l) AS labels
             FROM bm_documents d WHERE d.organization_id=:org AND (d.state='archived')=:archived
             AND (:grant='all' OR (:grant='own' AND d.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
@@ -187,6 +188,8 @@ def install_documents(app,actor):
     @app.get('/api/documents/{id}')
     def detail(id:UUID,current=dep):
         doc=get(current,id)
+        from .business.logistics import is_completed
+        doc['logistics_completed']=is_completed(current.connection,id)
         return {'document':{k:v for k,v in doc.items() if k!='request_sha256'},'external_dispatch_available':False,
                 'notice':'Проверка состава локальная. Для эмиссии и нанесения откройте раздел «Маркировка». Сведения каталога подтверждаются через Национальный каталог.'}
 
@@ -207,6 +210,8 @@ def install_documents(app,actor):
         doc=get(current,id,True)
         require(current,{'prepare':'marking.documents.edit','archive':'documents.archive','restore':'documents.restore'}[action],doc)
         if body.revision!=doc['revision']:raise HTTPException(409,'Накладная изменена. Обновите данные.')
+        from .business.logistics import is_completed
+        if is_completed(current.connection,id):raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
         if action=='prepare':
             if doc['state']!='draft':raise HTTPException(409,'Проверять можно только черновик')
             no_external(current.connection,id)
