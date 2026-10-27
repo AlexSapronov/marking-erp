@@ -39,3 +39,5 @@ textarea{font:inherit;min-height:72px;width:100%;padding:12px;border:1px solid v
 .business-form{display:grid;gap:16px;max-width:900px}.business-form>p{line-height:1.55}.business-form input[type=checkbox]{width:24px;min-height:24px}.business-attributes{display:grid;gap:14px}.business-bulk{flex-wrap:wrap;margin:14px 0}.business-reprints{display:grid;gap:12px}#business-dialog{width:min(1050px,96vw);max-width:96vw}#business-content{display:grid;gap:14px;overflow-wrap:anywhere}.business-check-result{display:grid;gap:10px;padding:16px;border:1px solid var(--border);border-radius:10px}.sidebar nav{overflow-y:auto;max-height:calc(100dvh - 180px)}
 
 .table-panel input[type=checkbox]{width:20px;height:20px;min-height:20px;accent-color:var(--primary)}
+/* Diagnostic status descriptions must fit handheld screens as well as desktop cards. */
+.system-result{white-space:normal;max-width:100%;overflow-wrap:anywhere}

@@ -20,7 +20,7 @@ const warehouse=createWarehouse({incidents,state,$,api,node,button,heading,notic
 const business=createBusiness({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
 const sessions=createSessions({state,$,api,node,button,notice,report,ask});
 const audit=createAudit({state,$,api,node,button,heading,report});
-const system=createSystem({state,$,api,node,button,heading,report});
+const system=createSystem({state,$,api,node,button,heading,report,navigate});
 const groupNames = {bm:'БМ',logistics:'Логист',warehouse:'Склад',tsd:'ТСД',specialist:'Специалист по маркировке',administrator:'Администратор'};
 const modules = [
   ['Эмиссия и нанесение','Заказ КМ, этикетки и отчёты','marking.codes.issue','▤'],

@@ -18,4 +18,4 @@ def test_unknown_or_failed_checks_never_become_ready():
         assert not public_status(report)['technical_ready']
     result = public_status({'ready': True, 'checks': dict.fromkeys(CHECKS, True), 'build_sha': 'a' * 40})
     assert result['technical_ready'] and result['build_sha'] == 'a' * 40
-    assert result['components']['true_api_oms'] == 'not_connected'
+    assert result['components']['true_api_oms'] == 'pilot_required'
