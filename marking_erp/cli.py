@@ -30,6 +30,8 @@ def main():
     revoke=commands.add_parser('revoke-signer')
     revoke.add_argument('--device-id',required=True)
     commands.add_parser('recover-operations')
+    registry_parser=commands.add_parser('sync-code-registry')
+    registry_parser.add_argument('--actor-id',required=True)
     runtime = commands.add_parser('grant-runtime')
     runtime.add_argument('--role', required=True)
     args = parser.parse_args()
@@ -82,6 +84,10 @@ def main():
             elif args.action=='recover-operations':
                 from .operations import recover_expired
                 print('recovered:',recover_expired(connection))
+            elif args.action=='sync-code-registry':
+                from uuid import UUID
+                from .business.registry import backfill
+                count=backfill(connection,settings,UUID(args.actor_id))
             elif args.action=='grant-runtime':
                 from .runtime_access import apply_runtime_grants
                 apply_runtime_grants(connection,args.role)
@@ -92,6 +98,8 @@ def main():
         if args.action=='register-signer':
             print('Device:',id)
             print('Bearer token (save privately; shown once):',token)
+        elif args.action=='sync-code-registry':
+            print('registry linked:',count)
     except (SQLAlchemyError, ValueError):
         parser.exit(1, "Database operation failed; inspect schema/configuration without sharing credentials.\n")
     finally:

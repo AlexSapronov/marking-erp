@@ -199,7 +199,7 @@ class BusinessWorker:
                 xml=initial['xmls'][0]['xml'].encode();s.queue(current,latest,'nk.publish',xml,{'good_id':payload['good_id']})
             else:
                 from .marking import apply
-                apply(current,latest,op,link,payload,result,live)
+                apply(current,latest,op,link,payload,result,live,self.settings)
             if latest['state']=='archived':c.execute(text("UPDATE business_items SET state='archived' WHERE id=:id"),{'id':latest['id']})
             c.execute(text('UPDATE business_links SET applied=true WHERE operation_id=:id'),{'id':id})
     def sync(self,id):

@@ -19,7 +19,7 @@ def register_product(c,organization_id,gtin,pn,tnved,*,source,source_ref,evidenc
     return {'id':id,'tnved_conflict':conflicts}
 
 
-def capture_code(c,organization_id,owner_id,raw,*,actor_id,source_ref,scanner=False):
+def capture_code(c,organization_id,owner_id,raw,*,actor_id,source_ref,scanner=False,allow_quantity_change=False):
     value=parse(raw,scanner=scanner)
     if not source_ref.strip():raise ValueError('Укажите происхождение КМ')
     for user in {owner_id,actor_id}:
@@ -32,8 +32,12 @@ def capture_code(c,organization_id,owner_id,raw,*,actor_id,source_ref,scanner=Fa
         c.execute(text("INSERT INTO codes(id,product_group,cis,gtin,product_id) VALUES (:id,'radio',:cis,:gtin,:product)"),{'id':id,'cis':value.cis,'gtin':value.gtin,'product':product})
     c.execute(text('''INSERT INTO code_access(code_id,organization_id,owner_id) VALUES (:id,:org,:owner) ON CONFLICT DO NOTHING'''),{'id':id,'org':organization_id,'owner':owner_id})
     last=c.execute(text('''SELECT * FROM code_payload_versions WHERE code_id=:id AND organization_id=:org ORDER BY version DESC LIMIT 1'''),{'id':id,'org':organization_id}).mappings().first()
-    canonical=c.execute(text("SELECT normalized FROM code_payload_versions v JOIN code_events e ON e.payload_id=v.id WHERE v.code_id=:id AND v.organization_id=:org AND e.kind='captured' ORDER BY e.id LIMIT 1"),{'id':id,'org':organization_id}).scalar()
+    canonical=c.execute(text("SELECT normalized FROM code_payload_versions v JOIN code_events e ON e.payload_id=v.id WHERE v.code_id=:id AND v.organization_id=:org AND e.kind<>'payload_conflict' ORDER BY v.version DESC LIMIT 1"),{'id':id,'org':organization_id}).scalar()
     kind='captured' if canonical is None else 'reobserved' if bytes(canonical)==value.normalized else 'payload_conflict'
+    # Only a business allocation can authorize AI30 changes. The signed base must
+    # remain byte-identical; a different crypto tail is always a conflict.
+    if kind=='payload_conflict' and allow_quantity_change and parse(bytes(canonical)).base==value.base:
+        kind='quantity_adjusted'
     payload=uuid4();version=last['version']+1 if last else 1
     c.execute(text('''INSERT INTO code_payload_versions(id,code_id,organization_id,version,raw,normalized,raw_sha256,normalized_sha256,profile,corrections,template,label_quantity,actor_id,source_ref)
         VALUES (:payload,:id,:org,:version,:raw,:normalized,:raw_hash,:normalized_hash,:profile,CAST(:corrections AS jsonb),:template,:quantity,:actor,:ref)'''),
@@ -55,7 +59,7 @@ def save_payload_file(c,store,payload_id):
     return _persist_file(c,store,value,bytes(value['raw']),'payload','application/octet-stream',{})
 
 
-def save_label(c,store,payload_id,pn):
+def save_label(c,store,payload_id,pn,*,rendered=None):
     from .labels import render_label
     value=c.execute(text('SELECT * FROM code_payload_versions WHERE id=:id'),{'id':payload_id}).mappings().one()
     if c.execute(text("SELECT kind FROM code_events WHERE payload_id=:id"),{'id':payload_id}).scalar_one()=='payload_conflict':raise ValueError('Конфликтный payload нельзя использовать для этикетки')
@@ -63,5 +67,5 @@ def save_label(c,store,payload_id,pn):
     parsed=parse(bytes(value['normalized']))
     if not c.execute(text('''SELECT 1 FROM product_pns p JOIN products pr ON pr.id=p.product_id WHERE pr.gtin=:gtin AND p.organization_id=:org AND p.pn=:pn LIMIT 1'''),{'gtin':parsed.gtin,'org':value['organization_id'],'pn':pn}).scalar():raise ValueError('PN не подтверждён источником')
     quantity=parsed.quantity if parsed.quantity is not None else 1
-    data=render_label(parsed.normalized,pn,quantity)
+    data=render_label(parsed.normalized,pn,quantity) if rendered is None else rendered
     return _persist_file(c,store,value,data,'label_pdf','application/pdf',{'pn':pn,'quantity':quantity,'template':'radio-58x40-v1','payload_sha256':value['normalized_sha256']})

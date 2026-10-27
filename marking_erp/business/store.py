@@ -26,12 +26,12 @@ def record(current,row,action,body=None):
     current.connection.execute(text('INSERT INTO business_events(item_id,actor_id,action,body) VALUES (:id,:actor,:action,CAST(:body AS jsonb))'),{'id':row['id'],'actor':current.id,'action':action,'body':json.dumps(body or {},default=str)})
     auth.audit(current.connection,current.id,'business.'+action,row['id'],{'kind':row['kind']})
 
-def create(current,kind,title,body,org,source=None,id=None,state='draft'):
-    c=current.connection;id=id or uuid4()
+def create(current,kind,title,body,org,source=None,id=None,state='draft',owner=None):
+    c=current.connection;id=id or uuid4();owner=owner or current.id
     if c.execute(text('SELECT EXISTS(SELECT 1 FROM operation_targets WHERE id=:id)'),{'id':id}).scalar_one():raise HTTPException(409,'Идентификатор запроса уже использован')
-    c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:user,1)'),{'id':id,'org':org,'user':current.id})
+    c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:user,1)'),{'id':id,'org':org,'user':owner})
     c.execute(text('''INSERT INTO business_items(id,organization_id,owner_id,kind,title,body,source_id,state)
-        VALUES (:id,:org,:owner,:kind,:title,CAST(:body AS jsonb),:source,:state)'''),{'id':id,'org':org,'owner':current.id,'kind':kind,'title':title,'body':json.dumps(body,default=str),'source':source,'state':state})
+        VALUES (:id,:org,:owner,:kind,:title,CAST(:body AS jsonb),:source,:state)'''),{'id':id,'org':org,'owner':owner,'kind':kind,'title':title,'body':json.dumps(body,default=str),'source':source,'state':state})
     row=item(c,id);record(current,row,'created');return row
 
 def save(current,row,action,*,body=None,state=None,title=None):
