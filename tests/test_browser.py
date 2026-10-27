@@ -681,7 +681,7 @@ def test_logistics_handback_full_excel_in_bm_ui(page,browser,live_app,engine):
         bm.get_by_role('button',name='Проверить полный Excel',exact=True).click()
         expect(bm.get_by_text('Маркированных позиций сверено: 1. Немаркируемых строк: 2.',exact=True)).to_be_visible()
         capture(bm,'bm-full-invoice-preview')
-        bm.get_by_role('button',name='Сохранить полный состав и вернуть логисту',exact=True).click();expect(bm.locator('#document-dialog')).to_be_hidden();bm.get_by_label('Раздел',exact=True).select_option('warehouse_ready');expect(bm.get_by_text('Полный состав готов',exact=True)).to_be_visible()
+        bm.get_by_role('button',name='Сохранить полный состав и вернуть логисту',exact=True).click();expect(bm.locator('#document-dialog')).to_be_hidden();bm.get_by_label('Раздел',exact=True).select_option('warehouse_ready');expect(bm.get_by_role('cell',name='Полный состав готов',exact=True)).to_be_visible()
         bm.set_viewport_size({'width':390,'height':844});assert bm.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(bm,'bm-full-invoice-390')
         assert not errors,errors
     finally:context.close()
