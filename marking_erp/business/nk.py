@@ -259,14 +259,16 @@ def install_nk(app,actor,settings):
         return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('external','rows','payloads')},'external_status':r['body'].get('external',{}).get('statuses',[])} for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
     @app.get('/api/catalog/export')
     def export(organization_id:UUID,q:str=Query('',max_length=120),archived:bool=False,draft_duplicates:str=Query('hide',pattern='^(hide|include|only)$'),current=dep):
-        current.require('nk.export',organization_id=organization_id,owner_id=current.id)
+        export_grant=current.require('nk.export',organization_id=organization_id,owner_id=current.id,assigned=True)
         grant=current.grants().get('nk.cards.view')
         if not grant:raise HTTPException(403,'Нет доступа к карточкам каталога')
         rows=current.connection.execute(text(CATALOG_CTE+'''SELECT i.body->>'pn' AS pn,i.body->>'gtin' AS gtin,i.body->>'tnved' AS tnved,
             i.body->>'name' AS name,i.body->>'brand' AS brand,i.body->'category_id' AS category_id,i.body->'external'->'statuses' AS statuses,duplicate_draft
             FROM catalog_rows i WHERE (state='archived')=:archived
+            AND (:export_grant='all' OR (:export_grant='own' AND i.owner_id=:user)
+                OR (:export_grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
             AND (title ILIKE :q ESCAPE '!' OR body->>'pn' ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
-            '''+DUPLICATE_FILTER+''' ORDER BY i.created_at,i.id LIMIT 50001'''),{'org':organization_id,'grant':grant,'user':current.id,'archived':archived,'draft_duplicates':draft_duplicates,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            '''+DUPLICATE_FILTER+''' ORDER BY i.created_at,i.id LIMIT 50001'''),{'org':organization_id,'grant':grant,'export_grant':export_grant,'user':current.id,'archived':archived,'draft_duplicates':draft_duplicates,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         if len(rows)>50000:raise HTTPException(422,'В выгрузке больше 50000 карточек. Уточните фильтр PN, GTIN или ТН ВЭД; неполный файл не формируется.')
         data=workbook([[r[k] or '' for k in ('pn','gtin','tnved','name','brand','category_id')]+[', '.join(r['statuses'] or []),'Есть опубликованная карточка с точным PN' if r['duplicate_draft'] else ''] for r in rows],['PN','GTIN','ТН ВЭД','Название','Товарный знак','ID категории','Статус НК','Совпадение PN'])
         return Response(data,media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="catalog.xlsx"'})

@@ -143,3 +143,24 @@ def test_remote_drafts_and_alternate_model_attribute_use_confirmed_identity(env,
         assert ids=={str(r['id']) for r in (pub,unsigned,official,other)}
         hidden={r['id'] for r in listed(c,env[1],draft_duplicates='only')['items']}
         assert str(draft['id']) in hidden and str(correction['id']) in hidden
+
+
+def test_export_intersects_its_own_scope_with_card_visibility(env,engine):
+    with engine.begin() as db:
+        own=catalog_fixture(db,env[1],env[3]['bm'],'EXPORT-OWN')
+        other=catalog_fixture(db,env[1],env[3]['specialist'],'EXPORT-ASSIGNED')
+        catalog_fixture(db,env[1],env[3]['specialist'],'EXPORT-PRIVATE')
+        db.execute(text('INSERT INTO operation_assignments VALUES (:target,:user)'),{'target':other['id'],'user':env[3]['bm']})
+    with client(env) as c:
+        login(c)
+        for read,export,expected in [('all','own',{'EXPORT-OWN'}),('own','all',{'EXPORT-OWN'}),
+                                     ('all','assigned',{'EXPORT-ASSIGNED'}),('assigned','all',{'EXPORT-ASSIGNED'}),
+                                     ('own','assigned',set())]:
+            with engine.begin() as db:
+                db.execute(text("UPDATE group_grants SET scope=:scope WHERE group_slug='bm' AND permission_id=:permission"),
+                    [{'scope':read,'permission':'nk.cards.view'},{'scope':export,'permission':'nk.export'}])
+            result=c.get('/api/catalog/export',params={'organization_id':str(env[1]),'draft_duplicates':'include'})
+            assert result.status_code==200,result.text
+            assert {r[0] for r in list(load_workbook(BytesIO(result.content)).active.values)[1:]}==expected
+        with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='bm' AND permission_id='nk.export'"))
+        assert c.get('/api/catalog/export',params={'organization_id':str(env[1])}).status_code==403
