@@ -35,6 +35,8 @@ def install_composition(app,actor):
         from ..invoice_excel import xlsx
         source=current.connection.execute(text('SELECT * FROM bm_documents WHERE id=:id'),{'id':id}).mappings().first()
         if not source:raise HTTPException(404,'Накладная не найдена')
+        current.require('marking.documents.view',organization_id=source['organization_id'],owner_id=source['owner_id'])
+        if source['state']=='archived':current.require('documents.archive.view',organization_id=source['organization_id'],owner_id=source['owner_id'])
         current.require('marking.import.preview',organization_id=source['organization_id'],owner_id=source['owner_id'])
         counts=Counter()
         for line in source['lines']:
@@ -46,6 +48,8 @@ def install_composition(app,actor):
         c=current.connection
         source=c.execute(text('SELECT * FROM bm_documents WHERE id=:id'+(' FOR UPDATE' if commit else '')),{'id':id}).mappings().first()
         if not source:raise HTTPException(404,'Накладная не найдена')
+        current.require('marking.documents.view',organization_id=source['organization_id'],owner_id=source['owner_id'])
+        if source['state']=='archived':current.require('documents.archive.view',organization_id=source['organization_id'],owner_id=source['owner_id'])
         current.require('marking.documents.edit',organization_id=source['organization_id'],owner_id=source['owner_id'])
         current.require('marking.import.commit' if commit else 'marking.import.preview',organization_id=source['organization_id'],owner_id=source['owner_id'])
         row=c.execute(text("SELECT * FROM business_items WHERE source_id=:id AND kind='marking' AND state<>'archived'"+(' FOR UPDATE' if commit else '')),{'id':id}).mappings().first()

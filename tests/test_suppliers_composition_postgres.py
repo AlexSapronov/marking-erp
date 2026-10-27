@@ -83,6 +83,9 @@ def test_full_invoice_rejects_marked_changes_and_wrong_role_and_file(allocated,e
         correct=c.post('/api/documents/'+str(source)+'/warehouse-composition/preview',params=params,content=full_excel()).json()
         assert c.post('/api/documents/'+str(source)+'/warehouse-composition/commit',params={**params,'sha256':correct['sha256']},content=full_excel(11)).status_code==409
         assert c.get('/api/documents/'+str(source)).json()['document']['revision']==2
+        with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='bm' AND permission_id='marking.documents.view'"))
+        assert c.get('/api/documents/'+str(source)+'/warehouse-composition/template').status_code==403
+        assert c.post('/api/documents/'+str(source)+'/warehouse-composition/preview',params=params,content=full_excel()).status_code==403
     with client(env) as c:
         login(c,'warehouse')
         assert c.post('/api/documents/'+str(source)+'/warehouse-composition/preview',params=params,content=full_excel()).status_code==403
