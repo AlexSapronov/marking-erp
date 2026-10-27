@@ -102,7 +102,7 @@ def test_scan_of_another_task_does_not_wait_for_locked_task(env,engine):
                 if locked:break
                 time.sleep(.02)
             assert locked,'First scan did not reach the authorization fence'
-            independent=pool.submit(scan,b,second)
+            independent=pool.submit(scan,b,second,{'request_id':str(uuid4()),'raw':raw('b')})
             response=independent.result(timeout=3)
             assert response.status_code==200,response.text
         finally:
