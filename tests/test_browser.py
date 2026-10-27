@@ -824,3 +824,46 @@ def test_catalog_published_pn_filter_export_selection_and_mobile(page,live_app,e
     capture(page,'catalog-duplicate-drafts-390')
     page.get_by_label('Раздел',exact=True).select_option('archived')
     expect(page.get_by_label('Совпадения с опубликованными',exact=True)).to_be_disabled()
+
+
+def test_catalog_import_original_workbook_history_and_real_downloads(page,live_app,engine):
+    from playwright.sync_api import expect
+    from test_catalog_import_postgres import source_book,GTIN
+    from openpyxl import load_workbook
+    from io import BytesIO
+    original=source_book()
+    login(page,'specialist');page.locator('#catalog-link').click()
+    page.get_by_role('button',name='Импорт Excel',exact=True).click()
+    page.get_by_label('Файл Excel',exact=True).set_input_files({'name':'Source.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':original})
+    page.get_by_role('button',name='Предпросмотр',exact=True).click()
+    expect(page.get_by_role('heading',name='Строк: 3 · Лист: Товары',exact=True)).to_be_visible()
+    expect(page.get_by_text('Полный повтор строки 2',exact=False)).to_be_visible()
+    # Reopen the saved preview before committing, to exercise recovery from closing the upload dialog.
+    page.locator('#business-dialog [data-close]').click()
+    page.get_by_role('button',name='Партии импорта',exact=True).click()
+    page.get_by_role('button',name='Открыть партию',exact=True).click()
+    page.get_by_label('Причина продолжения при совпадениях',exact=True).fill('Confirmed different manufacturer')
+    page.get_by_role('button',name='Создать локальные карточки',exact=True).click()
+    expect(page.locator('#business-title')).to_have_text('Импорт НК · Source.xlsx')
+    expect(page.get_by_text('Завершено · Строк: 3 · Карточек: 2',exact=True)).to_be_visible()
+    with page.expect_download() as source:page.get_by_role('link',name='Скачать исходный Excel',exact=True).click()
+    assert Path(source.value.path()).read_bytes()==original
+    with engine.begin() as c:
+        row=c.execute(text("SELECT body FROM business_items WHERE kind='import'")).scalar_one()
+        # Local fixture GTIN only. No external service is called by this scenario.
+        c.execute(text("UPDATE business_items SET body=jsonb_set(body,'{gtin}',to_jsonb(CAST(:gtin AS text))) WHERE id=:id"),{'id':row['card_ids'][0],'gtin':GTIN})
+    with page.expect_download() as result:page.get_by_role('link',name='Скачать исходную книгу с GTIN',exact=True).click()
+    book=load_workbook(BytesIO(Path(result.value.path()).read_bytes()))
+    assert book['Товары']['F2'].value==book['Товары']['F4'].value==GTIN
+    assert book['Товары']['A3'].value is None and book['Справка']['A1'].value=='Unchanged second sheet'
+    expect(page.get_by_role('button',name='Строка 2 · 00123 · Brand',exact=True)).to_be_visible()
+    expect(page.get_by_role('button',name='Строка 5 · 00123 · Other Brand',exact=True)).to_be_visible()
+    capture(page,'catalog-import-result-desktop')
+    page.locator('#business-dialog [data-close]').click()
+    page.get_by_role('button',name='Партии импорта',exact=True).click()
+    page.get_by_role('button',name='Открыть партию',exact=True).click()
+    expect(page.locator('#business-title')).to_have_text('Импорт НК · Source.xlsx')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page,'catalog-import-result-390')
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0

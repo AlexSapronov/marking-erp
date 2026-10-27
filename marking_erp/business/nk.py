@@ -9,7 +9,7 @@ import httpx
 from fastapi import Depends,HTTPException,Request,Response,Query
 from pydantic import Field,StrictInt
 from sqlalchemy import text
-from openpyxl import load_workbook
+from . import catalog_excel
 import xlsxwriter
 from ..auth_routes import Body
 from ..gs1 import valid_gtin
@@ -256,7 +256,7 @@ def install_nk(app,actor,settings):
             AND (:grant='all' OR (:grant='own' AND owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
             AND (title ILIKE :q ESCAPE '!' OR body->>'pn' ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
             {duplicate_filter} ORDER BY i.created_at DESC,i.id DESC LIMIT 26'''),{'org':organization_id,'kind':kind,'archived':archived,'draft_duplicates':draft_duplicates,'before':str(before_id) if before_id else None,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
-        return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('external','rows','payloads')},'external_status':r['body'].get('external',{}).get('statuses',[])} for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
+        return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('external','rows','row_links','payloads')},'external_status':r['body'].get('external',{}).get('statuses',[])} for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
     @app.get('/api/catalog/export')
     def export(organization_id:UUID,q:str=Query('',max_length=120),archived:bool=False,draft_duplicates:str=Query('hide',pattern='^(hide|include|only)$'),current=dep):
         export_grant=current.require('nk.export',organization_id=organization_id,owner_id=current.id,assigned=True)
@@ -335,34 +335,43 @@ def install_nk(app,actor,settings):
         if current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='sync' AND organization_id=:org AND state='processing' AND id<>:id)"),{'org':row['organization_id'],'id':id}).scalar_one():raise HTTPException(409,'Другая синхронизация уже выполняется')
         return s.save(current,row,'sync_resumed',body={**row['body'],'error':'','sync_actor':str(current.id)},state='processing')
     @app.post('/api/catalog-import/preview')
-    async def preview(request:Request,organization_id:UUID,current=dep):
+    async def preview(request:Request,organization_id:UUID,sheet_name:str|None=Query(None,max_length=120),filename:str=Query('catalog.xlsx',max_length=160),current=dep):
         current.require('nk.import.preview',organization_id=organization_id,owner_id=current.id)
         chunks=[];size=0
         async for chunk in request.stream():
             size+=len(chunk)
             if size>10*1024*1024:raise HTTPException(413,'Файл больше 10 МБ')
             chunks.append(chunk)
-        try:book=load_workbook(BytesIO(b''.join(chunks)),read_only=True,data_only=True)
+        content=b''.join(chunks)
+        try:source=catalog_excel.read(content,sheet_name)
+        except ValueError as error:raise HTTPException(422,str(error)) from None
         except Exception:raise HTTPException(422,'Не удалось прочитать XLSX') from None
-        try:
-            sheet=book.active;iterator=sheet.iter_rows(values_only=True);header=next(iterator,());mapping={}
-            aliases={'pn':('pn','артикул','модель'),'gtin':('gtin',),'tnved':('тнвэд','тн вэд'),'name':('название','наименование'),'brand':('товарный знак','бренд'),'category_id':('id категории','category_id')}
-            for k,names in aliases.items():mapping[k]=next((i for i,v in enumerate(header) if str(v or '').strip().casefold() in names),None)
-            if mapping['pn'] is None or mapping['tnved'] is None:raise HTTPException(422,'Шапка Excel должна содержать PN и ТН ВЭД; дополнительные поля: GTIN, Название, Товарный знак, ID категории')
-            rows=[]
-            for n,row in enumerate(iterator,2):
-                if n>2001:raise HTTPException(422,'До 2000 строк за один импорт')
-                if not any(v is not None for v in row):continue
-                values={k:row[i] if i is not None and i<len(row) else '' for k,i in mapping.items()}
-                for k in values:
-                    v=values[k];values[k]=str(int(v)) if isinstance(v,(int,float)) and v==int(v) else str(v or '').strip()
-                if values['gtin']:values['gtin']=values['gtin'].zfill(14)
-                if values['tnved']:values['tnved']=values['tnved'].zfill(10)
-                values['name']=values['name'] or values['pn'];values['category_id']=int(values['category_id'] or 0)
-                try:data=normalize(Card(organization_id=organization_id,**values));matches=duplicates(current.connection,organization_id,data);rows.append({'row':n,'data':data,'duplicates':matches,'error':''})
-                except Exception:rows.append({'row':n,'data':values,'duplicates':[],'error':'Проверьте PN, GTIN, ТН ВЭД и ID категории'})
-            result=s.create(current,'import','Импорт Excel НК',{'rows':rows},organization_id);return {'id':result['id'],'rows':rows}
-        finally:book.close()
+        rows=[];seen={}
+        for r in source['rows']:
+            values=r['values'];error=r['error'];matches=[];data=values
+            try:
+                values['category_id']=int(values['category_id'] or 0)
+                data=normalize(Card(organization_id=organization_id,**values))
+                matches=duplicates(current.connection,organization_id,data)
+            except Exception:error=error or 'Проверьте PN, GTIN, ТН ВЭД и ID категории'
+            key=sha256(json.dumps(data,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+            duplicate_row=seen.get(key);seen.setdefault(key,r['row'])
+            rows.append({'row':r['row'],'data':data,'duplicates':matches,'error':error,'duplicate_row':duplicate_row})
+        meta={k:v for k,v in source.items() if k!='rows'}
+        result=s.create(current,'import','Импорт НК · '+filename,{'rows':rows,'source_meta':meta,'source_sha256':sha256(content).hexdigest(),'filename':filename},organization_id)
+        s.artifact(current,result,'catalog_import_source','catalog-source.xlsx',content,catalog_excel.MIME,{'sheet_name':source['sheet_name']})
+        return {'id':result['id'],'revision':result['revision'],'rows':rows,'sheet_name':source['sheet_name'],'sheet_names':source['sheet_names']}
+    def import_source(current,row):
+        file=current.connection.execute(text("SELECT * FROM business_artifacts WHERE item_id=:id AND kind='catalog_import_source' ORDER BY version LIMIT 1"),{'id':row['id']}).mappings().first()
+        if not file:raise HTTPException(404,'Исходный Excel не сохранён для этой старой партии')
+        data=bytes(file['body'])
+        if sha256(data).hexdigest()!=file['sha256'] or file['sha256']!=row['body'].get('source_sha256'):raise HTTPException(503,'Исходный файл повреждён')
+        return data
+    @app.get('/api/catalog-import/{id}/source')
+    def source_download(id:UUID,current=dep):
+        row=s.get(current,id,'import',permission='nk.export');data=import_source(current,row)
+        s.record(current,row,'import_source_downloaded')
+        return Response(data,media_type=catalog_excel.MIME,headers={'Content-Disposition':'attachment; filename="catalog-source.xlsx"'})
     @app.post('/api/catalog-import/{id}/pipeline')
     def pipeline(id:UUID,body:Action,current=dep):
         row=s.get(current,id,'import',True,'nk.bulk_creation.execute')
@@ -373,19 +382,53 @@ def install_nk(app,actor,settings):
     @app.get('/api/catalog-import/{id}/export')
     def export_import(id:UUID,current=dep):
         row=s.get(current,id,'import',permission='nk.export');values=[]
+        ids=[UUID(v) for v in row['body'].get('card_ids',[])];grants=current.grants()
+        allowed=current.connection.execute(text('''SELECT i.* FROM business_items i WHERE i.id=ANY(CAST(:ids AS uuid[]))
+            AND i.organization_id=:org AND i.kind='card'
+            AND (:view='all' OR (:view='own' AND i.owner_id=:user) OR (:view='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
+            AND (:export='all' OR (:export='own' AND i.owner_id=:user) OR (:export='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))'''),
+            {'ids':ids,'org':row['organization_id'],'user':current.id,'view':grants.get('nk.cards.view'),'export':grants.get('nk.export')}).mappings().all()
+        cards={str(v['id']):dict(v) for v in allowed}
+        if set(cards)!={str(v) for v in ids}:raise HTTPException(403,'Нет права выгрузить одну или несколько карточек партии')
         for card_id in row['body'].get('card_ids',[]):
-            card=s.get(current,UUID(card_id),'card');d=card['body'];values.append([d['pn'],d['tnved'],d['brand'],d['gtin'],', '.join(d.get('external',{}).get('statuses',[]))])
-        return Response(workbook(values,['PN','ТН ВЭД','Товарный знак','GTIN','Статус НК']),media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="creation-result.xlsx"'})
+            d=cards[card_id]['body'];values.append([d['pn'],d['tnved'],d['brand'],d['gtin'],', '.join(d.get('external',{}).get('statuses',[]))])
+        if row['body'].get('source_meta'):
+            if 'row_links' not in row['body']:raise HTTPException(409,'Сначала создайте карточки из предпросмотра')
+            results={}
+            for link in row['body']['row_links']:
+                card=cards[link['card_id']];d=card['body']
+                if {k:d.get(k,'') for k in ('pn','brand','tnved')}!=link['identity']:
+                    results[link['row']]=['','PN, бренд или ТН ВЭД карточки изменены; требуется сверка']
+                    continue
+                state=', '.join(d.get('external',{}).get('statuses',[])) or 'Локальная карточка'
+                if d.get('dirty') and d.get('external'):state+='; есть неподтверждённые локальные изменения'
+                if card['state']=='archived':state+='; архив ERP'
+                result=row['body'].get('results',{}).get(link['card_id'])
+                if result:state+='; '+result
+                results[link['row']]=[d.get('gtin',''),state]
+            try:data=catalog_excel.append_results(import_source(current,row),row['body']['source_meta'],results)
+            except ValueError as error:raise HTTPException(422,str(error)) from None
+        else:data=workbook(values,['PN','ТН ВЭД','Товарный знак','GTIN','Статус НК'])
+        s.record(current,row,'import_result_downloaded')
+        return Response(data,media_type=catalog_excel.MIME,headers={'Content-Disposition':'attachment; filename="creation-result.xlsx"'})
     @app.post('/api/catalog-import/{id}/commit')
     def commit(id:UUID,body:Selection,current=dep):
-        row=s.get(current,id,'import',True,'nk.import.commit');s.version(row,body.revision)
+        row=s.get(current,id,'import',True,'nk.import.commit')
+        request_hash=sha256(json.dumps(body.model_dump(mode='json'),sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+        if row['body'].get('commit_sha256')==request_hash:
+            for card_id in row['body']['card_ids']:s.get(current,UUID(card_id),'card')
+            return {'card_ids':row['body']['card_ids'],'row_links':row['body']['row_links']}
+        s.version(row,body.revision)
         if row['state']!='draft':raise HTTPException(409,'Импорт уже обработан')
-        ids=[];seen=set()
+        if body.ids!=[id]:raise HTTPException(422,'Подтверждение должно относиться к этой партии импорта')
+        ids=[];seen={};links=[]
         for r in row['body']['rows']:
             if r['error']:raise HTTPException(422,'Исправьте ошибки в Excel и загрузите заново')
-            data=r['data'];key=(data['pn'].casefold(),data['gtin'])
-            if key in seen:continue
-            seen.add(key);check_duplicate(current.connection,row['organization_id'],data,body.reason)
-            data={**data,'dirty':True};card=s.create(current,'card',data['pn'],data,row['organization_id']);ids.append(str(card['id']))
-            s.record(current,card,'imported',{'source':str(id),'duplicate_reason':body.reason})
-        s.save(current,row,'import_committed',body={**row['body'],'card_ids':ids},state='done');return {'card_ids':ids}
+            data=r['data'];key=sha256(json.dumps(data,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+            if key not in seen:
+                check_duplicate(current.connection,row['organization_id'],data,body.reason)
+                card=s.create(current,'card',data['pn'],{**data,'dirty':True},row['organization_id']);card_id=str(card['id']);ids.append(card_id);seen[key]=card_id
+                s.record(current,card,'imported',{'source':str(id),'duplicate_reason':body.reason})
+            links.append({'row':r['row'],'card_id':seen[key],'identity':{k:data.get(k,'') for k in ('pn','brand','tnved')}})
+        s.save(current,row,'import_committed',body={**row['body'],'card_ids':ids,'row_links':links,'commit_sha256':request_hash},state='done')
+        return {'card_ids':ids,'row_links':links}
