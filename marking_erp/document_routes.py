@@ -159,7 +159,7 @@ def install_documents(app,actor):
         return {**result,'policy_versions':policy['versions'],'external_calls':False}
 
     @app.get('/api/documents')
-    def listing(organization_id:UUID,archived:bool=False,q:str=Query('',max_length=120),before_id:UUID|None=None,current=dep):
+    def listing(organization_id:UUID,archived:bool=False,q:str=Query('',max_length=120),before_id:UUID|None=None,stage:str=Query('all',pattern='^(all|composition_requested|warehouse_ready)$'),current=dep):
         permission='documents.archive.view' if archived else 'marking.documents.view'
         grant=current.grants().get(permission)
         view=current.grants().get('marking.documents.view')
@@ -170,11 +170,12 @@ def install_documents(app,actor):
             (SELECT i.body->'warehouse_composition'->>'state' FROM business_items i WHERE i.source_id=d.id AND i.kind='marking' AND i.state<>'archived') AS warehouse_stage,
             jsonb_array_length(d.lines) AS line_count,(SELECT sum((l->>'labels')::bigint) FROM jsonb_array_elements(d.lines) l) AS labels
             FROM bm_documents d WHERE d.organization_id=:org AND (d.state='archived')=:archived
+            AND (:stage='all' OR EXISTS(SELECT 1 FROM business_items w WHERE w.source_id=d.id AND w.kind='marking' AND w.state<>'archived' AND w.body->'warehouse_composition'->>'state'=CASE WHEN :stage='composition_requested' THEN 'requested' ELSE 'ready' END))
             AND (:grant='all' OR (:grant='own' AND d.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
             AND (:view='all' OR (:view='own' AND d.owner_id=:user) OR (:view='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=d.id AND a.user_id=:user)))
             AND (CAST(:before AS uuid) IS NULL OR (d.created_at,d.id)<(SELECT created_at,id FROM bm_documents WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (d.number ILIKE :q ESCAPE '!' OR {expression('d.supplier','d.organization_id')} ILIKE :q ESCAPE '!' OR EXISTS(SELECT 1 FROM jsonb_array_elements(d.lines) l WHERE l->>'pn' ILIKE :q ESCAPE '!'))
-            ORDER BY d.created_at DESC,d.id DESC LIMIT 26'''),{'org':organization_id,'archived':archived,'grant':grant,'view':view,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            ORDER BY d.created_at DESC,d.id DESC LIMIT 26'''),{'org':organization_id,'archived':archived,'stage':stage,'grant':grant,'view':view,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'documents':[dict(r) for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None,'external_dispatch_available':False}
 
     @app.post('/api/documents')

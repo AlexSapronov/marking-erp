@@ -37,6 +37,8 @@ def test_logistics_returns_to_bm_full_excel_adds_only_information_and_keeps_km(a
     with client(env) as c:
         login(c);doc=c.get('/api/documents/'+str(source)).json()['document']
         assert doc['warehouse_composition']['state']=='requested'
+        queue=c.get('/api/documents',params={'organization_id':str(env[1]),'stage':'composition_requested'}).json()['documents']
+        assert [v['id'] for v in queue]==[str(source)]
         params={'revision':doc['marking_revision'],'source_revision':doc['revision']}
         preview=c.post('/api/documents/'+str(source)+'/warehouse-composition/preview',params=params,content=data)
         assert preview.status_code==200,preview.text

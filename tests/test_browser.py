@@ -676,12 +676,12 @@ def test_logistics_handback_full_excel_in_bm_ui(page,browser,live_app,engine):
     expect(page.get_by_text('Документ возвращён в БМ. Ожидается полный Excel поставки.',exact=True)).to_be_visible()
     context=browser.new_context(viewport={'width':1440,'height':900},locale='ru-RU');bm=context.new_page();errors=[];bm.on('pageerror',lambda e:errors.append(str(e)))
     try:
-        bm.goto(live_app['base']);login(bm,'bm');bm.locator('#documents-link').click();expect(bm.get_by_text('Дополнить состав для склада',exact=True)).to_be_visible();bm.get_by_role('button',name='Открыть',exact=True).click()
+        bm.goto(live_app['base']);login(bm,'bm');bm.locator('#documents-link').click();bm.get_by_label('Раздел',exact=True).select_option('composition_requested');expect(bm.get_by_text('Дополнить состав для склада',exact=True)).to_be_visible();bm.get_by_role('button',name='Открыть',exact=True).click()
         bm.get_by_label('Полный Excel поставки',exact=True).set_input_files({'name':'full.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':full_excel()})
         bm.get_by_role('button',name='Проверить полный Excel',exact=True).click()
         expect(bm.get_by_text('Маркированных позиций сверено: 1. Немаркируемых строк: 2.',exact=True)).to_be_visible()
         capture(bm,'bm-full-invoice-preview')
-        bm.get_by_role('button',name='Сохранить полный состав и вернуть логисту',exact=True).click();expect(bm.locator('#document-dialog')).to_be_hidden();expect(bm.get_by_text('Полный состав готов',exact=True)).to_be_visible()
+        bm.get_by_role('button',name='Сохранить полный состав и вернуть логисту',exact=True).click();expect(bm.locator('#document-dialog')).to_be_hidden();bm.get_by_label('Раздел',exact=True).select_option('warehouse_ready');expect(bm.get_by_text('Полный состав готов',exact=True)).to_be_visible()
         bm.set_viewport_size({'width':390,'height':844});assert bm.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(bm,'bm-full-invoice-390')
         assert not errors,errors
     finally:context.close()

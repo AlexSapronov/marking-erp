@@ -2,9 +2,9 @@ const states={draft:'Черновик',prepared:'Состав проверен �
 const historyNames={created:'Создана',edited:'Изменён состав',prepared:'Состав проверен локально',archived:'Остановлена и архивирована',restored:'Возвращена в черновики'};
 const fields=[['pn','PN'],['gtin','GTIN'],['quantity','Штук в этикетке'],['labels','Этикеток'],['tnved','ТН ВЭД']];
 export function createDocuments({state,$,api,node,button,heading,notice,report,openDialog,closeDialog}){
-  let generation=0,editSeq=0,org='',query='',archived=false,cursors=[null],page=0,editor=null;
+  let generation=0,editSeq=0,org='',query='',archived=false,warehouseStage='all',cursors=[null],page=0,editor=null;
   const can=p=>Boolean(state.session?.permissions[p]);
-  function reset(){generation++;editSeq++;editor=null;$('document-content').replaceChildren();}
+  function reset(){generation++;editSeq++;editor=null;warehouseStage='all';org='';query='';archived=false;page=0;cursors=[null];$('document-content').replaceChildren();}
   $('document-dialog').addEventListener('close',()=>{editSeq++;editor=null;$('document-content').replaceChildren();});
   function label(text,control){const wrap=node('label',text);control.setAttribute('aria-label',text);wrap.append(control);return wrap;}
   function input(text,value='',type='text'){const i=node('input');i.type=type;i.value=value;return [label(text,i),i];}
@@ -18,11 +18,11 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     host.replaceChildren(heading('Накладные БМ','Подготовка состава, проверка и архив. Эмиссия и нанесение доступны в разделе «Маркировка».',actions));
     const form=node('form',undefined,'filters document-filters'),organizations=node('select');for(const o of state.session.organizations)organizations.append(new Option(o.name,o.id));organizations.value=org;organizations.addEventListener('change',()=>{org=organizations.value;cursors=[null];page=0;show();});
     const search=node('input');search.value=query;search.placeholder='Номер, поставщик или PN';
-    const scope=node('select');scope.append(new Option('В работе','active'));if(can('documents.archive.view'))scope.append(new Option('Архив','archived'));if(!can('documents.archive.view'))archived=false;scope.value=archived?'archived':'active';scope.addEventListener('change',()=>{archived=scope.value==='archived';cursors=[null];page=0;show();});
+    const scope=node('select');scope.append(new Option('В работе','active'),new Option('Вернулись из логистики','composition_requested'),new Option('Полный состав готов','warehouse_ready'));if(can('documents.archive.view'))scope.append(new Option('Архив','archived'));if(!can('documents.archive.view'))archived=false;scope.value=archived?'archived':warehouseStage==='all'?'active':warehouseStage;scope.addEventListener('change',()=>{archived=scope.value==='archived';warehouseStage=['composition_requested','warehouse_ready'].includes(scope.value)?scope.value:'all';cursors=[null];page=0;show();});
     form.append(label('Организация',organizations),label('Поиск накладных',search),label('Раздел',scope));const apply=node('button','Найти');apply.type='submit';form.append(apply);form.addEventListener('submit',e=>{e.preventDefault();query=search.value;cursors=[null];page=0;show();});host.append(form);
     const panel=node('section',undefined,'panel table-panel');panel.id='document-list';panel.append(node('p','Загружаем накладные…','empty'));host.append(panel);
     try{
-      const params=new URLSearchParams({organization_id:org,archived,q:query});if(cursors[page])params.set('before_id',cursors[page]);const data=await api('/api/documents?'+params);
+      const params=new URLSearchParams({organization_id:org,archived,q:query,stage:warehouseStage});if(cursors[page])params.set('before_id',cursors[page]);const data=await api('/api/documents?'+params);
       if(seq!==generation||state.route!=='/documents')return;panel.replaceChildren();
       if(!data.documents.length)panel.append(node('p',archived?'Архив пуст.':'Нет накладных по выбранным условиям. Создайте накладную или измените поиск.','empty'));
       else{panel.append(node('p','Таблицу накладных можно прокрутить вправо.','document-scroll-hint'));const wrap=node('div',undefined,'table-wrap'),table=node('table');wrap.tabIndex=0;wrap.setAttribute('aria-label','Реестр накладных, прокручиваемая таблица');table.append(node('caption','Накладные','sr-only'));const head=node('thead'),tr=node('tr');for(const text of ['Номер / дата','Поставщик','Состав','Состояние','Действия'])tr.append(node('th',text));head.append(tr);table.append(head);const body=node('tbody');
