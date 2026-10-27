@@ -212,6 +212,9 @@ def install_warehouse(app, actor, settings=None):
             if existing['task_id']==id and bytes(existing['payload'])==parsed.normalized and existing['removed_at'] is None and (body.line_index is None or body.line_index==existing['line_index']): return {'id':existing['id'],'replayed':True}
             raise HTTPException(409, 'Запрос уже использован. Обновите задание.')
         writable(current,task)
+        if task['kind']=='shipment':
+            from .incidents import enforce
+            enforce(c,task['organization_id'],'shipment',cises=[parsed.cis],targets=[task['id'],task['source_id']])
         duplicate=c.execute(text('SELECT id FROM warehouse_scans WHERE task_id=:id AND cis=:cis AND removed_at IS NULL'), {'id':id,'cis':parsed.cis}).scalar_one_or_none()
         if duplicate: raise HTTPException(409, {'code':'duplicate_scan','message':'Этот КМ уже отсканирован. При ошибке удалите ранее принятый скан.','scan_id':str(duplicate)})
         candidates=[i for i,r in enumerate(task['lines']) if r.get('marked',True) and r['gtin']==parsed.gtin and r['quantity']==quantity]
@@ -258,6 +261,9 @@ def install_warehouse(app, actor, settings=None):
         if action=='close':
             writable(current,task)
             if any(r['scanned']!=r['labels'] or r['units']!=r['expected_units'] for r in summary(current,task)): raise HTTPException(409, 'Есть расхождения. Отсканируйте недостающие КМ.')
+            from .incidents import enforce
+            accepted=current.connection.execute(text('SELECT cis FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL'),{'id':id}).scalars().all()
+            enforce(current.connection,task['organization_id'],task['kind'],cises=list(accepted)+task['expected_codes'],targets=[task['id'],task['source_id']])
             config=live_policy(current,task)
             if config and any(r.get('marked',True) for r in task['lines']):
                 scans=[dict(r) for r in current.connection.execute(text('SELECT cis,gtin,quantity FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL'),{'id':id}).mappings()]
@@ -279,6 +285,9 @@ def install_warehouse(app, actor, settings=None):
         task=get(current,id);require(current,task,'export')
         if task['kind']!='shipment': raise HTTPException(403, 'Экспорт доступен для отгрузки')
         if task['state']!='closed': raise HTTPException(409,'Итоговая выгрузка доступна после полной сверки и закрытия отгрузки')
+        from .incidents import enforce
+        cises=current.connection.execute(text('SELECT cis FROM warehouse_scans WHERE task_id=:id AND removed_at IS NULL'),{'id':id}).scalars().all()
+        enforce(current.connection,task['organization_id'],'shipment',cises=cises,targets=[task['id'],task['source_id']])
         out=BytesIO();book=xlsxwriter.Workbook(out,{'in_memory':True,'strings_to_formulas':False,'strings_to_urls':False});sheet=book.add_worksheet('Отгрузка')
         sheet.write_row(0,0,['PN','GTIN','Количество','КМ (GS = <GS>)','Сотрудник','Дата сканирования'])
         rows=current.connection.execute(text('SELECT s.line_index,s.gtin,s.quantity,s.payload,u.display_name,s.created_at FROM warehouse_scans s JOIN users u ON u.id=s.actor_id WHERE s.task_id=:id AND s.removed_at IS NULL ORDER BY s.line_index,s.created_at'), {'id':id}).mappings()

@@ -278,6 +278,8 @@ def install_marking(app,actor,settings):
         current.require('split.operations.create',organization_id=body.organization_id,owner_id=current.id)
         try:code=gs1.parse(body.raw.encode('ascii'),scanner=True)
         except (UnicodeError,ValueError):raise HTTPException(422,'Не удалось прочитать полный КМ') from None
+        from ..incidents import enforce
+        enforce(current.connection,body.organization_id,'split',cises=[code.cis])
         if code.gtin.startswith('029'):raise HTTPException(422,'REAPPLY для технического GTIN 029 недоступен')
         c=current.connection;existing=c.execute(text('SELECT * FROM business_items WHERE id=:id'),{'id':body.request_id}).mappings().first()
         if existing:
@@ -442,6 +444,11 @@ def install_marking(app,actor,settings):
         if file['kind'] not in ('reprint','warehouse_invoice'):s.require(current,row,permission)
         if row['body'].get('codes_released') and file['kind'].startswith('labels'):raise HTTPException(409,'КМ возвращены в общий пул; прежние этикетки больше не используются')
         if file['kind'].startswith('labels') and current.connection.execute(text("SELECT EXISTS(SELECT 1 FROM business_codes WHERE item_id=:id AND state='withdrawn')"),{'id':row['id']}).scalar_one():raise HTTPException(409,'В документе есть заменённый КМ. Прежний комплект этикеток использовать нельзя.')
+        if file['kind'].startswith('labels') or file['kind']=='reprint':
+            from ..incidents import enforce
+            selected=[file['snapshot']['code_id']] if file['kind']=='reprint' else None
+            cises=current.connection.execute(text('SELECT cis FROM business_codes WHERE item_id=:id AND (CAST(:selected AS uuid[]) IS NULL OR id=ANY(CAST(:selected AS uuid[])))'),{'id':row['id'],'selected':selected}).scalars().all()
+            enforce(current.connection,row['organization_id'],'reprint',cises=cises,targets=[row['id'],row['source_id']])
         data=bytes(file['body'])
         if sha256(data).hexdigest()!=file['sha256']:raise HTTPException(503,'Файл повреждён')
         s.record(current,row,'file_downloaded',{'artifact':str(id),'version':file['version']})

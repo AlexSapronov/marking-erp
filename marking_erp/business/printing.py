@@ -110,6 +110,9 @@ def authorize_job(c,job):
         latest=c.execute(text("SELECT id FROM business_artifacts WHERE item_id=:item AND kind='labels_pdf' ORDER BY version DESC LIMIT 1"),{'item':item['id']}).scalar_one_or_none()
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_codes WHERE item_id=:id AND state='withdrawn')"),{'id':item['id']}).scalar_one():raise HTTPException(409,'В комплекте есть заменённые КМ')
         if latest!=file['id']:raise HTTPException(409,'Версия этикеток изменилась')
+    from ..incidents import enforce
+    cises=c.execute(text('SELECT cis FROM business_codes WHERE item_id=:id'),{'id':item['id']}).scalars().all()
+    enforce(c,item['organization_id'],'reprint',cises=cises,targets=[item['id'],item['source_id']])
     if sha256(bytes(file['body'])).hexdigest()!=file['sha256']:raise HTTPException(503,'PDF повреждён')
     return file
 
@@ -125,6 +128,8 @@ def install_printing(app,actor,engine):
             if old['actor_id']!=current.id or old['request_sha256']!=fingerprint:raise HTTPException(409,'Идентификатор запроса уже использован')
             return {**public(dict(old)),'file_id':old['artifact_id']}
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='remark' AND body->>'old_code_id'=:id AND state NOT IN ('done','archived'))"),{'id':str(id)}).scalar_one():raise HTTPException(409,'По этому КМ выполняется официальная замена; перепечать старой этикетки остановлена')
+        from ..incidents import enforce
+        enforce(c,code['organization_id'],'reprint',cises=[code['cis']],targets=[item['id'],item['source_id']])
         usable(code,item);policy=snapshot(c,code['organization_id']);rules=policy['values']
         if rules['labels.reprint.reason_required'] and len(body.reason.strip())<8:raise HTTPException(422,'Укажите содержательную причину перепечати (от 8 символов)')
         if body.copies>rules['labels.reprint.max_copies']:raise HTTPException(422,'Превышен разрешённый максимум копий')

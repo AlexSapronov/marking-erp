@@ -91,6 +91,12 @@ class BusinessWorker:
     def dispatch(self,ticket):
         with self.engine.begin() as c:
             link=c.execute(text('SELECT * FROM business_links WHERE operation_id=:id'),{'id':ticket['id']}).mappings().one();row=s.item(c,link['item_id']);config,inn=self.config(c,row['organization_id'])
+            from ..incidents import enforce_business
+            try:enforce_business(c,row,ticket['kind'])
+            except Exception as error:
+                from fastapi import HTTPException
+                if not isinstance(error,HTTPException):raise
+                raise operations.DispatchBlocked('Локальный карантин запрещает эту отправку; сначала разберите инцидент') from None
             if not config.get('writes_enabled') or row['state']=='archived':raise operations.DispatchBlocked('Отправка отключена')
             if row['source_id'] and row['kind']=='marking':
                 source=c.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()

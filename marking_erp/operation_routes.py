@@ -32,6 +32,6 @@ def install_operations(app,actor):
         events=c.execute(text('SELECT id,state,reason,created_at FROM operation_events WHERE operation_id=:id ORDER BY id DESC LIMIT 100'),{'id':id}).mappings().all()
         receipts=c.execute(text('SELECT id,phase,fence,sha256,applied,classification,created_at FROM operation_receipts WHERE operation_id=:id ORDER BY id DESC LIMIT 100'),{'id':id}).mappings().all()
         signature=c.execute(text('SELECT state,fence,signature_sha256,verification_ref,lease_until FROM signer_jobs WHERE operation_id=:id'),{'id':id}).mappings().first()
-        return {'operation':{k:op[k] for k in ('id','kind','state','reason','payload_sha256','contract_version','target_revision','external_id','fence','created_at','updated_at')},
+        return {'operation':{k:op[k] for k in ('id','organization_id','kind','state','reason','payload_sha256','contract_version','target_revision','external_id','fence','created_at','updated_at')},
                 'events':[dict(e) for e in events],'receipts':[dict(r) for r in receipts],'signature':dict(signature) if signature else None,
                 'notice':'Принятие запроса не означает завершение. Неизвестный результат требует сверки; повторная отправка здесь недоступна.'}

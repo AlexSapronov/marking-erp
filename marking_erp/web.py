@@ -75,6 +75,8 @@ def create_app(settings=None, engine=None):
     install_audit(app,app.state.auth_dependency)
     install_documents(app,app.state.auth_dependency)
     install_warehouse(app,app.state.auth_dependency,settings)
+    from .incidents import install_incidents
+    install_incidents(app,app.state.auth_dependency)
     from .business.connections import install_connections
     from .business.nk import install_nk
     from .business.marking import install_marking
@@ -109,6 +111,7 @@ def create_app(settings=None, engine=None):
     @app.get("/groups")
     @app.get("/rules")
     @app.get("/codes")
+    @app.get("/incidents")
     @app.get("/operations")
     @app.get("/system")
     @app.get("/audit")

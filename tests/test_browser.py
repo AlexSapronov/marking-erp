@@ -751,3 +751,40 @@ def test_official_remark_workspace_and_fts_submission_ui_without_external_send(p
     expect(page.get_by_role('button',name='Подписать и подать в ЧЗ',exact=True)).to_be_visible();capture(page,'fts-submit-desktop')
     page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'fts-submit-390')
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+def test_tsd_incident_to_specialist_quarantine_and_release_ui(page,browser,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.policy import snapshot
+    from test_warehouse_postgres import raw,GTIN
+    org=live_app['org'];source=uuid4();task=uuid4();number='INCIDENT-UI-01'
+    with engine.begin() as c:
+        lines=[{'pn':'PN-INCIDENT','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':1}]
+        for id,owner in ((source,live_app['users']['bm']),(task,live_app['users']['logistics'])):
+            c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,2)'),{'id':id,'org':org,'owner':owner})
+        c.execute(text('''INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256)
+            VALUES (:id,:org,:owner,:number,'2026-10-27','Поставщик UI',2,'prepared',CAST(:lines AS jsonb),CAST(:policy AS jsonb),:sha)'''),{'id':source,'org':org,'owner':live_app['users']['bm'],'number':number,'lines':json.dumps(lines),'policy':json.dumps(snapshot(c,org),default=str),'sha':'1'*64})
+        c.execute(text('''INSERT INTO warehouse_tasks(id,organization_id,owner_id,source_id,source_revision,kind,number,supplier,document_date,lines)
+            VALUES (:id,:org,:owner,:source,2,'shipment',:number,'Поставщик UI','2026-10-27',CAST(:lines AS jsonb))'''),{'id':task,'org':org,'owner':live_app['users']['logistics'],'source':source,'number':number,'lines':json.dumps(lines)})
+        c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES (:id,:user)'),{'id':task,'user':live_app['users']['tsd']})
+    login(page,'tsd');expect(page.locator('#incidents-link')).to_be_hidden();page.locator('#shipment-link').click();page.get_by_role('button',name='Открыть задание',exact=True).click()
+    page.get_by_role('button',name='Сообщить о проблеме',exact=True).click();page.get_by_label('Тип проблемы',exact=True).select_option('damaged_label')
+    page.get_by_label('КМ (полный скан или код идентификации)',exact=True).fill(raw());page.get_by_label('Описание проблемы',exact=True).fill('Повреждена этикетка, требуется проверка специалистом')
+    page.get_by_role('button',name='Зарегистрировать проблему',exact=True).click();expect(page.get_by_label('Действие с проблемой',exact=True)).to_be_visible()
+    assert page.get_by_label('Действие с проблемой',exact=True).locator('option').all_text_contents()==['Добавить комментарий']
+    page.locator('#incident-dialog [data-close]').click()
+    context=browser.new_context(viewport={'width':1440,'height':900},locale='ru-RU');manager=context.new_page();errors=[];manager.on('pageerror',lambda e:errors.append(str(e)))
+    try:
+        manager.goto(live_app['base']);login(manager,'specialist');manager.locator('#incidents-link').click();manager.get_by_role('button',name='Открыть проблему',exact=True).click()
+        manager.get_by_label('Действие с проблемой',exact=True).select_option('assign');manager.get_by_label('Новый ответственный',exact=True).select_option(str(live_app['users']['specialist']));manager.get_by_label('Комментарий к действию',exact=True).fill('Специалист принял обращение склада');manager.get_by_role('button',name='Сохранить действие',exact=True).click()
+        manager.get_by_label('Действие с проблемой',exact=True).select_option('quarantine');manager.get_by_label('Отгрузка и её выгрузка',exact=True).check();manager.get_by_label('Комментарий к действию',exact=True).fill('Отгрузка остановлена до проверки повреждённой этикетки');manager.get_by_role('button',name='Сохранить действие',exact=True).click()
+        expect(manager.get_by_text('Ограничено: Отгрузка и её выгрузка',exact=True)).to_be_visible();capture(manager,'incident-quarantine-desktop')
+        page.get_by_label('Сканируйте Data Matrix',exact=True).fill(raw());page.get_by_role('button',name='Принять скан',exact=True).click();expect(page.locator('#warehouse-content .error-message')).to_contain_text('локальным карантином')
+        page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'incident-tsd-blocked-390')
+        manager.get_by_label('Действие с проблемой',exact=True).select_option('resolve');manager.get_by_label('Комментарий к действию',exact=True).fill('Этикетка проверена, отгрузка может продолжаться');manager.get_by_role('button',name='Сохранить действие',exact=True).click();expect(manager.get_by_text('Активных ограничений карантина нет.',exact=True)).to_be_visible()
+        manager.set_viewport_size({'width':390,'height':844});assert manager.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(manager,'incident-resolved-390')
+        page.get_by_role('button',name='Принять скан',exact=True).click();expect(page.locator('.warehouse-metrics strong')).to_have_text('1 / 1 КМ')
+        assert not errors,errors
+    finally:context.close()
+    with engine.connect() as c:
+        assert c.execute(text('SELECT status FROM incidents')).scalar_one()=='resolved'
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
