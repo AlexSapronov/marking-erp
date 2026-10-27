@@ -47,6 +47,8 @@ def idle(c,id):
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_links l JOIN external_operations o ON o.id=l.operation_id WHERE l.item_id=:id AND o.state NOT IN ('confirmed','rejected','cancelled_before_dispatch'))"),{'id':id}).scalar_one():raise HTTPException(409,'Есть незавершённая внешняя операция. Сначала проверьте её результат.')
 
 def queue(current,row,step,payload,metadata=None):
+    from ..incidents import enforce_business
+    enforce_business(current.connection,row,step)
     from .contracts import register
     register(current.connection)
     id=uuid4();c=current.connection

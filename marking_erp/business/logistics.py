@@ -28,6 +28,8 @@ def facts(c,row):
     current_codes=effective(c,[v['id'] for v in codes])
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='remark' AND source_id=:id AND state NOT IN ('done','archived'))"),{'id':source['id']}).scalar_one():blockers.append('Есть незавершённая официальная перемаркировка')
     if len(codes)!=sum(v['labels'] for v in row['body']['lines']) or any(v['state']!='applied' for v in current_codes.values()):blockers.append('Не все КМ подтверждены как нанесённые')
+    from ..incidents import blockers as quarantine_blockers
+    if any(quarantine_blockers(c,row['organization_id'],a,cises=[v['cis'] for v in current_codes.values()],targets=[source['id'],row['id']]) for a in ('receipt','shipment','external')):blockers.append('Есть активные ограничения локального карантина по накладной или её КМ')
     wanted={str(v['id']) for v in codes}
     atks=c.execute(text("SELECT id,state,revision,body FROM business_items WHERE organization_id=:org AND kind='atk' AND state<>'archived' AND body->'documents' @> CAST(:doc AS jsonb)"),{'org':row['organization_id'],'doc':'["'+str(row['id'])+'"]'}).mappings().all()
     covered=set()

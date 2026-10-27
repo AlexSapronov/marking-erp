@@ -46,6 +46,7 @@ print(json.dumps(sorted([d.metadata['Name']+'=='+d.version for d in importlib.me
         shutil.copy2(repo/'docs/MVP-WAREHOUSE.md',bundle/'MVP-WAREHOUSE.md')
         shutil.copy2(repo/'docs/BUSINESS-MVP.md',bundle/'BUSINESS-MVP.md')
         shutil.copy2(repo/'docs/LABEL-AND-OFFICIAL-FLOWS.md',bundle/'LABEL-AND-OFFICIAL-FLOWS.md')
+        shutil.copy2(repo/'docs/architecture/INCIDENTS.md',bundle/'INCIDENTS.md')
         shutil.copytree(repo/'deploy/windows',bundle/'deploy/windows')
         release={'sha':a.sha,'schema_revision':schema_head(),'os':'ubuntu','version':'24.04','machine':'x86_64','python':'3.12'}
         (bundle/'release.json').write_text(json.dumps(release,indent=2)+'\n')
