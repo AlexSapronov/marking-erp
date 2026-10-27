@@ -81,3 +81,14 @@ def test_revoked_access_and_unknown_printer_outcome_do_not_emit_more_copies(allo
         with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='specialist' AND permission_id='labels.reprint'"))
         assert c.get('/api/business-files/'+file).status_code==403
         assert c.post('/api/reprints/'+rid+'/printed').status_code==403
+
+def test_revoked_print_confirmation_cancels_a_queued_reprint_before_agent_delivery(allocated,engine):
+    env,item,source,code=allocated
+    with engine.begin() as db:device,token=register_printer(db,env[1],'Warehouse','Label Printer')
+    with client(env) as c,client(env) as agent:
+        login(c,'specialist');rid=str(uuid4());file=c.post('/api/business-codes/'+str(code['id'])+'/reprint',json={'request_id':rid,'reason':'Damaged label replacement'}).json()['file_id']
+        response=c.post('/api/business-files/'+file+'/print',json={'request_id':str(uuid4()),'printer_id':str(device),'reprint_id':rid});assert response.status_code==200,response.text
+        with engine.begin() as db:db.execute(text("UPDATE group_grants SET scope='none' WHERE group_slug='specialist' AND permission_id='labels.print.confirm'"))
+        agent.headers['Authorization']='Bearer '+token
+        assert agent.post('/api/print-agent/claim').json()['job'] is None
+    with engine.connect() as db:assert db.execute(text('SELECT state FROM print_jobs')).scalar_one()=='cancelled'

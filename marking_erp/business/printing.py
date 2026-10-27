@@ -100,6 +100,7 @@ def authorize_job(c,job):
     current=auth.Actor(c,dict(user),'printer',None)
     file=c.execute(text('SELECT * FROM business_artifacts WHERE id=:id'),{'id':job['artifact_id']}).mappings().one()
     item=s.item(c,file['item_id'])
+    current.require('labels.print.confirm',**context(current,item))
     if job['reprint_id']:
         request,code,item=reprint_access(current,job['reprint_id']);current_payload(request,code,item)
         if request['state']!='prepared':raise HTTPException(409,'Задание перепечати уже обработано')
@@ -123,6 +124,7 @@ def install_printing(app,actor,engine):
         if old:
             if old['actor_id']!=current.id or old['request_sha256']!=fingerprint:raise HTTPException(409,'Идентификатор запроса уже использован')
             return {**public(dict(old)),'file_id':old['artifact_id']}
+        if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='remark' AND body->>'old_code_id'=:id AND state NOT IN ('done','archived'))"),{'id':str(id)}).scalar_one():raise HTTPException(409,'По этому КМ выполняется официальная замена; перепечать старой этикетки остановлена')
         usable(code,item);policy=snapshot(c,code['organization_id']);rules=policy['values']
         if rules['labels.reprint.reason_required'] and len(body.reason.strip())<8:raise HTTPException(422,'Укажите содержательную причину перепечати (от 8 символов)')
         if body.copies>rules['labels.reprint.max_copies']:raise HTTPException(422,'Превышен разрешённый максимум копий')
