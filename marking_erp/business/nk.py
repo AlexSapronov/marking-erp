@@ -15,6 +15,7 @@ from ..auth_routes import Body
 from ..gs1 import valid_gtin
 from . import store as s
 from .connections import load
+from .catalog_worklist import CATALOG_CTE,DUPLICATE_FILTER
 from .errors import RemoteError
 
 BASES={'production':'https://апи.национальный-каталог.рф','sandbox':'https://api.nk.sandbox.crptech.ru'}
@@ -243,27 +244,33 @@ def install_nk(app,actor,settings):
         result=Client(load(current.connection,settings,organization_id)).schema(category_id,raw)
         return {'attributes':result}
     @app.get('/api/catalog')
-    def listing(organization_id:UUID,kind:str=Query('card',pattern='^(card|template|sync|import)$'),q:str=Query('',max_length=120),archived:bool=False,before_id:UUID|None=None,current=dep):
+    def listing(organization_id:UUID,kind:str=Query('card',pattern='^(card|template|sync|import)$'),q:str=Query('',max_length=120),archived:bool=False,before_id:UUID|None=None,draft_duplicates:str=Query('hide',pattern='^(hide|include|only)$'),current=dep):
         current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id,assigned=True)
         grant=current.grants()['nk.cards.view']
-        rows=current.connection.execute(text('''SELECT i.id,i.title,i.state,i.revision,i.body,i.updated_at FROM business_items i WHERE i.organization_id=:org AND kind=:kind
+        projection=CATALOG_CTE if kind=='card' else ''
+        source='catalog_rows' if kind=='card' else 'business_items'
+        duplicate_column='duplicate_draft' if kind=='card' else 'false AS duplicate_draft'
+        duplicate_filter=DUPLICATE_FILTER if kind=='card' else ''
+        rows=current.connection.execute(text(projection+f'''SELECT i.id,i.title,i.state,i.revision,i.body,i.updated_at,{duplicate_column} FROM {source} i WHERE i.organization_id=:org AND kind=:kind
             AND (state='archived')=:archived AND (CAST(:before AS uuid) IS NULL OR (i.created_at,i.id)<(SELECT created_at,id FROM business_items WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (:grant='all' OR (:grant='own' AND owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
-            AND (title ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!') ORDER BY i.created_at DESC,i.id DESC LIMIT 26'''),{'org':organization_id,'kind':kind,'archived':archived,'before':str(before_id) if before_id else None,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            AND (title ILIKE :q ESCAPE '!' OR body->>'pn' ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
+            {duplicate_filter} ORDER BY i.created_at DESC,i.id DESC LIMIT 26'''),{'org':organization_id,'kind':kind,'archived':archived,'draft_duplicates':draft_duplicates,'before':str(before_id) if before_id else None,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('external','rows','payloads')},'external_status':r['body'].get('external',{}).get('statuses',[])} for r in rows[:25]],'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
     @app.get('/api/catalog/export')
-    def export(organization_id:UUID,q:str=Query('',max_length=120),current=dep):
-        current.require('nk.export',organization_id=organization_id,owner_id=current.id)
+    def export(organization_id:UUID,q:str=Query('',max_length=120),archived:bool=False,draft_duplicates:str=Query('hide',pattern='^(hide|include|only)$'),current=dep):
+        export_grant=current.require('nk.export',organization_id=organization_id,owner_id=current.id,assigned=True)
         grant=current.grants().get('nk.cards.view')
         if not grant:raise HTTPException(403,'Нет доступа к карточкам каталога')
-        rows=current.connection.execute(text("""SELECT i.body->>'pn' AS pn,i.body->>'gtin' AS gtin,i.body->>'tnved' AS tnved,
-            i.body->>'name' AS name,i.body->>'brand' AS brand,i.body->'category_id' AS category_id,i.body->'external'->'statuses' AS statuses
-            FROM business_items i WHERE organization_id=:org AND kind='card' AND state<>'archived'
-            AND (:grant='all' OR (:grant='own' AND owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
-            AND (title ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
-            ORDER BY i.created_at,i.id LIMIT 50001"""),{'org':organization_id,'grant':grant,'user':current.id,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+        rows=current.connection.execute(text(CATALOG_CTE+'''SELECT i.body->>'pn' AS pn,i.body->>'gtin' AS gtin,i.body->>'tnved' AS tnved,
+            i.body->>'name' AS name,i.body->>'brand' AS brand,i.body->'category_id' AS category_id,i.body->'external'->'statuses' AS statuses,duplicate_draft
+            FROM catalog_rows i WHERE (state='archived')=:archived
+            AND (:export_grant='all' OR (:export_grant='own' AND i.owner_id=:user)
+                OR (:export_grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=i.id AND a.user_id=:user)))
+            AND (title ILIKE :q ESCAPE '!' OR body->>'pn' ILIKE :q ESCAPE '!' OR body->>'gtin' ILIKE :q ESCAPE '!' OR body->>'tnved' ILIKE :q ESCAPE '!')
+            '''+DUPLICATE_FILTER+''' ORDER BY i.created_at,i.id LIMIT 50001'''),{'org':organization_id,'grant':grant,'export_grant':export_grant,'user':current.id,'archived':archived,'draft_duplicates':draft_duplicates,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         if len(rows)>50000:raise HTTPException(422,'В выгрузке больше 50000 карточек. Уточните фильтр PN, GTIN или ТН ВЭД; неполный файл не формируется.')
-        data=workbook([[r[k] or '' for k in ('pn','gtin','tnved','name','brand','category_id')]+[', '.join(r['statuses'] or [])] for r in rows],['PN','GTIN','ТН ВЭД','Название','Товарный знак','ID категории','Статус НК'])
+        data=workbook([[r[k] or '' for k in ('pn','gtin','tnved','name','brand','category_id')]+[', '.join(r['statuses'] or []),'Есть опубликованная карточка с точным PN' if r['duplicate_draft'] else ''] for r in rows],['PN','GTIN','ТН ВЭД','Название','Товарный знак','ID категории','Статус НК','Совпадение PN'])
         return Response(data,media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':'attachment; filename="catalog.xlsx"'})
     @app.get('/api/catalog/{id}')
     def detail(id:UUID,current=dep):
