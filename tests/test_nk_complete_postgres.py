@@ -190,3 +190,21 @@ def test_explicit_discard_preserves_local_history_and_restores_remote_identity(e
         assert discarded.json()['body']['pn']=='Remote-PN' and discarded.json()['title']=='Remote-PN'
         events=c.get(url).json()['events']
         assert next(e for e in events if e['action']=='local_changes_discarded')['body']['previous']['pn']=='Local-PN'
+
+
+def test_assigned_bulk_scope_and_receipt_replay(env,engine):
+    with client(env) as c:
+        login(c,'administrator');connections(c,env,writes_enabled=True)
+    with engine.begin() as c:
+        row=catalog_fixture(c,env[1],env[3]['specialist'],'Assigned-PN')
+        c.execute(text("UPDATE group_grants SET scope='assigned' WHERE group_slug='bm' AND permission_id IN ('nk.cards.view','nk.gtin.generate')"))
+        c.execute(text('INSERT INTO operation_assignments VALUES (:id,:user)'),{'id':row['id'],'user':env[3]['bm']})
+    body={'organization_id':str(env[1]),'request_id':str(uuid4()),'action':'gtin','entries':[{'id':str(row['id']),'revision':1}]}
+    with client(env) as c:
+        login(c)
+        assert c.get('/api/catalog-options',params={'organization_id':str(env[1])}).status_code==200
+        response=c.post('/api/catalog-bulk',json=body);assert response.status_code==200,response.text
+        assert response.json()[0]['ok']
+        assert c.post('/api/catalog-bulk',json=body).json()==response.json()
+        with engine.begin() as db:db.execute(text('DELETE FROM operation_assignments WHERE target_id=:id'),{'id':row['id']})
+        assert c.post('/api/catalog-bulk',json=body).status_code==403

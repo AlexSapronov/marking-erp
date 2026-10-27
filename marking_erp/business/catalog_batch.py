@@ -37,7 +37,7 @@ def install(app, actor, settings):
 
     @app.post('/api/catalog-bulk')
     def bulk(body: Batch, current=dep):
-        current.require('nk.cards.view', organization_id=body.organization_id, owner_id=current.id)
+        current.require('nk.cards.view', organization_id=body.organization_id, owner_id=current.id, assigned=True)
         c = current.connection
         from sqlalchemy import text
         fingerprint = sha256(json.dumps(body.model_dump(mode='json'),sort_keys=True).encode()).hexdigest()
@@ -64,7 +64,9 @@ def install(app, actor, settings):
                 result.append({'id':str(entry.id),'ok':False,'message':error.detail if isinstance(error.detail,str) else error.detail.get('message','Проверьте карточку')})
             except RemoteError as error:
                 result.append({'id':str(entry.id),'ok':False,'message':str(error)})
-        s.create(current,'import','Массовое действие НК · '+body.action,{'bulk_action':body.action,'request_sha256':fingerprint,'results':result,'policy':policy},body.organization_id,id=body.request_id,state='done')
+        receipt=s.create(current,'import','Массовое действие НК · '+body.action,{'bulk_action':body.action,'request_sha256':fingerprint,'results':result,'policy':policy},body.organization_id,id=body.request_id,state='done')
+        if current.grants().get('nk.cards.view')=='assigned':
+            c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES (:id,:user)'),{'id':receipt['id'],'user':current.id})
         return result
 
     @app.post('/api/catalog-import/{id}/prepare')

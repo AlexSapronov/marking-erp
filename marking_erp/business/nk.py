@@ -263,7 +263,7 @@ def install_nk(app,actor,settings):
         return {'kinds':values,'policy':rules(current.connection,organization_id)}
     @app.get('/api/catalog-schema')
     def schema(organization_id:UUID,category_id:int=Query(ge=1),card_id:UUID|None=None,current=dep):
-        current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id)
+        current.require('nk.cards.view',organization_id=organization_id,owner_id=current.id,assigned=True)
         card=s.get(current,card_id,'card') if card_id else None
         if card and card['organization_id']!=organization_id:raise HTTPException(422,'Организация карточки отличается')
         raw=card['body'].get('external',{}).get('raw') if card else None
