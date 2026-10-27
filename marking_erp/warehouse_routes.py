@@ -87,9 +87,10 @@ def install_warehouse(app, actor, settings=None):
         conflict=c.execute(text("""SELECT EXISTS(
             SELECT 1 FROM warehouse_tasks t
             WHERE t.organization_id=:org AND t.source_id<>:source AND t.state='open'
-            AND (t.expected_codes ?| CAST(:codes AS text[]) OR EXISTS(
-                SELECT 1 FROM warehouse_scans s WHERE s.task_id=t.id
-                AND s.removed_at IS NULL AND s.cis=ANY(CAST(:codes AS text[])))))"""),
+            AND t.expected_codes ?| CAST(:codes AS text[])) OR EXISTS(
+            SELECT 1 FROM warehouse_scans s JOIN warehouse_tasks t ON t.id=s.task_id
+            WHERE t.organization_id=:org AND t.source_id<>:source AND t.state='open'
+            AND s.removed_at IS NULL AND s.cis=ANY(CAST(:codes AS text[])))"""),
             {'org':task['organization_id'],'source':task['source_id'],'codes':codes}).scalar_one()
         if conflict:raise HTTPException(409,'КМ уже закреплён за другой активной накладной. Обратитесь к логисту для сверки состава.')
 
