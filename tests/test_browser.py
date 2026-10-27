@@ -790,3 +790,37 @@ def test_tsd_incident_to_specialist_quarantine_and_release_ui(page,browser,live_
     with engine.connect() as c:
         assert c.execute(text('SELECT status FROM incidents')).scalar_one()=='resolved'
         assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_catalog_published_pn_filter_export_selection_and_mobile(page,live_app,engine):
+    from playwright.sync_api import expect
+    from test_catalog_worklist_postgres import catalog_fixture
+    from openpyxl import load_workbook
+    with engine.begin() as c:
+        org=live_app['org'];owner=live_app['users']['specialist']
+        catalog_fixture(c,org,owner,'MPQ5-S-1220A',status='published',title='Published model')
+        catalog_fixture(c,org,owner,'MPQ5-S-1220A',title='Duplicate draft')
+        catalog_fixture(c,org,owner,'MPQ5-S-1220B',title='Different model')
+    login(page,'specialist');page.locator('#catalog-link').click()
+    expect(page.get_by_text('Published model',exact=True)).to_be_visible()
+    expect(page.get_by_text('Different model',exact=True)).to_be_visible()
+    expect(page.get_by_text('Duplicate draft',exact=True)).to_have_count(0)
+    filter=page.get_by_label('Совпадения с опубликованными',exact=True)
+    filter.select_option('include')
+    expect(page.get_by_text('Duplicate draft',exact=True)).to_be_visible()
+    page.get_by_label('Выбрать Duplicate draft',exact=True).check()
+    filter.select_option('only')
+    expect(page.get_by_text('Published model',exact=True)).to_have_count(0)
+    expect(page.get_by_label('Выбрать Duplicate draft',exact=True)).not_to_be_checked()
+    expect(page.get_by_text('PN уже опубликован',exact=True)).to_be_visible()
+    export=page.get_by_role('link',name='Скачать каталог Excel по фильтру',exact=True)
+    expect(export).to_have_attribute('href',__import__('re').compile('draft_duplicates=only'))
+    with page.expect_download() as info:export.click()
+    rows=list(load_workbook(__import__('io').BytesIO(Path(info.value.path()).read_bytes())).active.values)
+    assert len(rows)==2 and rows[1][0]=='MPQ5-S-1220A'
+    capture(page,'catalog-duplicate-drafts-desktop')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+    capture(page,'catalog-duplicate-drafts-390')
+    page.get_by_label('Раздел',exact=True).select_option('archived')
+    expect(page.get_by_label('Совпадения с опубликованными',exact=True)).to_be_disabled()
