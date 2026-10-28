@@ -33,7 +33,8 @@ def facts(current, doc):
         elif any(a['state']=='aggregating' for a in atks):stage='АТК формируются';next_action='Дождаться подтверждения АТК'
         elif all(a['state'] in ('ready','transferred') for a in atks):stage='Груз сформирован';next_action='Ожидается обработка логистом'
     # Warehouse summaries only; device assignments and full scans stay in warehouse APIs.
-    tasks=c.execute(text("SELECT kind,state,count(*) AS count FROM warehouse_tasks WHERE source_id=:id GROUP BY kind,state ORDER BY kind,state"),{'id':doc['id']}).mappings().all()
+    from ..code_card import warehouse_scope
+    tasks=c.execute(text(f"SELECT w.kind,w.state,count(*) AS count FROM warehouse_tasks w WHERE w.source_id=:id AND w.organization_id=:org AND {warehouse_scope(current)} GROUP BY w.kind,w.state ORDER BY w.kind,w.state"),{'id':doc['id'],'org':doc['organization_id'],'user':current.id}).mappings().all()
     operations=c.execute(text('SELECT o.kind,o.state,o.reason FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id ORDER BY o.created_at DESC LIMIT 100'),{'id':row['id']}).mappings().all()
     return {'operations':[dict(o) for o in operations],'stage':stage,'next_action':next_action,'process':{'id':row['id'],'revision':row['revision'],'state':row['state']},
             'labels_transferred':transferred,'atks':atks,'tasks':[dict(t) for t in tasks]}

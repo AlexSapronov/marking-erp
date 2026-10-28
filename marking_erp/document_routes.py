@@ -208,6 +208,13 @@ def install_documents(app,actor):
         doc['logistics_completed']=is_completed(current.connection,id)
         doc['canonical_supplier']=canonical(current.connection,doc['organization_id'],doc['supplier'])
         process=current.connection.execute(text("SELECT id,revision,body->'warehouse_composition' AS composition FROM business_items WHERE source_id=:id AND kind='marking' AND state<>'archived'"),{'id':id}).mappings().first()
+        doc['marking_in_progress']=bool(process)
+        if process:
+            from .business import store
+            try:store.get(current,process['id'])
+            except HTTPException as error:
+                if error.status_code!=403:raise
+                process=None
         doc['marking_id']=process['id'] if process else None
         doc['marking_revision']=process['revision'] if process else None
         doc['warehouse_composition']=process['composition'] if process else None

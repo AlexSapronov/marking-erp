@@ -1,5 +1,5 @@
 const names={receipt:'Приёмка',shipment:'Отгрузка'},states={open:'В работе',closed:'Закрыто',cancelled:'Отменено'};
-export function createWarehouse({incidents,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask}){
+export function createWarehouse({appendWorkflow,incidents,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask}){
   let generation=0,detailGeneration=0,org='',kind='receipt',query='',closed=null,archived=false,cursors=[null],page=0,active=null;
   let refreshTimer=null,refreshAction=null,refreshBusy=false,refreshFailures=0,listRefresh=null,writeEpoch=0,pollDelay=5000;
   const can=p=>Boolean(state.session?.permissions[p]);
@@ -132,6 +132,7 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
     const can=p=>Boolean(data.permissions?.[p]);
     const {task,lines,scans,events}=data,content=$('warehouse-content'),seq=detailGeneration,isLog=logistics(),writable=task.state==='open'&&!task.archived_at&&!data.paused;content.replaceChildren();const status=node('p','Обновляется автоматически','muted');status.id='warehouse-auto-status';status.setAttribute('role','status');content.append(status);$('warehouse-title').textContent=names[task.kind]+' · '+task.number;
     content.append(node('p',`${task.document_date} · ${task.supplier} · ${states[task.state]}`,'muted'),node('p','Назначено: '+data.assignees.join(', '),'muted'));
+    appendWorkflow(content,'warehouse',task.id);
     if(task.source_type==='excel'){content.append(node('p','Резервный Excel · самостоятельное складское задание, без накладной БМ.','notice warning'));if(data.import_source)content.append(node('p','Источник: '+data.import_source.filename,'muted'));if(data.source_download){const source=node('a','Скачать исходный Excel');source.href='/api/warehouse/tasks/'+task.id+'/source-file?logistics='+isLog;source.setAttribute('download','warehouse-source.xlsx');content.append(source);}}
     if(task.archived_at&&data.archive_retain_until)content.append(node('p','Хранить не менее чем до '+new Date(data.archive_retain_until).toLocaleDateString('ru-RU'),'muted'));
     if(task.archived_at)content.append(node('p','Накладная в архиве. Сканы и результат закрытия сохранены.','notice'));
@@ -190,6 +191,7 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
     stopRefresh();active=null;
     const seq=++detailGeneration,content=$('warehouse-content');content.replaceChildren(node('p','Проверяем этапы…'));
     try{const data=await api('/api/logistics/documents/'+id);if(seq!==detailGeneration)return;const d=data.document;content.replaceChildren(button('К списку',()=>completionList(d.state==='completed')),node('h2',d.title),node('p',d.supplier));
+      appendWorkflow(content,'logistics',id);
       if(data.required_fields)content.append(node('p','Реквизиты закрытия: '+data.required_fields.map(f=>({supplier:'поставщик',number:'номер',date:'дата'}[f]||f)).join(', '),'muted'));
       if(data.composition_request_available&&can('logistics.warehouse.transfer'))content.append(button('Вернуть в БМ для полного Excel',async()=>{if(await ask('Вернуть накладную в БМ?',d.title+': БМ добавит немаркируемые строки из полного Excel поставки.','Вернуть в БМ'))await completionMutate(content,id,'request-composition',{revision:d.revision,confirmation:d.title});},'primary'));
       if(d.composition?.state==='requested')content.append(node('p','Документ возвращён в БМ. Ожидается полный Excel поставки.','notice warning'));
@@ -203,5 +205,5 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
   async function completionMutate(form,id,action,body){
     const controls=[...form.querySelectorAll('input,button')];controls.forEach(c=>c.disabled=true);try{await api('/api/logistics/documents/'+id+'/'+action,{method:'POST',body});notice(action==='complete'?'Накладная завершена.':action==='request-composition'?'Накладная возвращена в БМ для загрузки полного Excel.':'Накладная возвращена в работу.');await completionDetail(id);}catch(e){form.append(node('p',e.message,'error-message'));report(e);}finally{controls.forEach(c=>c.disabled=false);}
   }
-  return {show,reset};
+  return {show,reset,openRelated:async target=>{org=target.organization_id;page=0;cursors=[null];query='';archived=Boolean(target.archived);await show();if(target.type==='completion'){openDialog('warehouse-dialog');await completionDetail(target.id);}else await open(target.id);}};
 }

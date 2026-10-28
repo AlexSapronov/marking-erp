@@ -1,3 +1,4 @@
+import {createWorkflow} from '/assets/workflow.js';
 import {createIncidents} from '/assets/incidents.js';
 import {createBusiness} from '/assets/business.js';
 import {createWarehouse} from '/assets/warehouse.js';
@@ -15,12 +16,27 @@ const incidents=createIncidents({state,$,api,node,button,heading,notice,report,o
 const admin=createAdmin({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
 const registry=createRegistry({state,$,api,node,button,heading,notice,report,openDialog,openProcess:async row=>{closeDialog('code-dialog',true);navigate(({marking:'/marking',atk:'/atks',transform:'/atks',split:'/split',remark:'/remarking',fts:'/fts'})[row.kind]||'/marking');await business.show();await business.open(row.id);}});
 const operations=createOperations({incidents,state,$,api,node,button,heading,report,openDialog});
-const documents=createDocuments({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask,openMarking:async id=>{navigate('/marking');await business.show();await business.open(id);}});
-const warehouse=createWarehouse({incidents,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
-const business=createBusiness({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
+const appendWorkflow=createWorkflow({state,api,node,button,openTarget:openWorkflowTarget});
+const documents=createDocuments({appendWorkflow,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask,openMarking:async id=>{navigate('/marking');await business.show();await business.open(id);}});
+const warehouse=createWarehouse({appendWorkflow,incidents,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
+const business=createBusiness({appendWorkflow,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
 const sessions=createSessions({state,$,api,node,button,notice,report,ask});
 const audit=createAudit({state,$,api,node,button,heading,report});
 const system=createSystem({state,$,api,node,button,heading,report,navigate});
+async function openWorkflowTarget(target){
+  if(!state.session?.organization_ids.includes(target.organization_id))return;
+  const routes={document:'/documents',completion:'/logistics'};
+  const route=routes[target.type]||target.route;
+  if(!['/documents','/logistics','/receipt','/shipment','/catalog','/marking','/atks','/fts','/split','/remarking'].includes(route))return;
+  const raw=$('warehouse-dialog').querySelector('.warehouse-scan input');
+  if($('warehouse-dialog').open&&raw?.value&&!await ask('Перейти к связанному документу?','В поле сканера есть неотправленный КМ. Он не будет отправлен при переходе.','Перейти без отправки'))return;
+  if(!allDialogsClosed()||!admin.canLeave())return;
+  navigate(route);
+  if(state.route!==route||!state.session)return;
+  if(target.type==='document')await documents.openRelated(target);
+  else if(target.type==='warehouse'||target.type==='completion')await warehouse.openRelated(target);
+  else if(target.type==='business')await business.openRelated(target);
+}
 const groupNames = {bm:'БМ',logistics:'Логист',warehouse:'Склад',tsd:'ТСД',specialist:'Специалист по маркировке',administrator:'Администратор'};
 const modules = [
   ['Эмиссия и нанесение','Заказ КМ, этикетки и отчёты','marking.codes.issue','▤'],

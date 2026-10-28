@@ -73,6 +73,8 @@ def create_app(settings=None, engine=None):
     install_operations(app,app.state.auth_dependency)
     install_system(app,app.state.auth_dependency,settings,engine)
     install_audit(app,app.state.auth_dependency)
+    from .workflow import install_workflow
+    install_workflow(app,app.state.auth_dependency)
     install_documents(app,app.state.auth_dependency)
     install_warehouse(app,app.state.auth_dependency,settings)
     from .incidents import install_incidents

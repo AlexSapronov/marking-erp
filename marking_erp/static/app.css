@@ -49,3 +49,11 @@ textarea{font:inherit;min-height:72px;width:100%;padding:12px;border:1px solid v
   dialog.catalog-sidebar { margin: 0 0 0 auto; width: min(760px, 72vw); max-width: 72vw; height: 100dvh; max-height: 100dvh; border-radius: 0; }
 }
 #catalog-selection-summary { margin: .5rem 0; }
+
+.workflow-panel{overflow-wrap:anywhere;min-width:0}
+.workflow-next{font-weight:600}
+.workflow-group{margin-block:.65rem}
+.workflow-group h4{margin-block:.65rem .35rem}
+.workflow-group ul,.workflow-blockers{padding-inline-start:1.25rem}
+.workflow-group li{margin-block:.4rem}
+.workflow-group .link-button{white-space:normal;text-align:start;max-width:100%}

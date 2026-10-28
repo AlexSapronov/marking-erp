@@ -985,7 +985,7 @@ def test_bm_invoice_chain_and_cross_page_selection(page,live_app,engine):
     page.get_by_role('button',name='Далее',exact=True).click()
     expect(page.locator('#bm-selection')).to_contain_text('1')
     page.get_by_role('button',name='Открыть',exact=True).first.click()
-    expect(page.get_by_role('heading',name='Цепочка накладной',exact=True)).to_be_visible()
+    expect(page.get_by_role('heading',name='Цепочка работы',exact=True)).to_be_visible()
     capture(page,'bm-invoice-workflow')
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
 
@@ -1207,3 +1207,65 @@ def test_worker_health_shows_delayed_stage_without_leaking_or_retrying_work(page
     with engine.connect() as c:
         assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
         assert c.execute(text("SELECT state FROM business_items WHERE title='PRIVATE_WORKER_SYNC_TITLE'")).scalar_one()=='blocked'
+
+
+def test_workflow_navigation_catalog_to_warehouse_and_read_retry(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.business.worker import background
+    from test_warehouse_postgres import raw
+    task=refresh_task(engine,live_app,'FLOW-CHAIN')
+    org=live_app['org']
+    with engine.begin() as c:
+        source=c.execute(text('SELECT * FROM bm_documents WHERE id=(SELECT source_id FROM warehouse_tasks WHERE id=:id)'),{'id':task}).mappings().one()
+        actor=background(c,live_app['users']['specialist'],org)
+        process=store.create(actor,'marking','FLOW-MARKING',{'supplier':source['supplier'],'lines':source['lines'],'source_revision':2,'warehouse_composition':{'state':'requested'}},org,source['id'],state='awaiting_full_invoice',owner=live_app['users']['bm'])
+        atk=store.create(actor,'atk','FLOW-ATK',{'documents':[str(process['id'])],'codes':[],'atk':'fixture-confirmed'},org,state='transferred')
+        store.create(actor,'fts','FLOW-FTS',{'atks':[str(atk['id'])],'codes':[],'declaration_number':'fixture-only','declaration_date':'2026-10-28'},org,state='prepared')
+        store.create(actor,'card','FLOW-CARD',{'pn':'REFRESH-PN','name':'Товар для технической проверки','gtin':source['lines'][0]['gtin'],'tnved':'8542399000','brand':'Fixture','category_id':1,'attributes':{},'dirty':False,'external':{'statuses':['published']}},org,state='active')
+    login(page,'specialist');page.locator('#documents-link').click()
+    page.get_by_role('button',name='Открыть',exact=True).click()
+    panel=page.locator('#document-content .workflow-panel')
+    expect(panel).to_contain_text('Следующий этап ведёт: БМ / закупщик')
+    panel.get_by_role('button',name='НК · FLOW-CARD',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/catalog')
+    expect(page.locator('#business-title')).to_have_text('FLOW-CARD')
+    page.locator('#business-content .workflow-panel').get_by_role('button',name='Накладная БМ · FLOW-CHAIN',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/documents')
+    page.locator('#document-content .workflow-panel').get_by_role('button',name='Маркировка · FLOW-MARKING',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/marking')
+    expect(page.locator('#business-title')).to_have_text('FLOW-MARKING')
+    page.locator('#business-content .workflow-panel').get_by_role('button',name='АТК · FLOW-ATK',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/atks')
+    expect(page.locator('#business-title')).to_have_text('FLOW-ATK')
+    page.locator('#business-content .workflow-panel').get_by_role('button',name='ФТС / ввод в оборот · FLOW-FTS',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/fts')
+    expect(page.locator('#business-title')).to_have_text('FLOW-FTS')
+    page.locator('#business-content .workflow-panel').get_by_role('button',name='Приёмка · FLOW-CHAIN',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/receipt')
+    expect(page.locator('#warehouse-title')).to_contain_text('FLOW-CHAIN')
+    panel=page.locator('#warehouse-content .workflow-panel')
+    scanner=page.get_by_label('Сканируйте Data Matrix',exact=True);scanner.fill(raw('a'))
+    panel.get_by_role('button',name='Накладная БМ · FLOW-CHAIN',exact=True).click()
+    expect(page.locator('#confirm-dialog')).to_be_visible()
+    page.locator('#confirm-dialog').get_by_role('button',name='Отмена',exact=True).click()
+    expect(scanner).to_have_value(raw('a'))
+    expect(page).to_have_url(live_app['base']+'/receipt')
+    page.context.set_offline(True);panel.get_by_role('button',name='Обновить цепочку',exact=True).click()
+    expect(panel.get_by_role('button',name='Повторить загрузку цепочки',exact=True)).to_be_visible()
+    expect(scanner).to_have_value(raw('a'))
+    page.context.set_offline(False);panel.get_by_role('button',name='Повторить загрузку цепочки',exact=True).click()
+    expect(panel).to_contain_text('Текущий этап: В работе')
+    expect(scanner).to_have_value(raw('a'))
+    page.locator('#warehouse-dialog').evaluate('(el)=>el.scrollTop=0')
+    capture(page,'workflow-chain-desktop')
+    page.set_viewport_size({'width':390,'height':844})
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    capture(page,'workflow-chain-390')
+    scanner.fill('')
+    panel.get_by_role('button',name='Накладная БМ · FLOW-CHAIN',exact=True).click()
+    expect(page).to_have_url(live_app['base']+'/documents')
+    expect(page.locator('#document-title')).to_contain_text('FLOW-CHAIN')
+    with engine.connect() as c:
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+        assert c.execute(text('SELECT count(*) FROM warehouse_scans')).scalar_one()==0
