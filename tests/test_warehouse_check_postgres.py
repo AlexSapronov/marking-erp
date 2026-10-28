@@ -25,7 +25,7 @@ def task(env,codes=None,*,kind='receipt',labels=None):
     with client(env) as c:
         login(c);created=c.post('/api/documents',json=invoice(env,number=number,lines=[{'pn':'PN-01','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':labels or len(codes)}]));assert created.status_code==200,created.text
         source=created.json()['id'];assert c.post('/api/documents/'+source+'/prepare',json={'revision':1}).status_code==200
-    request={'request_id':str(uuid4()),'source_id':source,'source_revision':2,'kind':kind,'assignees':[str(env[3]['tsd'])],'expected_codes':codes}
+    request={'request_id':str(uuid4()),'source_id':source,'source_revision':2,'confirmed':True,'kind':kind,'assignees':[str(env[3]['tsd'])],'expected_codes':codes}
     with client(env) as c:
         login(c,'logistics');created=c.post('/api/logistics/warehouse-transfer',json=request);assert created.status_code==200,created.text
     return created.json()['id'],number,request

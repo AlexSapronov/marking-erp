@@ -1142,3 +1142,42 @@ def test_tsd_network_retry_retains_request_after_refresh_and_revocation_clears_d
         with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
         capture(page,'tsd-auto-refresh-access-revoked')
     finally:peer.close()
+
+
+def test_workflow_rules_apply_to_transfer_and_frozen_warehouse_task(page,browser,live_app,engine):
+    from playwright.sync_api import expect
+    from test_workflow_policy_postgres import rules
+    from test_warehouse_postgres import raw,GTIN
+    org=live_app['org']
+    rules(engine,org,**{'warehouse.complete.confirm':False,'warehouse.duplicate.behavior':'error','warehouse.missing.warning_threshold':2,'warehouse.devices.poll_seconds':1,'warehouse.hide_completed':False})
+    context=browser.new_context(base_url=live_app['base']);headers={'Origin':live_app['base'],'X-Requested-With':'marking-erp'}
+    try:
+        response=context.request.post('/api/session',data={'username':'bm-user','password':PASSWORD,'otp':''},headers=headers);assert response.status==200,response.text()
+        headers['X-CSRF-Token']=response.json()['csrf']
+        value={'request_id':str(uuid4()),'organization_id':str(org),'number':'RULES-UI','document_date':'2026-10-28','supplier':'Policy supplier','lines':[{'pn':'POLICY-PN','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':2}]}
+        created=context.request.post('/api/documents',data=value,headers=headers);assert created.status==200,created.text()
+        source=created.json()['id'];assert context.request.post('/api/documents/'+source+'/prepare',data={'revision':1},headers=headers).status==200
+    finally:context.close()
+    login(page,'logistics');page.goto(live_app['base']+'/logistics')
+    page.get_by_role('button',name='+ Передать на склад',exact=True).click()
+    page.locator('#warehouse-content fieldset input[value="'+str(live_app['users']['tsd'])+'"]').check()
+    page.get_by_label('Подтверждаю передачу проверенного состава на склад',exact=True).check()
+    page.get_by_role('button',name='Передать на склад',exact=True).click()
+    expect(page.locator('#warehouse-dialog')).to_be_hidden()
+    rules(engine,org,**{'warehouse.complete.confirm':True,'warehouse.duplicate.behavior':'error_with_delete_action','warehouse.missing.warning_threshold':1})
+    page.locator('#logout').click();expect(page.locator('#login-screen')).to_be_visible();login(page,'tsd');page.locator('#receipt-link').click()
+    expect(page.get_by_label('Состояние',exact=True)).to_have_value('all')
+    page.get_by_role('button',name='Открыть задание',exact=True).click()
+    expect(page.locator('#warehouse-content')).to_contain_text('Недостача: 2 КМ')
+    expect(page.get_by_label('Введите номер накладной для подтверждения',exact=True)).to_have_count(0)
+    scanner=page.get_by_label('Сканируйте Data Matrix',exact=True);scanner.fill(raw('a'));page.get_by_role('button',name='Принять скан',exact=True).click()
+    expect(page.locator('.warehouse-metrics strong')).to_have_text('1 / 2 КМ')
+    expect(page.locator('#warehouse-content')).not_to_contain_text('Недостача:')
+    scanner.fill(raw('a'));page.get_by_role('button',name='Принять скан',exact=True).click()
+    expect(page.locator('.warehouse-scan .error-message')).to_contain_text('уже отсканирован')
+    expect(page.get_by_role('button',name='Удалить ранее принятый КМ',exact=True)).to_have_count(0)
+    scanner.fill(raw('b'));page.get_by_role('button',name='Принять скан',exact=True).click()
+    expect(page.locator('.warehouse-metrics strong')).to_have_text('2 / 2 КМ')
+    page.get_by_role('button',name='Закрыть задание после сверки',exact=True).click()
+    expect(page.locator('#warehouse-content')).to_contain_text('Закрыто')
+    capture(page,'workflow-policy-warehouse-closed')

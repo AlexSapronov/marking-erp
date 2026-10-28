@@ -45,4 +45,4 @@ def snapshot(connection,organization_id):
             if row['scope_key']==key:
                 versions['system' if key=='system' else 'organization']=row['revision']
                 if row['rule_id'] in values:values[row['rule_id']]=row['value']
-    return {'catalog_version':1,'organization_id':org,'versions':versions,'values':values}
+    return {'catalog_version':2,'organization_id':org,'versions':versions,'values':values}

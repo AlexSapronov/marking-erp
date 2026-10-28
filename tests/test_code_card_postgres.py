@@ -75,7 +75,7 @@ def test_warehouse_expectations_scans_and_historical_check(allocated,engine):
     env,item,source,code=allocated;path=base(allocated);org=str(env[1]);task=uuid4()
     with client(env) as c:
         login(c,'logistics')
-        response=c.post('/api/logistics/warehouse-transfer',json={'request_id':str(task),'source_id':str(source),'source_revision':2,'kind':'receipt','assignees':[str(env[3]['warehouse'])]})
+        response=c.post('/api/logistics/warehouse-transfer',json={'request_id':str(task),'source_id':str(source),'source_revision':2,'confirmed':True,'kind':'receipt','assignees':[str(env[3]['warehouse'])]})
         assert response.status_code==200,response.text
     with engine.begin() as db:
         db.execute(text("UPDATE warehouse_tasks SET expected_codes=CAST(:codes AS jsonb),verified_at=now() WHERE id=:id"),{'codes':json.dumps([code['cis']]),'id':task})

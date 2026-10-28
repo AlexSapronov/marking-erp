@@ -81,7 +81,7 @@ def test_warehouse_assignment_is_live_and_cancel_revokes_registry_access(allocat
     env,item,source,code=allocated;org=str(env[1]);task=uuid4()
     with client(env) as logistics:
         login(logistics,'logistics')
-        response=logistics.post('/api/logistics/warehouse-transfer',json={'request_id':str(task),'source_id':str(source),'source_revision':2,'kind':'receipt','assignees':[str(env[3]['warehouse'])]})
+        response=logistics.post('/api/logistics/warehouse-transfer',json={'request_id':str(task),'source_id':str(source),'source_revision':2,'confirmed':True,'kind':'receipt','assignees':[str(env[3]['warehouse'])]})
         assert response.status_code==200,response.text
     with client(env) as c:
         login(c,'warehouse')

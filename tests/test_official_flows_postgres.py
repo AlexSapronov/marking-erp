@@ -89,7 +89,7 @@ def test_replacement_emits_remark_code_and_requires_independent_official_submiss
         assert c.execute(text('SELECT count(*) FROM code_replacements')).scalar_one()==1
     with client(env) as c:
         login(c,'logistics');task=str(uuid4())
-        response=c.post('/api/logistics/warehouse-transfer',json={'request_id':task,'source_id':str(source),'source_revision':2,'kind':'receipt','assignees':[str(env[3]['warehouse'])]})
+        response=c.post('/api/logistics/warehouse-transfer',json={'request_id':task,'source_id':str(source),'source_revision':2,'confirmed':True,'kind':'receipt','assignees':[str(env[3]['warehouse'])]})
         assert response.status_code==200,response.text
     with engine.connect() as c:assert c.execute(text('SELECT expected_codes FROM warehouse_tasks WHERE id=:id'),{'id':task}).scalar_one()==[replacement['cis']]
 

@@ -46,6 +46,7 @@ def install_connections(app,actor,settings):
     @app.put('/api/connections')
     def update(body:Connection,current=dep):
         current.require('integrations.manage',organization_id=body.organization_id,administrative=True)
+        if body.ignore_legal_entity:raise HTTPException(422,'Строгая проверка владельца обязательна; исключения не поддерживаются')
         if not settings.mfa_encryption_key:raise HTTPException(409,'Не настроен серверный ключ шифрования')
         if body.fias_id:
             try:UUID(body.fias_id)

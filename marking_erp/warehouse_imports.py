@@ -105,6 +105,8 @@ def install(app,actor,require_task,get_task,record,exclusive_codes,task_context)
         c.execute(text('''INSERT INTO warehouse_tasks(id,organization_id,owner_id,source_id,source_type,source_revision,kind,number,supplier,document_date,lines,expected_codes,expected_payloads,transfer_request_sha256)
             VALUES(:id,:org,:owner,:source,'excel',1,:kind,:number,:supplier,:date,CAST(:lines AS jsonb),CAST(:codes AS jsonb),CAST(:evidence AS jsonb),:hash)'''),
             {'id':body.request_id,'org':preview['organization_id'],'owner':current.id,'source':body.preview_id,'kind':preview['kind'],'number':body.number.strip(),'supplier':body.supplier.strip(),'date':body.document_date,'lines':json.dumps(result['lines']),'codes':json.dumps(result['expected_codes']),'evidence':json.dumps(result['expected_payloads']),'hash':fingerprint})
+        from .policy import snapshot
+        c.execute(text('UPDATE warehouse_tasks SET policy_snapshot=CAST(:policy AS jsonb) WHERE id=:id'),{'id':body.request_id,'policy':json.dumps(snapshot(c,preview['organization_id']))})
         for person in people:c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES(:id,:user)'),{'id':body.request_id,'user':person['id']})
         record(current,get_task(current,body.request_id),'imported',{'reason':body.reason.strip(),'sha256':preview['sha256'],'assignees':sorted(set(map(str,body.assignees)))})
         return {'id':body.request_id}
