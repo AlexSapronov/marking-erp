@@ -13,7 +13,8 @@ export function createWorkflow({state,api,node,button,openTarget}){
      node('p','Следующее действие: '+data.next_action,'workflow-next'),
      node('p','Следующий этап ведёт: '+data.responsible_role),node('p','Владелец документа: '+data.owner_name,'muted'));
     if(data.next_target)section.append(button('Открыть следующий этап',()=>openTarget(data.next_target),'primary'));
-    if(data.blockers.length){const list=node('ul',undefined,'workflow-blockers');for(const text of data.blockers)list.append(node('li',text));section.append(node('h4','Что требует внимания'),list);}
+    // Logistics already renders the same blockers beside its completion form.
+    if(kind!=='logistics'&&data.blockers.length){const list=node('ul',undefined,'workflow-blockers');for(const text of data.blockers)list.append(node('li',text));section.append(node('h4','Что требует внимания'),list);}
     for(const group of data.groups){const details=node('section',undefined,'workflow-group');details.append(node('h4',group.name));const list=node('ul');for(const item of group.items){const line=node('li');line.append(button(item.label+' · '+item.title,()=>openTarget(item.target),'link-button'),node('span',' — '+item.state));list.append(line);}details.append(list);section.append(details);}
     section.append(node('p','Связи НК с накладными показаны по точному PN и GTIN. Представлены только доступные документы, до 25 в каждой группе. Для полного реестра откройте соответствующее рабочее место.','muted'));
     if(data.truncated)section.append(node('p','Показана часть связанных документов. Продолжите поиск в рабочем месте.','notice warning'));
