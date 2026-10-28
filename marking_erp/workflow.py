@@ -157,7 +157,7 @@ def overview(current,kind,id):
         if entries:groups.append({'name':name,'items':entries})
     group('Накладные БМ',documents,'document')
     for group_kind,name,condition in [
-        ('card','Национальный каталог',"EXISTS(SELECT 1 FROM bm_documents d CROSS JOIN LATERAL jsonb_array_elements(d.lines) l WHERE d.id=ANY(CAST(:sources AS uuid[])) AND d.organization_id=:org AND l->>'gtin'<>'' AND l->>'gtin'=i.body->>'gtin' AND l->>'pn'=i.body->>'pn')"),
+        ('card','Национальный каталог',"(i.body->>'pn',i.body->>'gtin') IN (SELECT l->>'pn',l->>'gtin' FROM bm_documents d CROSS JOIN LATERAL jsonb_array_elements(d.lines) l WHERE d.id=ANY(CAST(:sources AS uuid[])) AND d.organization_id=:org AND l->>'gtin'<>'')"),
         ('marking','Эмиссия и нанесение',"i.source_id=ANY(CAST(:sources AS uuid[]))"),
         ('atk','АТК',"i.id=ANY(CAST(:atks AS uuid[]))"),
         ('fts','ФТС и ввод в оборот',"i.body->'atks' ?| CAST(:atks AS text[])"),
