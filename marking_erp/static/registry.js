@@ -1,6 +1,6 @@
-export function createRegistry({state,$,api,node,button,heading,notice,report,openDialog}){
-  let sequence=0,organization='',query='',cursor=null,previous=[];
-  const reset=()=>{sequence++;organization='';query='';cursor=null;previous=[];};
+export function createRegistry({state,$,api,node,button,heading,notice,report,openDialog,openProcess}){
+  let sequence=0,dialogSequence=0,organization='',query='',cursor=null,previous=[];
+  const reset=()=>{sequence++;dialogSequence++;organization='';query='';cursor=null;previous=[];};
   function showError(e){if(e.code==='stale')return;if($('code-dialog').open)$('code-content').prepend(node('p',e.message,'error-message'));report(e);}
   async function download(path,name){
     const generation=state.generation,controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
@@ -26,14 +26,54 @@ export function createRegistry({state,$,api,node,button,heading,notice,report,op
     try{const data=await api('/api/codes?'+new URLSearchParams({organization_id:organization,q:query,...(cursor?{before_id:cursor}:{})}));if(seq!==sequence||state.route!=='/codes')return;
       host.replaceChildren();if(!data.codes.length)host.append(node('p',query?'Коды по вашему запросу не найдены.':'Сохранённых КМ пока нет. Они появятся после подключения источников и рабочих процессов.','empty'));
       else{const wrap=node('div',undefined,'table-wrap'),table=node('table'),thead=node('thead'),head=node('tr');for(const text of ['PN / GTIN','Код идентификации','AI30 этикетки','Состояние данных','Действия'])head.append(node('th',text));thead.append(head);table.append(thead);const body=node('tbody');
-        for(const code of data.codes){const row=node('tr'),product=node('td');product.append(node('strong',code.pn||'PN не подтверждён'),node('small',code.gtin));row.append(product,node('td',code.cis,'cis-cell'),node('td',code.label_quantity===null?'Не указан':String(code.label_quantity)));const status=node('td');status.append(node('span',code.conflicts?'Конфликт payload':'Сохранён','badge '+(code.conflicts?'conflict':'')),node('small','Статус ЧЗ не проверен'));row.append(status);const actions=node('td');if(state.session.permissions['codes.history.view'])actions.append(button('История',()=>history(code)));row.append(actions);body.append(row);}
+        for(const code of data.codes){const row=node('tr'),product=node('td');product.append(node('strong',code.pn||'PN не подтверждён'),node('small',code.gtin));row.append(product,node('td',code.cis,'cis-cell'),node('td',code.label_quantity===null?'Не указан':String(code.label_quantity)));const status=node('td');status.append(node('span',code.conflicts?'Конфликт payload':'Сохранён','badge '+(code.conflicts?'conflict':'')),node('small','Статус ЧЗ не проверен'));row.append(status);const actions=node('td');actions.append(button('Карточка КМ',()=>card(code)));if(state.session.permissions['codes.history.view'])actions.append(button('История',()=>history(code)));row.append(actions);body.append(row);}
         table.append(body);wrap.append(table);host.append(wrap);}
       const footer=node('div',undefined,'table-footer'),back=button('Назад',()=>{cursor=previous.pop()??null;load();}),next=button('Далее',()=>{previous.push(cursor);cursor=data.next_cursor;load();});back.disabled=!previous.length;next.disabled=!data.next_cursor;footer.append(node('span','Показано: '+data.codes.length),back,next);host.append(footer);
     }catch(e){if(seq!==sequence)return;host.replaceChildren(node('p','Не удалось загрузить реестр.','empty'),button('Повторить',load));report(e);}
   }
+  const names={marking:'Эмиссия и нанесение',atk:'АТК',transform:'Трансформация АТК',split:'Разделение',remark:'Перемаркировка',fts:'Импорт с ФТС',receipt:'Приёмка',shipment:'Отгрузка',reserved:'Зарезервирован',emitted:'Получен',applied:'Нанесение подтверждено',free:'Свободный пул',withdrawn:'Выведен из использования',open:'В работе',closed:'Закрыт',cancelled:'Отменён',draft:'Черновик',prepared:'Подготовлен',archived:'В архиве',ordering:'Заказ КМ',receiving:'Получение КМ',labels_ready:'Этикетки готовы',application_confirmed:'Нанесение подтверждено',reporting:'Ожидание отчёта',rejected:'Отклонён',ready:'Готов',transferred:'Передан',aggregating:'Формирование АТК',awaiting_approval:'Ожидает согласования',processing:'В обработке',done:'Завершён',completed:'Завершён',queued:'В очереди',claimed:'Принят агентом',spooled:'Передан в очередь принтера',unknown:'Результат неизвестен',held:'Приостановлен',printed:'Печать подтверждена',in_progress:'Разбирается',resolved:'Решён',warehouse_ready:'Готов для логистики',awaiting_full_invoice:'Ожидает полного состава',circulation_confirmed:'Ввод в оборот подтверждён'};
+  const title=value=>names[value]||value;
+  async function card(code){
+    const seq=++dialogSequence,org=organization,generation=sequence,host=$('code-content');
+    $('code-title').textContent='Карточка КМ';host.replaceChildren(node('p','Загружаем карточку…','empty'));openDialog('code-dialog');
+    const active=()=>seq===dialogSequence&&generation===sequence&&state.route==='/codes';
+    try{const data=await api('/api/codes/'+code.id+'/card?organization_id='+org);if(!active())return;const value=data.code;
+      host.replaceChildren(node('p',value.cis,'cis-cell'),node('p','GTIN: '+value.gtin),node('p',value.products.map(p=>p.pn+' · ТН ВЭД '+p.tnved).join('; ')||'PN не подтверждён'),node('p','Версия '+value.version+' · Шаблон '+value.template+' · AI30 этикетки: '+(value.label_quantity??'не указан')));
+      host.append(node('p','SHA256 текущего полного КМ: '+value.normalized_sha256,'hash-text'));
+      if(value.conflict)host.append(node('p','Есть конфликт полного КМ. Автоматическая замена запрещена.','notice error'));
+      if(value.allocation){const a=value.allocation;host.append(node('p','Локальное распределение: '+title(a.state)+' · '+a.quantity+' ед. · '+a.pn+' · '+a.title));}
+      else host.append(node('p','Сведения о распределении отсутствуют или недоступны вашей роли.','field-help'));
+      const checked=node('section',undefined,'history-entry');checked.append(node('h3','Последняя сохранённая проверка ЧЗ'));
+      if(value.last_check){const v=value.last_check;checked.append(node('p',new Date(v.checked_at).toLocaleString('ru-RU')+' · '+title(v.kind)+' · '+v.number),node('p',Object.entries(v.facts).map(([k,val])=>({status:'Статус',ownerInn:'ИНН владельца',gtin:'GTIN',quantity:'Количество',parent:'Родительский код'}[k]||k)+': '+val).join(' · ')));}
+      else checked.append(node('p','Доступных сохранённых складских проверок ЧЗ нет.'));
+      checked.append(node('p','Это исторические сведения складской проверки. Открытие карточки не обращается в ЧЗ и не подтверждает текущий статус, владельца или возможность отгрузки.','field-help'));host.append(checked);
+      const controls=node('div',undefined,'form-actions');controls.append(button('Обновить карточку',()=>card(code)));if(state.session.permissions['codes.history.view'])controls.append(button('История исходных данных',()=>history(code)));host.append(controls,node('p','Ниже показаны только доступные вам связи. Отсутствие записи не доказывает отсутствие процесса или ограничения. AI30 не является текущим остатком после разделения.','notice warning'));
+      for(const [section,label] of [['lineage','Связанные КМ: разделение и подтверждённая замена'],['documents','Накладные'],['processes','Эмиссия, АТК, разделение и перемаркировка'],['warehouse','Склад и резервирование'],['printing','Печать'],['reprints','Перепечать и контроль сканов'],['incidents','Инциденты и карантин']]){
+        const panel=node('section',undefined,'history-entry');panel.append(node('h3',label));const rows=node('div');panel.append(rows);host.append(panel);loadRelations(code,org,section,rows,active);
+      }
+    }catch(e){if(active()){host.replaceChildren(node('p',e.message,'error-message'),button('Повторить',()=>card(code)));report(e);}}
+  }
+  async function loadRelations(code,org,section,host,active,cursor=null){
+    const loading=node('p','Загружаем связи…','field-help');host.querySelector('[data-more]')?.remove();host.append(loading);
+    try{const data=await api('/api/codes/'+code.id+'/relations?'+new URLSearchParams({organization_id:org,section,...(cursor||{})}));if(!active())return;loading.remove();
+      if(!data.items.length&&!cursor)host.append(node('p','Доступных записей нет.','field-help'));
+      for(const row of data.items){const entry=node('article',undefined,'history-entry');entry.append(node('strong',row.title||row.id),node('p',[row.kind?title(row.kind):'',row.state?title(row.state):'',new Date(row.created_at).toLocaleString('ru-RU')].filter(Boolean).join(' · ')));
+        if(row.archived_at)entry.append(node('p','В архиве'));
+        if(section==='warehouse')entry.append(node('p',[row.expected_reservation?'Ожидается в открытом задании':'',row.scanned?'Есть действующий скан':'',row.scan_removed?'Есть история удалённых сканов':''].filter(Boolean).join(' · ')||'Историческая связь'));
+        if(row.copies!==undefined)entry.append(node('p','Копий: '+row.copies+(row.scanned_copies!==undefined?' · Контрольных сканов: '+row.scanned_copies:'')));
+        if(row.reason)entry.append(node('p','Причина: '+row.reason));
+        if(row.pdf_sha256)entry.append(node('p','SHA256 PDF: '+row.pdf_sha256,'hash-text'));
+        if(row.restrictions)entry.append(node('p','Ограничения: '+(row.restrictions.map(x=>({receipt:'Приёмка',shipment:'Отгрузка',split:'Разделение',reprint:'Печать',external:'Внешние операции',remark:'Перемаркировка'}[x]||x)).join(', ')||'нет')));
+        if(section==='lineage')entry.append(button('Открыть связанный КМ',()=>card(row)));
+        if(section==='processes'&&openProcess)entry.append(button('Открыть процесс',()=>openProcess(row)));
+        host.append(entry);
+      }
+      if(data.next_cursor){const more=button('Ещё связи',()=>loadRelations(code,org,section,host,active,data.next_cursor));more.dataset.more='';host.append(more);}
+    }catch(e){if(active()){loading.replaceWith(node('p',e.message,'error-message'));const retry=button('Повторить загрузку',()=>{retry.remove();loadRelations(code,org,section,host,active,cursor);});host.append(retry);}}
+  }
   async function history(code,before=null){
-    const seq=sequence,org=organization;
-    try{const data=await api('/api/codes/'+code.id+'/history?'+new URLSearchParams({organization_id:org,...(before?{before_id:before}:{})}));if(seq!==sequence||state.route!=='/codes')return;const host=$('code-content');
+    const seq=sequence,org=organization,dialog=++dialogSequence;
+    try{const data=await api('/api/codes/'+code.id+'/history?'+new URLSearchParams({organization_id:org,...(before?{before_id:before}:{})}));if(seq!==sequence||dialog!==dialogSequence||state.route!=='/codes')return;const host=$('code-content');
       if(!before){host.replaceChildren(node('p',code.cis,'cis-cell'),node('p',code.conflicts?'Обнаружен другой полный payload для того же КИ. Автоматическая замена запрещена.':'Сохранение кода не является подтверждением его статуса или подлинности.','notice '+(code.conflicts?'error':'warning')));$('code-title').textContent='История КМ';}
       const labels={captured:'Первое сохранение',reobserved:'Повторное наблюдение',payload_conflict:'Конфликт полного КМ',quantity_adjusted:'Перераспределение количества'};
       for(const event of data.history){const card=node('section',undefined,'history-entry');card.append(node('h3',labels[event.kind]),node('p',new Date(event.created_at).toLocaleString('ru-RU')+' · '+event.actor_name,'field-help'),node('p','Версия '+event.version+' · Шаблон '+event.template+' · AI30: '+(event.label_quantity??'не указан')),node('p','Источник: '+event.source_ref,'field-help'),node('p','Профиль: '+event.profile,'field-help'),node('p','Исходный SHA256: '+event.raw_sha256,'hash-text'),node('p','Нормализованный SHA256: '+event.normalized_sha256,'hash-text'));

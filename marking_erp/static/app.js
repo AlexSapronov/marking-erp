@@ -13,7 +13,7 @@ const field = (form, name) => form.elements.namedItem(name);
 const state = {session:null,generation:0,route:'/',users:[],options:null,editing:null,credentials:null,query:'',group:'',status:'active',page:1};
 const incidents=createIncidents({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
 const admin=createAdmin({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
-const registry=createRegistry({state,$,api,node,button,heading,notice,report,openDialog});
+const registry=createRegistry({state,$,api,node,button,heading,notice,report,openDialog,openProcess:async row=>{closeDialog('code-dialog',true);navigate(({marking:'/marking',atk:'/atks',transform:'/atks',split:'/split',remark:'/remarking',fts:'/fts'})[row.kind]||'/marking');await business.show();await business.open(row.id);}});
 const operations=createOperations({incidents,state,$,api,node,button,heading,report,openDialog});
 const documents=createDocuments({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask,openMarking:async id=>{navigate('/marking');await business.show();await business.open(id);}});
 const warehouse=createWarehouse({incidents,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});

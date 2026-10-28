@@ -1,5 +1,6 @@
 """Organization and own/assigned filtering happen before any payload or file read."""
 from uuid import UUID
+from datetime import datetime
 from fastapi import Depends,HTTPException,Query,Response
 from sqlalchemy import text
 from . import auth
@@ -44,6 +45,20 @@ def install_registry(app,actor,settings):
             AND (c.cis LIKE :q ESCAPE '!' OR c.gtin LIKE :q ESCAPE '!' OR EXISTS(SELECT 1 FROM product_pns p JOIN products pr ON pr.id=p.product_id WHERE pr.gtin=c.gtin AND p.organization_id=:org AND p.pn ILIKE :q ESCAPE '!'))
             ORDER BY c.created_at DESC,c.id DESC LIMIT :limit'''),{'org':organization_id,'scope':scope,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%','limit':limit+1}).mappings().all()
         return {'codes':[dict(x) for x in result[:limit]],'next_cursor':str(result[limit-1]['id']) if len(result)>limit else None}
+
+    @app.get('/api/codes/{id}/card')
+    def card(id:UUID,organization_id:UUID,current=dependency):
+        allowed_code(current,id,organization_id,'codes.registry.view')
+        from .code_card import overview
+        return {'code':overview(current,id,organization_id)}
+
+    @app.get('/api/codes/{id}/relations')
+    def relations(id:UUID,organization_id:UUID,section:str=Query(pattern='^(processes|documents|warehouse|incidents|printing|reprints|lineage)$'),
+                  before_time:datetime|None=None,before_id:UUID|None=None,current=dependency):
+        allowed_code(current,id,organization_id,'codes.registry.view')
+        if (before_time is None)!=(before_id is None):raise HTTPException(422,'Нужны обе части курсора')
+        from .code_card import relations as read
+        return read(current,id,organization_id,section,before_time,before_id)
 
     @app.get('/api/codes/{id}/history')
     def history(id:UUID,organization_id:UUID,before_id:int|None=None,current=dependency):
