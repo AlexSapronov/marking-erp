@@ -36,6 +36,8 @@ class BusinessWorker:
             if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273539)')).scalar_one():return
         from .catalog_schedule import tick as schedule_tick
         schedule_tick(self.engine,self.settings)
+        from .auto_print import tick as auto_print_tick
+        auto_print_tick(self.engine)
         # Dispatch machinery prevents two workers claiming the same mutation.
         operations.dispatch_once(self.engine,'business-worker',{(kind,VERSION):self.dispatch for kind in CONTRACTS},allowed_kinds=list(CONTRACTS),lease_seconds=180)
         with self.engine.connect() as c:

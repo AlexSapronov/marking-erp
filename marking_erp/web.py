@@ -85,9 +85,11 @@ def create_app(settings=None, engine=None):
     from .business.token_auth import install_token_auth
     install_token_auth(app,app.state.auth_dependency,engine,settings)
     install_nk(app,app.state.auth_dependency,settings)
+    from .business.auto_print import install_auto_print
+    install_auto_print(app,app.state.auth_dependency)
     install_marking(app,app.state.auth_dependency,settings)
     from .business.printing import install_printing
-    install_printing(app,app.state.auth_dependency,engine)
+    install_printing(app,app.state.auth_dependency,engine,settings)
     install_verifier(app,engine)
     from .business.fts import install_fts
     install_fts(app,app.state.auth_dependency,settings)

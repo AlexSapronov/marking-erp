@@ -1017,3 +1017,35 @@ def test_admin_warehouse_archive_and_restore(page,live_app):
     capture(page,'warehouse-admin-archive')
     restore.get_by_role('button',name='Вернуть из архива',exact=True).click()
     expect(page.get_by_role('heading',name='Вернуть в работу',exact=True)).to_be_visible()
+
+
+def test_auto_print_opt_in_and_queued_kit_ui(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.business.marking import apply
+    from marking_erp.business.printing import register_printer
+    from marking_erp.business.auto_print import tick
+    from marking_erp.registry import register_product
+    from test_gs1 import sample,GTIN
+    org=live_app['org'];specialist=live_app['users']['specialist']
+    with engine.begin() as c:
+        user=dict(c.execute(text('SELECT * FROM users WHERE id=:id'),{'id':specialist}).mappings().one());current=auth.Actor(c,user,'fixture',None)
+        register_product(c,org,GTIN,'AUTO-PRINT-PN','8542399000',source='external_verified',source_ref='fixture:nk',evidence_sha256='1'*64)
+        item=store.create(current,'marking','AUTO-PRINT-INVOICE',{'supplier':'Fixture','lines':[{'pn':'AUTO-PRINT-PN','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':1}]},org,state='receiving')
+        settings=Settings(database_url='postgresql+psycopg://unused@localhost/test',file_storage_path=live_app['file_storage_path'])
+        apply(current,item,{'id':uuid4(),'kind':'bm.fetch'},{'metadata':{'gtin':GTIN,'expected':1}},{},{'codes':[sample(37).decode()]},None,settings)
+        register_printer(c,org,'Складской принтер','Zebra fixture')
+    login(page,'specialist');page.goto(live_app['base']+'/marking')
+    page.get_by_role('button',name='Открыть',exact=True).click()
+    page.get_by_label('Разрешаю автоматически напечатать один комплект после готовности',exact=True).check()
+    page.get_by_role('button',name='Включить автопечать',exact=True).click()
+    expect(page.locator('#business-content')).to_contain_text('Ожидает готовности этикеток')
+    tick(engine)
+    page.get_by_role('button',name='Обновить состояние автопечати',exact=True).click()
+    expect(page.locator('#business-content')).to_contain_text('Комплект передан в очередь')
+    expect(page.locator('#business-content')).to_contain_text('Часть 1')
+    capture(page,'auto-print-kit-desktop')
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'auto-print-kit-390')
+    with engine.connect() as c:
+        assert c.execute(text('SELECT count(*) FROM print_jobs')).scalar_one()==1
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0

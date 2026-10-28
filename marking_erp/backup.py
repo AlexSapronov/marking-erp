@@ -209,6 +209,7 @@ def _freeze(c,bundle_hash,snapshot_at):
     c.execute(text("UPDATE users SET auth_version=auth_version+1,mfa_last_counter=GREATEST(mfa_last_counter,floor(extract(epoch from clock_timestamp())/30)::bigint)"))
     c.execute(text("UPDATE warehouse_tasks SET check_result=NULL,check_digest=NULL,check_policy_sha256=NULL,verified_at=NULL WHERE state='open'"))
     c.execute(text('UPDATE printer_devices SET enabled=false'))
+    c.execute(text("UPDATE auto_print_requests SET state='cancelled',reason='После восстановления требуется сверка фактической печати и новое подтверждение',updated_at=now() WHERE state IN ('waiting','blocked')"))
     c.execute(text("UPDATE print_jobs SET state=CASE WHEN state IN ('queued','held') THEN 'cancelled' ELSE 'unknown' END,lease_hash=NULL WHERE state IN ('queued','held','claimed','unknown')"))
     c.execute(text("UPDATE integration_auth_jobs SET state='expired',lease_hash=NULL,finished_at=now() WHERE state IN ('pending','leased')"))
     c.execute(text("UPDATE integration_settings SET public=public||CAST(:flags AS jsonb),revision=revision+1"),{'flags':json.dumps({'writes_enabled':False,'auto_refresh_tokens':False})})
