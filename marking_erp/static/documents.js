@@ -1,7 +1,7 @@
 const states={draft:'Черновик',prepared:'Состав проверен локально',archived:'В архиве'};
 const historyNames={created:'Создана',edited:'Изменён состав',prepared:'Состав проверен локально',archived:'Остановлена и архивирована',restored:'Возвращена в черновики'};
 const fields=[['pn','PN'],['gtin','GTIN'],['quantity','Штук в этикетке'],['labels','Этикеток'],['tnved','ТН ВЭД']];
-export function createDocuments({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,openMarking,ask}){
+export function createDocuments({appendWorkflow,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,openMarking,ask}){
   let generation=0,editSeq=0,org='',query='',archived=false,warehouseStage='all',cursors=[null],page=0,editor=null,selected=new Map(),bulkRequests=new Map();
   const can=p=>Boolean(state.session?.permissions[p]);
   function reset(){generation++;editSeq++;editor=null;selected.clear();bulkRequests.clear();warehouseStage='all';org='';query='';archived=false;page=0;cursors=[null];$('document-content').replaceChildren();}
@@ -49,11 +49,11 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     if(doc.warehouse_composition?.state==='ready')message='Полный состав поставки сохранён и возвращён в рабочее место логиста.';
     content.append(node('p',`${doc.document_date} · ${doc.canonical_supplier||doc.supplier} · ${doc.logistics_completed?"Завершена логистом":doc.warehouse_composition?.state==="requested"?"Дополнить состав для склада":doc.warehouse_composition?.state==="ready"?"Полный состав готов":states[doc.state]} · Версия ${doc.revision}`),node('p',message,'notice warning'));
     if(doc.state==='archived'&&doc.archive_retain_until)content.append(node('p','Хранить не менее чем до '+new Date(doc.archive_retain_until).toLocaleDateString('ru-RU'),'muted'));
-    if(doc.workflow){const chain=node('section',undefined,'panel');chain.append(node('h3','Цепочка накладной'),node('p',doc.workflow.stage),node('p','Следующее действие: '+doc.workflow.next_action));for(const op of doc.workflow.operations||[])chain.append(node('p',op.kind+': '+op.state+(op.reason?' · '+op.reason:'')));for(const a of doc.workflow.atks)chain.append(node('p','АТК: '+a.title+' · '+a.state));for(const t of doc.workflow.tasks)chain.append(node('p',(t.kind==='receipt'?'Приёмка':'Отгрузка')+': '+t.state));content.append(chain);}
+    appendWorkflow(content,'document',doc.id);
     const actions=node('div',undefined,'actions');
     if(doc.marking_id)actions.append(button('Открыть процесс маркировки',()=>{closeDialog('document-dialog',true);openMarking(doc.marking_id);},'primary'));
-    if(!doc.marking_id&&doc.state==='prepared'&&can('marking.codes.issue')){const request_id=crypto.randomUUID();actions.append(button('Начать маркировку этой накладной',async()=>{if(!(await ask('Начать маркировку накладной '+doc.number+'?','Будет использован доступный пул КМ и создан заказ недостающих кодов. Проверьте состав перед подтверждением.','Начать маркировку')))return;try{const result=await api('/api/marking/start',{method:'POST',body:{source_id:doc.id,revision:doc.revision,confirmed:true,request_id}});closeDialog('document-dialog',true);openMarking(result.id);}catch(e){fail(e);}},'primary'));}
-    if(!doc.logistics_completed&&!doc.marking_id&&doc.state!=='archived'&&can('marking.documents.edit'))actions.append(button('Редактировать состав',()=>renderEditor(doc)));
+    if(!doc.marking_in_progress&&doc.state==='prepared'&&can('marking.codes.issue')){const request_id=crypto.randomUUID();actions.append(button('Начать маркировку этой накладной',async()=>{if(!(await ask('Начать маркировку накладной '+doc.number+'?','Будет использован доступный пул КМ и создан заказ недостающих кодов. Проверьте состав перед подтверждением.','Начать маркировку')))return;try{const result=await api('/api/marking/start',{method:'POST',body:{source_id:doc.id,revision:doc.revision,confirmed:true,request_id}});closeDialog('document-dialog',true);openMarking(result.id);}catch(e){fail(e);}},'primary'));}
+    if(!doc.logistics_completed&&!doc.marking_in_progress&&doc.state!=='archived'&&can('marking.documents.edit'))actions.append(button('Редактировать состав',()=>renderEditor(doc)));
     if(doc.state==='draft'&&can('marking.documents.edit'))actions.append(button('Проверить состав',()=>change(doc,'prepare',{}),'primary'));
     if(can('audit.operational.view'))actions.append(button('История накладной',async()=>{const seq=editSeq;try{const data=await api('/api/documents/'+doc.id+'/history');if(seq!==editSeq)return;const history=node('section',undefined,'section-gap');history.id='document-history';history.append(node('h3','История версий'));for(const h of data.history)history.append(node('p',`Версия ${h.revision} · ${historyNames[h.action]||'Событие'} · ${h.actor_name} · ${new Date(h.created_at).toLocaleString('ru-RU')} ${h.reason}`));content.querySelector('#document-history')?.remove();content.append(history);}catch(error){if(seq===editSeq)fail(error);}}));content.append(actions);
     if(doc.warehouse_composition?.state==='requested'&&can('marking.documents.edit')&&can('marking.import.preview'))compositionForm(content,doc);
@@ -116,5 +116,5 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
       catch(error){if(seq===editSeq)fail(error);}finally{if(seq===editSeq){form.dataset.busy='false';blocked.forEach(([b,disabled])=>b.disabled=disabled);}}
     });
   }
-  return {show,reset,dirty:()=>$('document-form')?.dataset.dirty==='true'};
+  return {show,reset,openRelated:async target=>{org=target.organization_id;page=0;cursors=[null];query='';archived=Boolean(target.archived);await show();await open(target.id);},dirty:()=>$('document-form')?.dataset.dirty==='true'};
 }
