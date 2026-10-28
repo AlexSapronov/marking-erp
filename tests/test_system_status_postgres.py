@@ -107,7 +107,8 @@ def test_operational_evidence_is_local_redacted_and_does_not_claim_pilot(global_
         assert item['signers']=={'registered':1,'trusted':1,'recent':1,'token_capable':1}
         assert item['writes_enabled'] and not item['warehouse_live_checks']
         assert item['token_renewal'][0]['needs_attention'] is True
-        assert not data['external_probe_performed'] and not data['hardware_verified'] and not data['worker_liveness_verified']
+        assert not data['external_probe_performed'] and not data['hardware_verified']
+        assert data['worker_liveness_verified']==data['workers']['available']
         for value in [private, 'a'*64, sha256(private.encode()).hexdigest(), str(device)]:
             assert value not in response.text
 

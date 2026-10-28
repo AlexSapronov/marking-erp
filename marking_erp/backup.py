@@ -205,6 +205,8 @@ def _connect_args(url):
 
 
 def _freeze(c,bundle_hash,snapshot_at):
+    c.execute(text("INSERT INTO worker_events(worker_id,action) SELECT id,'restored' FROM worker_runs WHERE state NOT IN ('stopped','restored')"))
+    c.execute(text("UPDATE worker_runs SET state='restored',heartbeat_at=NULL,thread_alive=false WHERE state NOT IN ('stopped','restored')"))
     c.execute(text('DELETE FROM sessions'))
     c.execute(text("UPDATE users SET auth_version=auth_version+1,mfa_last_counter=GREATEST(mfa_last_counter,floor(extract(epoch from clock_timestamp())/30)::bigint)"))
     c.execute(text("UPDATE warehouse_tasks SET check_result=NULL,check_digest=NULL,check_policy_sha256=NULL,verified_at=NULL WHERE state='open'"))

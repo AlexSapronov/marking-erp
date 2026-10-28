@@ -47,5 +47,6 @@ def operational_status(c, settings, *, inspect_credentials=False):
         count(*) FILTER (WHERE cardinality(restrictions)>0) AS quarantined,
         count(*) FILTER (WHERE assignee_id IS NULL) AS unassigned
         FROM incidents WHERE status<>'resolved' AND organization_id IN (SELECT id FROM organizations WHERE enabled)''')).mappings().one())
+    from .worker_health import health
     return {'organizations': organizations, 'operations': operations, 'printing': printing, 'incidents': incidents,
-            'external_probe_performed': False, 'hardware_verified': False, 'worker_liveness_verified': False}
+            'external_probe_performed': False, 'hardware_verified': False, **health(c)}

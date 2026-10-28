@@ -20,42 +20,56 @@ def background(c,owner,org,include_disabled=False):
     current=auth.Actor(c,dict(user),'worker',None);current.org=org;return current
 
 class BusinessWorker:
-    def __init__(self,engine,settings):self.engine=engine;self.settings=settings;self.stop=threading.Event();self.thread=None
+    def __init__(self,engine,settings):
+        from ..worker_health import WorkerObserver
+        self.engine=engine;self.settings=settings;self.stop=threading.Event();self.thread=None
+        self.observer=WorkerObserver(engine,settings.build_sha)
     def start(self):
+        self.observer.start(lambda:bool(self.thread and self.thread.is_alive()))
         self.thread=threading.Thread(target=self.run,daemon=True,name='business-worker');self.thread.start()
     def close(self):
         self.stop.set()
         if self.thread:self.thread.join(timeout=45)
     def run(self):
-        while not self.stop.is_set():
-            try:self.tick()
-            except Exception:pass # Individual operations retain evidence/state; never log tokens or raw replies.
-            self.stop.wait(2)
+        try:
+            while not self.stop.is_set():
+                self.observer.begin()
+                try:completed=self.tick()
+                except Exception:self.observer.finish(False) # No exception text, tokens or raw replies.
+                else:self.observer.finish(None if completed is False else True)
+                self.stop.wait(2)
+        finally:self.observer.close()
     def tick(self):
         with self.engine.begin() as c:
-            if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273539)')).scalar_one():return
+            if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273539)')).scalar_one():return False
         from .catalog_schedule import tick as schedule_tick
+        self.observer.phase('schedule')
         schedule_tick(self.engine,self.settings)
         from .auto_print import tick as auto_print_tick
+        self.observer.phase('auto_print')
         auto_print_tick(self.engine)
         # Dispatch machinery prevents two workers claiming the same mutation.
+        self.observer.phase('dispatch')
         operations.dispatch_once(self.engine,'business-worker',{(kind,VERSION):self.dispatch for kind in CONTRACTS},allowed_kinds=list(CONTRACTS),lease_seconds=180)
         with self.engine.connect() as c:
             pending=c.execute(text("SELECT o.id FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE (o.state='submitted' OR (o.state='unknown' AND o.external_id IS NOT NULL)) AND NOT l.applied ORDER BY o.updated_at LIMIT 10")).scalars().all()
             syncs=c.execute(text("SELECT id FROM business_items WHERE kind='sync' AND state='processing' ORDER BY created_at LIMIT 1")).scalars().all()
         for id in pending:
             if self.stop.is_set():break
+            self.observer.phase('reconcile')
             try:self.reconcile(id)
             except Exception:
                 with self.engine.begin() as c:c.execute(text("UPDATE external_operations SET reason='Ожидается подтверждение ЧЗ/НК. Проверьте доступ и квитанцию в личном кабинете.' WHERE id=:id AND state='submitted'"),{'id':id})
         for id in syncs:
+            self.observer.phase('catalog_sync')
             try:self.sync(id)
             except RemoteError as error:
                 if error.status!=429:self.pause_sync(id,str(error))
             except SyncProblem as error:self.pause_sync(id,str(error))
             except Exception:self.pause_sync(id,'Синхронизация остановлена. Проверьте доступ, структуру ответа НК и настройки подключения.')
-        self.pipeline_tick()
+        self.observer.phase('pipeline');self.pipeline_tick()
         from .token_auth import refresh_tick
+        self.observer.phase('token_refresh')
         refresh_tick(self.engine,self.settings)
     def pause_sync(self,id,message):
         with self.engine.begin() as c:

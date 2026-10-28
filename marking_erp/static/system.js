@@ -14,10 +14,37 @@ const operationStates={awaiting_signature:'Ожидают подписи',queued
 const printingStates={queued:'В очереди',held:'Приостановлены карантином',claimed:'Выданы агенту',unknown:'Исход неизвестен'};
 const date=value=>value?new Date(value).toLocaleString('ru-RU'):'Нет данных';
 
+const workerStages={starting:'Запуск',cycle:'Начало цикла',schedule:'Планировщик НК',auto_print:'Автопечать',dispatch:'Отправка внешней операции',reconcile:'Проверка квитанции',catalog_sync:'Синхронизация НК',pipeline:'Партия каталога',token_refresh:'Обновление доступа ЧЗ/СУЗ',idle:'Ожидание следующего цикла',stopped:'Остановлен'};
+const workerObservations={active:'Свежий сигнал',starting:'Запускается',stale:'Нет свежего сигнала потока',delayed:'Долгое выполнение этапа',error:'Цикл завершился ошибкой',historical:'Предыдущий экземпляр'};
+const alertNames={worker_unavailable:'Нет свежего сигнала работающего обработчика',worker_delayed:'Задержка этапа обработчика',worker_errors:'Ошибки полного цикла обработки',unknown_operations:'Неизвестный исход внешней операции — требуется сверка',blocked_operations:'Внешние операции заблокированы',ready_queue_delayed:'Готовые операции ждут отправки более 5 минут',dispatch_lease_expired:'Истёк срок выполняемой отправки — проверьте исход',external_receipt_delayed:'Внешняя квитанция ожидается более 10 минут',signature_waiting:'Операции ждут подписи более 5 минут',print_unknown:'Неизвестный исход печати или агент не завершил задание за 5 минут',print_queue_delayed:'Печать ждёт агента более 5 минут',print_held:'Печать приостановлена карантином',catalog_processing_delayed:'Каталог не обновлял прогресс более 10 минут',catalog_blocked:'Синхронизация или партия НК остановлена',auto_print_blocked:'Автопечать остановлена до очереди',auto_print_ready_delayed:'Готовый комплект ждёт автопечати более 5 минут',authorization_expired:'Истёк срок задания авторизации ЧЗ/СУЗ'};
+function workersView(data,{node,button,navigate,permissions}){
+  const section=node('section',undefined,'panel section-gap');section.id='worker-health';section.append(node('h2','Фоновые обработчики и задержки'));
+  const status=data.workers;
+  if(!status){section.append(node('p','Нет данных наблюдения.','notice warning'));return section;}
+  section.append(node('p','Состояние на момент последнего обновления страницы.','muted'));
+  section.append(node('p',status.available?'Есть свежий сигнал работающего потока':status.starting?'Обработчик запускается':'Свежий сигнал работающего обработчика отсутствует',status.available?'notice success':'notice warning'),
+    node('p',`Сигнал активности: каждые ${status.heartbeat_seconds} сек.; устаревание после ${status.stale_after_seconds} сек. Завершённый цикл не означает успешного завершения каждой бизнес-операции.`,'muted'));
+  if(status.truncated)section.append(node('p','Показаны до 20 экземпляров; работающие экземпляры идут первыми.','muted'));
+  for(const instance of status.instances){const card=node('article',undefined,'history-entry');card.append(node('h3','Экземпляр '+instance.id.slice(0,8)),node('p',workerObservations[instance.observation]||'Нет данных','badge'),
+    node('p','Этап: '+workerStages[instance.stage]),node('p','Начало этапа: '+date(instance.stage_started_at)+' · порог предупреждения: '+instance.stage_limit_seconds+' сек.','muted'),
+    node('p','Последний сигнал: '+date(instance.heartbeat_at)),node('p','Последний завершённый цикл: '+date(instance.last_success_at)),node('p',`Завершено циклов: ${instance.cycles}. Ошибок циклов: ${instance.errors}; подряд: ${instance.consecutive_errors}.`));section.append(card);}
+  section.append(node('h3','Предупреждения'));
+  if(!data.alerts?.length)section.append(node('p','По локальным данным задержек и неизвестных исходов не обнаружено.','notice success'));
+  for(const alert of data.alerts||[]){const row=node('p',(alertNames[alert.code]||'Требует внимания')+' · '+alert.count+(alert.oldest_at?' · самое раннее: '+date(alert.oldest_at):''),alert.severity==='critical'?'notice error':'notice warning');row.dataset.workerAlert=alert.code;section.append(row);}
+  section.append(node('p','Предупреждение о задержке не доказывает отказ внешней системы. Неизвестные отправки и печать сначала сверяют по квитанции или у принтера; этот экран не повторяет операции.','muted'));
+  if(navigate&&permissions?.['operations.view'])section.append(button('Проверить внешние операции',()=>navigate('/operations')));
+  if(navigate&&permissions?.['labels.print.view'])section.append(button('Перейти к печати',()=>navigate('/reprint')));
+  if(navigate&&permissions?.['nk.cards.view'])section.append(button('Проверить каталог',()=>navigate('/catalog')));
+  const history=node('details');history.append(node('summary','Последние события обработчиков'));
+  for(const event of status.events)history.append(node('p',({started:'Запуск экземпляра',cycle_failed:'Ошибка цикла',recovered:'Цикл снова завершается успешно',stopped:'Штатная остановка',restored:'Наблюдение перенесено из резервной копии'}[event.action]||'Событие')+' · '+date(event.created_at)));
+  section.append(history);return section;
+}
+
 function operationalView(data,{node,button,navigate,permissions}){
   const section=node('section',undefined,'panel section-gap');section.append(node('h2','Подключения и эксплуатация'),
-    node('p','Здесь показаны сохранённые настройки и события сервера. Доступ к внешним API, работа фонового обработчика, сертификата и оборудования этим экраном не подтверждаются.','muted'));
+    node('p','Здесь показаны сохранённые настройки и события сервера. Сигналы обработчика показываются отдельно. Доступ к внешним API, работа сертификата и оборудования требуют проверки на целевой среде.','muted'));
   if(!data){section.append(node('p','Сводка недоступна: сначала приведите схему БД к версии установленного релиза.','empty'));return section;}
+  section.append(workersView(data,{node,button,navigate,permissions}));
   const component=(host,label,status,description)=>{const row=node('article',undefined,'system-component');row.append(node('h3',label),node('span',status,'badge system-result unknown'),node('p',description,'muted'));host.append(row);};
   for(const org of data?.organizations||[]){
     const group=node('section',undefined,'section-gap');group.append(node('h3',org.name));
@@ -71,7 +98,7 @@ export function createSystem({state,$,api,node,button,heading,report,navigate}){
       for(const [label,value] of [['Сборка',data.build_sha||'SHA релиза не указан'],['Ожидаемая схема',data.expected_schema_revision],['Проверено',new Date(data.checked_at).toLocaleString('ru-RU')]]){
         meta.append(node('dt',label),node('dd',value,'hash-text'));
       }
-      summary.append(meta);content.append(summary);
+      summary.append(meta);if(data.operational?.alerts?.length)summary.append(node('p','Фоновая обработка требует внимания: предупреждений '+data.operational.alerts.length+'. Подробности ниже.','notice warning'));content.append(summary);
       const grid=node('section',undefined,'system-check-grid');grid.setAttribute('aria-label','Проверки сервера');
       for(const [key,[label,description]] of Object.entries(checks)){
         const result=data.checks[key],item=node('article',undefined,'panel system-check');item.dataset.check=key;
