@@ -68,9 +68,12 @@ def exact_pdf(c,code,row,settings=None):
         file=c.execute(text("SELECT * FROM files WHERE payload_id=:payload AND organization_id=:org AND kind='label_pdf' AND snapshot->>'pn'=:pn ORDER BY created_at,id LIMIT 1"),
             {'payload':code['registry_payload_id'],'org':row['organization_id'],'pn':code['pn']}).mappings().first()
         if file:
+            if file['snapshot'].get('payload_sha256')!=payload_sha or file['snapshot'].get('quantity')!=code['quantity']:raise HTTPException(409,'Сохранённый PDF не соответствует текущему полному КМ')
             try:return FileStore(settings.file_storage_path).read(file)
             except StorageError:raise HTTPException(503,'Сохранённая этикетка недоступна или повреждена') from None
-    with zipfile.ZipFile(BytesIO(bytes(saved['body']))) as archive:return archive.read(f'{index+1:05d}.pdf')
+    try:
+        with zipfile.ZipFile(BytesIO(bytes(saved['body']))) as archive:return archive.read(f'{index+1:05d}.pdf')
+    except (KeyError,zipfile.BadZipFile):raise HTTPException(503,'Точный сохранённый PDF недоступен. Требуется восстановить файлы реестра.') from None
 
 
 def current_parts(c,item):
