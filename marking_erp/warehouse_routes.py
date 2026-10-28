@@ -52,6 +52,10 @@ def install_warehouse(app, actor, settings=None):
         else:
             current.require('warehouse.'+task['kind']+'.'+action, **ctx)
 
+    def archive_admin(current,permission,**ctx):
+        if current.user['group_slug']!='administrator' and not auth.group_has_admin(current.connection,current.user['group_slug']):raise HTTPException(403,'Архивирование склада доступно администратору')
+        current.require(permission,**ctx,administrative=True)
+
     def get(current, id, lock=False):
         task = current.connection.execute(text('SELECT * FROM warehouse_tasks WHERE id=:id'+(' FOR UPDATE' if lock else '')), {'id':id}).mappings().first()
         if not task: raise HTTPException(404, 'Задание не найдено')
@@ -62,6 +66,7 @@ def install_warehouse(app, actor, settings=None):
         return current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'+(' FOR UPDATE' if lock else '')),{'id':task['source_id']}).mappings().one()
 
     def writable(current, task):
+        if task.get('archived_at'):raise HTTPException(409,'Задание в архиве')
         if task['state']!='open': raise HTTPException(409, 'Задание закрыто или отменено')
         source = source_status(current,task,True)
         if source['state']=='archived': raise HTTPException(409, 'Исходная накладная в архиве. Работа остановлена.')
@@ -294,19 +299,20 @@ def install_warehouse(app, actor, settings=None):
         return {'id':body.request_id}
 
     @app.get('/api/warehouse/tasks')
-    def listing(organization_id:UUID, kind:str=Query('receipt',pattern='^(receipt|shipment)$'), logistics:bool=False, closed:bool=False, q:str=Query('',max_length=120), before_id:UUID|None=None, current=dep):
+    def listing(organization_id:UUID, kind:str=Query('receipt',pattern='^(receipt|shipment)$'), logistics:bool=False, closed:bool=False, archived:bool=False, q:str=Query('',max_length=120), before_id:UUID|None=None, current=dep):
         if organization_id not in current.organizations(): raise HTTPException(403, 'Нет доступа к организации')
         permission='logistics.warehouse.result.view' if logistics else 'warehouse.'+kind+'.view'
         grant=current.grants().get(permission)
         if not grant: raise HTTPException(403, 'Нет доступа к заданиям')
-        rows=current.connection.execute(text('''SELECT t.id,t.organization_id,t.owner_id,t.kind,t.source_type,t.number,t.supplier,t.document_date,t.state,t.revision,
+        if archived:archive_admin(current,'documents.archive.view',organization_id=organization_id,owner_id=current.id)
+        rows=current.connection.execute(text('''SELECT t.id,t.organization_id,t.owner_id,t.kind,t.source_type,t.number,t.supplier,t.document_date,t.state,t.revision,t.archived_at,
             jsonb_array_length(t.lines) AS line_count,
             (SELECT count(*) FROM warehouse_scans s WHERE s.task_id=t.id AND s.removed_at IS NULL) AS scanned,
             (SELECT sum((l->>'labels')::bigint) FROM jsonb_array_elements(t.lines) l) AS expected
             FROM warehouse_tasks t WHERE t.organization_id=:org AND t.kind=:kind
-            AND (:closed OR t.state='open') AND (CAST(:before AS uuid) IS NULL OR (t.created_at,t.id)<(SELECT created_at,id FROM warehouse_tasks WHERE id=CAST(:before AS uuid) AND organization_id=:org))
+            AND (t.archived_at IS NOT NULL)=:archived AND (:closed OR :archived OR t.state='open') AND (CAST(:before AS uuid) IS NULL OR (t.created_at,t.id)<(SELECT created_at,id FROM warehouse_tasks WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (:grant='all' OR (:grant='own' AND t.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=t.id AND a.user_id=:user)))
-            AND (t.number ILIKE :q ESCAPE '!' OR t.supplier ILIKE :q ESCAPE '!') ORDER BY t.created_at DESC,t.id DESC LIMIT 26'''), {'org':organization_id,'kind':kind,'closed':closed,'grant':grant,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
+            AND (t.number ILIKE :q ESCAPE '!' OR t.supplier ILIKE :q ESCAPE '!') ORDER BY t.created_at DESC,t.id DESC LIMIT 26'''), {'org':organization_id,'kind':kind,'closed':closed,'archived':archived,'grant':grant,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'tasks':[{k:v for k,v in r.items() if k not in ('organization_id','owner_id','kind')} for r in rows[:25] if permitted(current,r,logistics=logistics)], 'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
 
     @app.get('/api/warehouse/tasks/{id}')
@@ -372,10 +378,40 @@ def install_warehouse(app, actor, settings=None):
         if found: event(current,task,'scan_removed',{'scan_id':str(scan_id)})
         return {'removed':bool(found)}
 
+    @app.post('/api/warehouse/tasks/{id}/archive')
+    def archive_task(id:UUID,body:Transition,current=dep):
+        task=get(current,id,True);require(current,task)
+        archive_admin(current,'documents.archive',**context(current,task))
+        if body.confirmation!=task['number']:raise HTTPException(422,'Введите точный номер накладной')
+        if task['archived_at']:return {'archived':True}
+        if body.revision!=task['revision']:raise HTTPException(409,'Задание изменено')
+        if task['state']=='open':
+            transition(id,'close',body,current)
+            task=get(current,id,True)
+        if task['state']!='closed' or any(r['scanned']!=r['labels'] or r['units']!=r['expected_units'] for r in summary(current,task)):raise HTTPException(409,'Архив доступен только после заполнения без расхождений')
+        from .incidents import enforce
+        accepted=[v['cis'] for v in active_scans(current,task)]
+        enforce(current.connection,task['organization_id'],task['kind'],cises=accepted+task['expected_codes'],targets=[task['id'],task['source_id']])
+        current.connection.execute(text('UPDATE warehouse_tasks SET archived_at=now(),archived_by=:user WHERE id=:id'),{'id':id,'user':current.id})
+        event(current,task,'archived',{'reason':body.reason.strip()})
+        return {'archived':True}
+
+    @app.post('/api/warehouse/tasks/{id}/unarchive')
+    def unarchive_task(id:UUID,body:Transition,current=dep):
+        task=get(current,id,True);require(current,task)
+        archive_admin(current,'documents.restore',**context(current,task))
+        if body.confirmation!=task['number']:raise HTTPException(422,'Введите точный номер накладной')
+        if not task['archived_at']:return {'archived':False}
+        if body.revision!=task['revision']:raise HTTPException(409,'Задание изменено')
+        current.connection.execute(text('UPDATE warehouse_tasks SET archived_at=NULL,archived_by=NULL WHERE id=:id'),{'id':id})
+        event(current,task,'unarchived',{'reason':body.reason.strip()})
+        return {'archived':False}
+
     @app.post('/api/warehouse/tasks/{id}/{action}')
     def transition(id:UUID, action:str, body:Transition, current=dep):
         if action not in ('close','reopen','cancel'): raise HTTPException(404, 'Действие не найдено')
         task=get(current,id,True)
+        if task['archived_at']:raise HTTPException(409,'Сначала верните задание из архива')
         if action=='cancel':
             require(current,task,logistics=True)
             current.require('logistics.warehouse.refresh',**context(current,task))

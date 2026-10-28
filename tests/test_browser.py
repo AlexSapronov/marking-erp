@@ -979,3 +979,32 @@ def test_bm_invoice_chain_and_cross_page_selection(page,live_app,engine):
     expect(page.get_by_role('heading',name='Цепочка накладной',exact=True)).to_be_visible()
     capture(page,'bm-invoice-workflow')
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_admin_warehouse_archive_and_restore(page,live_app):
+    from playwright.sync_api import expect
+    from test_warehouse_excel import workbook
+    login(page,'administrator');page.goto(live_app['base']+'/receipt')
+    page.get_by_role('button',name='Резервный Excel',exact=True).click()
+    page.get_by_label('Номер документа',exact=True).fill('ARCHIVE-UI-01')
+    page.get_by_label('Поставщик',exact=True).fill('Archive supplier')
+    page.get_by_label('Причина резервного импорта',exact=True).fill('Проверка архива немаркируемой поставки')
+    page.locator('#warehouse-content fieldset input[value="'+str(live_app['users']['tsd'])+'"]').check()
+    content=workbook([['BOLT','','',5,'']])
+    page.get_by_label('Файл склада XLSX',exact=True).set_input_files({'name':'archive.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':content})
+    page.get_by_role('button',name='Проверить Excel',exact=True).click()
+    page.get_by_role('button',name='Создать складское задание',exact=True).click()
+    page.locator('#confirm-ok').click()
+    archive=page.locator('.warehouse-transition').filter(has=page.get_by_role('button',name='В архив',exact=True))
+    archive.get_by_label('Введите номер накладной для подтверждения',exact=True).fill('ARCHIVE-UI-01')
+    archive.get_by_role('button',name='В архив',exact=True).click()
+    expect(page.get_by_text('Накладная в архиве. Сканы и результат закрытия сохранены.',exact=True)).to_be_visible()
+    page.locator('#warehouse-dialog [data-close]').click()
+    page.get_by_label('Состояние',exact=True).select_option('archive')
+    expect(page.get_by_role('heading',name='ARCHIVE-UI-01',exact=True)).to_be_visible()
+    page.get_by_role('button',name='Открыть задание',exact=True).click()
+    restore=page.locator('.warehouse-transition').filter(has=page.get_by_role('button',name='Вернуть из архива',exact=True))
+    restore.get_by_label('Введите номер накладной для подтверждения',exact=True).fill('ARCHIVE-UI-01')
+    capture(page,'warehouse-admin-archive')
+    restore.get_by_role('button',name='Вернуть из архива',exact=True).click()
+    expect(page.get_by_role('heading',name='Вернуть в работу',exact=True)).to_be_visible()
