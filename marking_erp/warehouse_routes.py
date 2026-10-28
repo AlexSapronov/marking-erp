@@ -335,7 +335,7 @@ def install_warehouse(app, actor, settings=None):
         result=task['check_result']
         expired=bool(result and (datetime.now(timezone.utc)-datetime.fromisoformat(result['checked_at'])).total_seconds()>public['rules']['warehouse.external_fact_max_age_seconds'])
         token=checks.digest({'revision':task['revision'],'archive':task['archived_at'],'source':dict(source),'policy':public,
-            'expired':expired,'permissions':permissions,'administrative':administrative,'assignees':[dict(a) for a in assignees]})
+            'expired':expired,'permissions':permissions,'grants':grants,'administrative':administrative,'assignees':[dict(a) for a in assignees]})
         if sync_token==token:return {'unchanged':True,'sync_token':token}
         scans=current.connection.execute(text('''SELECT s.id,s.line_index,s.gtin,s.quantity,substr(s.cis,19,20) AS serial,u.display_name,s.created_at
             FROM warehouse_scans s JOIN users u ON u.id=s.actor_id WHERE s.task_id=:id AND s.removed_at IS NULL ORDER BY s.created_at DESC,s.id DESC LIMIT 100'''), {'id':id}).mappings().all()
