@@ -63,6 +63,7 @@ export function createRegistry({state,$,api,node,button,heading,notice,report,op
         if(row.copies!==undefined)entry.append(node('p','Копий: '+row.copies+(row.scanned_copies!==undefined?' · Контрольных сканов: '+row.scanned_copies:'')));
         if(row.reason)entry.append(node('p','Причина: '+row.reason));
         if(row.pdf_sha256)entry.append(node('p','SHA256 PDF: '+row.pdf_sha256,'hash-text'));
+        if(section==='incidents')entry.append(node('p',row.cis?'КМ инцидента: '+row.cis:'Инцидент относится к связанному документу целиком','cis-cell'));
         if(row.restrictions)entry.append(node('p','Ограничения: '+(row.restrictions.map(x=>({receipt:'Приёмка',shipment:'Отгрузка',split:'Разделение',reprint:'Печать',external:'Внешние операции',remark:'Перемаркировка'}[x]||x)).join(', ')||'нет')));
         if(section==='lineage')entry.append(button('Открыть связанный КМ',()=>card(row)));
         if(section==='processes'&&openProcess)entry.append(button('Открыть процесс',()=>openProcess(row)));

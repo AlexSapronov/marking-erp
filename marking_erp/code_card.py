@@ -126,7 +126,7 @@ def relations(current, id, org, section, before_time=None, before_id=None):
         linked='''(w.expected_codes ? :cis OR EXISTS(SELECT 1 FROM warehouse_scans s WHERE s.task_id=w.id AND s.cis=:cis))'''
         access=warehouse_scope(current)
     elif section=='incidents':
-        table='incidents n';alias='n';select='n.id,n.created_at,n.category,n.source_title AS title,n.status AS state,n.restrictions,n.revision'
+        table='incidents n';alias='n';select='n.id,n.created_at,n.category,n.source_title AS title,n.cis,n.status AS state,n.restrictions,n.revision'
         prefix='''WITH RECURSIVE ancestors(id,cis,item_id) AS (
             SELECT id,cis,item_id FROM business_codes WHERE organization_id=:org AND registry_code_id=:id
             UNION SELECT old.id,old.cis,old.item_id FROM ancestors a JOIN code_replacements r ON r.new_code_id=a.id
