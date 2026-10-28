@@ -16,7 +16,7 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
     refreshBusy=true;
     try{await action();if(refreshAction===action){refreshFailures=0;syncStatus();}}
     catch(e){if(refreshAction===action&&e.code!=='stale'){
-      if(e.status===403||e.status===404){stopRefresh();if(active){detailGeneration++;active=null;$('warehouse-content').replaceChildren(node('p','Доступ к заданию изменён или задание недоступно. Обратитесь к логисту.','notice warning'));}else $('warehouse-list')?.replaceChildren(node('p','Доступ к заданиям изменён. Обновите рабочее место.','notice warning'));}
+      if(e.status===403||e.status===404){stopRefresh();if(active){detailGeneration++;active=null;$('warehouse-title').textContent='Задание недоступно';listRefresh?.invalidate?.();$('warehouse-content').replaceChildren(node('p','Доступ к заданию изменён или задание недоступно. Обратитесь к логисту.','notice warning'));}else $('warehouse-list')?.replaceChildren(node('p','Доступ к заданиям изменён. Обновите рабочее место.','notice warning'));}
       else{refreshFailures++;syncStatus('Не удалось обновить данные. Последний результат сохранён на экране; проверяем связь.',true);}
     }}finally{refreshBusy=false;if(refreshAction===action)queueRefresh(Math.min(30000,5000*2**refreshFailures));}
   }
@@ -56,6 +56,7 @@ export function createWarehouse({incidents,state,$,api,node,button,heading,notic
       if(focused)panel.querySelector('[data-task-id="'+focused+'"]')?.focus({preventScroll:true});
     };
     listRefresh=async()=>{if(seq===generation&&!$('warehouse-dialog').open)await load();};
+    listRefresh.invalidate=()=>{snapshot='';panel.replaceChildren();};
     try{await load();if(seq===generation&&!active)startRefresh(listRefresh);}
     catch(e){if(seq===generation){panel.replaceChildren(node('p','Не удалось загрузить задания. Нажмите «Обновить».','empty'));report(e);if(!active)startRefresh(listRefresh);}}
   }

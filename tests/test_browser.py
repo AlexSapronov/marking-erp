@@ -1137,6 +1137,8 @@ def test_tsd_network_retry_retains_request_after_refresh_and_revocation_clears_d
         with engine.begin() as c:c.execute(text('DELETE FROM operation_assignments WHERE target_id=:id AND user_id=:user'),{'id':task,'user':live_app['users']['tsd']})
         expect(page.locator('#warehouse-content')).to_contain_text('Доступ к заданию изменён',timeout=15000)
         expect(page.locator('.warehouse-scan')).to_have_count(0);expect(page.locator('.warehouse-metrics')).to_have_count(0)
+        expect(page.locator('#warehouse-title')).to_have_text('Задание недоступно')
+        expect(page.locator('#warehouse-list')).not_to_contain_text('AUTO-REFRESH-NETWORK')
         with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
         capture(page,'tsd-auto-refresh-access-revoked')
     finally:peer.close()
