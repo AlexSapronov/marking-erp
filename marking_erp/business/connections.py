@@ -18,6 +18,7 @@ class Connection(Body):
     template_id:StrictInt=Field(default=36,ge=36,le=37)
     writes_enabled:StrictBool=False
     auto_refresh_tokens:StrictBool=False
+    nk_auto_sync:StrictBool=False
     warehouse_live_checks:StrictBool=True
     ignore_legal_entity:StrictBool=False
     nk_key:SecretStr|None=None
@@ -60,6 +61,10 @@ def install_connections(app,actor,settings):
                 secret[k]=raw
         public=body.model_dump(exclude={'organization_id','revision','nk_key','true_token','oms_token'})
         if body.auto_refresh_tokens:public['token_refresh_actor']=str(current.id)
+        if body.nk_auto_sync:
+            current.require('nk.sync.execute',organization_id=body.organization_id,owner_id=current.id)
+            if not secret.get('nk_key'):raise HTTPException(422,'Для автоматической синхронизации нужен ключ НК')
+            public['nk_sync_actor']=str(current.id)
         encrypted=Fernet(settings.mfa_encryption_key.get_secret_value().encode()).encrypt(json.dumps(secret).encode())
         c.execute(text('''INSERT INTO integration_settings(organization_id,public,secret) VALUES (:org,CAST(:public AS jsonb),:secret)
             ON CONFLICT(organization_id) DO UPDATE SET public=EXCLUDED.public,secret=EXCLUDED.secret,revision=integration_settings.revision+1,updated_at=now()'''),{'org':body.organization_id,'public':json.dumps(public),'secret':encrypted})

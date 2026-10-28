@@ -931,3 +931,32 @@ def test_warehouse_fallback_excel_preview_commit_and_exact_source(page,live_app,
         assert c.execute(text('SELECT count(*) FROM bm_documents')).scalar_one()==0
         assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
         assert c.execute(text("SELECT count(*) FROM warehouse_tasks WHERE source_type='excel'")).scalar_one()==1
+
+
+def test_nk_cross_page_selection_saved_status_and_sidebar(page,live_app,engine):
+    from playwright.sync_api import expect
+    from test_catalog_worklist_postgres import catalog_fixture
+    with engine.begin() as c:
+        for n in range(30):catalog_fixture(c,live_app['org'],live_app['users']['specialist'],f'NK-{n:03}')
+    login(page,'specialist');page.locator('#catalog-link').click()
+    page.get_by_label('Сортировка',exact=True).select_option('pn')
+    page.get_by_label('Статус НК',exact=True).select_option('local')
+    page.get_by_role('button',name='Выбрать страницу',exact=True).click()
+    expect(page.locator('#catalog-selection-summary')).to_contain_text('25')
+    page.get_by_role('button',name='Далее',exact=True).click()
+    page.get_by_label('Выбрать NK-025',exact=True).check()
+    expect(page.locator('#catalog-selection-summary')).to_contain_text('26')
+    page.get_by_role('button',name='Назад',exact=True).click()
+    expect(page.get_by_label('Выбрать NK-000',exact=True)).to_be_checked()
+    capture(page,'nk-cross-page-selection')
+    page.reload()
+    expect(page.get_by_label('Статус НК',exact=True)).to_have_value('local')
+    expect(page.get_by_label('Сортировка',exact=True)).to_have_value('pn')
+    page.get_by_role('button',name='Открыть',exact=True).first.click()
+    expect(page.locator('#business-dialog')).to_have_class(__import__('re').compile('catalog-sidebar'))
+    expect(page.get_by_role('button',name='Проверить обязательные поля',exact=True)).to_be_visible()
+    expect(page.locator('#business-dialog').get_by_role('button',name='Сохранить в НК',exact=True)).to_be_disabled()
+    expect(page.locator('#business-dialog').get_by_role('button',name='Опубликовать',exact=True)).to_be_disabled()
+    expect(page.get_by_text('Следующий шаг:',exact=False)).to_be_visible()
+    capture(page,'nk-card-sidebar')
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
