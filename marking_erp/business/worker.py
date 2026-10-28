@@ -79,7 +79,7 @@ class BusinessWorker:
             s.save(current,row,'sync_paused',body={**row['body'],'error':message},state='blocked')
     def pipeline_tick(self):
         with self.engine.begin() as c:
-            c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
+            if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273529)')).scalar_one():return
             row=c.execute(text("SELECT * FROM business_items WHERE kind='import' AND state='processing' AND body->>'pipeline'='true' ORDER BY updated_at LIMIT 1 FOR UPDATE SKIP LOCKED")).mappings().first()
             if not row:return
             row=dict(row)

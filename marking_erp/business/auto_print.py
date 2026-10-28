@@ -97,7 +97,7 @@ def install_auto_print(app,actor):
 def tick(engine):
     with engine.begin() as c:
         # Same fence as manual queueing, archive, permissions and source edits.
-        c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
+        if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273529)')).scalar_one():return
         row=c.execute(text("SELECT * FROM auto_print_requests WHERE state='waiting' ORDER BY updated_at,id FOR UPDATE SKIP LOCKED LIMIT 1")).mappings().first()
         if not row:return
         try:

@@ -10,6 +10,7 @@ from sqlalchemy import text
 import xlsxwriter
 from . import auth, gs1, warehouse_check as checks
 from .auth_routes import Body
+from .write_locks import resources
 from . import workflow_policy as workflow
 from .policy import snapshot
 
@@ -66,7 +67,7 @@ def install_warehouse(app, actor, settings=None):
 
     def source_status(current,task,lock=False):
         if task['source_type']=='excel':return {'state':'prepared','revision':1}
-        return current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'+(' FOR UPDATE' if lock else '')),{'id':task['source_id']}).mappings().one()
+        return current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'+(' FOR SHARE' if lock else '')),{'id':task['source_id']}).mappings().one()
 
     def writable(current, task):
         if task.get('archived_at'):raise HTTPException(409,'Задание в архиве')
@@ -83,19 +84,16 @@ def install_warehouse(app, actor, settings=None):
         if action in ('scanned','scan_removed','reopen','cancel'):
             c.execute(text('UPDATE warehouse_tasks SET verified_at=NULL,check_result=NULL,check_digest=NULL,check_policy_sha256=NULL WHERE id=:id'),{'id':task['id']})
 
-    def exclusive_codes(current, task, cises, *, scanning=False):
-        """One source may receive and ship a KM; different open sources may not.
+    def exclusive_codes(current, task, cises):
+        """Serialize reservation/check/scan of the same CIS across sources.
 
-        Transfer/reopen use the exclusive authorization fence. Scans share that
-        fence, so a per-organization/CIS lock also coordinates legacy tasks that
-        have no expected list. No network I/O is performed under this lock.
+        All entry points use the same sorted transaction locks. Independent
+        documents and disjoint codes need no exclusive authorization fence.
         """
         codes=sorted(set(cises))
         if not codes:return
         c=current.connection
-        if scanning:
-            c.execute(text('SELECT pg_advisory_xact_lock(hashtextextended(:key,0))'),
-                {'key':'warehouse-cis:'+str(task['organization_id'])+':'+codes[0]})
+        resources(c, 'warehouse-cis:'+str(task['organization_id']), codes, rows=True)
         conflict=c.execute(text("""SELECT EXISTS(
             SELECT 1 FROM warehouse_tasks t
             WHERE t.organization_id=:org AND t.source_id<>:source AND t.state='open'
@@ -232,6 +230,7 @@ def install_warehouse(app, actor, settings=None):
     @app.post('/api/logistics/warehouse-transfer')
     def transfer(body:Transfer, current=dep):
         c=current.connection
+        resources(c, 'target-request', [body.request_id])
         source=c.execute(text('SELECT * FROM bm_documents WHERE id=:id FOR UPDATE'), {'id':body.source_id}).mappings().first()
         if not source: raise HTTPException(404, 'Накладная не найдена')
         assigned=c.execute(text('SELECT EXISTS(SELECT 1 FROM operation_assignments WHERE target_id=:id AND user_id=:user)'),{'id':source['id'],'user':current.id}).scalar_one()
@@ -370,6 +369,7 @@ def install_warehouse(app, actor, settings=None):
         try: parsed=gs1.parse(body.raw.encode('ascii'),scanner=True)
         except (ValueError,UnicodeError) as error: raise HTTPException(422, str(error) if isinstance(error,ValueError) else 'Переключите сканер на английскую раскладку') from None
         quantity=parsed.quantity or 1
+        resources(c, 'warehouse-scan-request', [body.request_id])
         existing=c.execute(text('SELECT * FROM warehouse_scans WHERE id=:id'), {'id':body.request_id}).mappings().first()
         if existing:
             if existing['task_id']==id and bytes(existing['payload'])==parsed.normalized and existing['removed_at'] is None and (body.line_index is None or body.line_index==existing['line_index']): return {'id':existing['id'],'replayed':True}
@@ -400,7 +400,7 @@ def install_warehouse(app, actor, settings=None):
         else: index=body.line_index
         line=summary(current,task)[index]
         if line['scanned']>=line['labels']: raise HTTPException(409, 'Все КМ этой строки уже отсканированы')
-        exclusive_codes(current,task,[parsed.cis],scanning=True)
+        exclusive_codes(current,task,[parsed.cis])
         c.execute(text('''INSERT INTO warehouse_scans(id,task_id,line_index,cis,gtin,quantity,payload,actor_id)
             VALUES (:id,:task,:line,:cis,:gtin,:quantity,:payload,:user)'''), {'id':body.request_id,'task':id,'line':index,'cis':parsed.cis,'gtin':parsed.gtin,'quantity':quantity,'payload':parsed.normalized,'user':current.id})
         event(current,task,'scanned',{'scan_id':str(body.request_id),'line_index':index})
