@@ -81,6 +81,9 @@ def test_partial_report_only_applies_its_codes(allocated,engine):
         apply(actor,row,{'kind':'bm.report'},{},{'sntins':[bytes(code['payload']).decode()]},{},None,env[0])
         assert store.item(c,item)['state']=='reporting'
         assert c.execute(text("SELECT count(*) FROM business_codes WHERE item_id=:id AND state='applied'"),{'id':item}).scalar_one()==1
+        c.execute(text("UPDATE business_items SET state='rejected',body=jsonb_set(body,'{last_rejected_step}','\"bm.report\"') WHERE id=:id"),{'id':item})
+        apply(actor,store.item(c,item),{'kind':'bm.report'},{},{'sntins':[bytes(code['payload']).decode()]},{},None,env[0])
+        assert store.item(c,item)['state']=='rejected'
         apply(actor,store.item(c,item),{'kind':'bm.report'},{},{'sntins':[other.decode()]},{},None,env[0])
         assert store.item(c,item)['state']=='applied'
 

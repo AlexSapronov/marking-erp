@@ -146,7 +146,10 @@ def apply(current,row,op,link,payload,result,live,settings):
             actual=fresh.get('quantityInPack')
             if not isinstance(actual,(int,float,str)) or int(actual)!=body['baseline']-body['quantity']:raise ValueError('Отчёт принят; остаток исходного КМ ещё не подтверждён')
             body['remaining']=int(actual)
-        s.save(current,row,'report_confirmed',body=body,state='applied' if all(v['state']=='applied' for v in rows(c,row['id'])) else 'reporting')
+        complete=all(v['state']=='applied' for v in rows(c,row['id']))
+        pending=c.execute(text("SELECT EXISTS(SELECT 1 FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id AND o.kind IN ('bm.report','split.report') AND o.state NOT IN ('confirmed','rejected','cancelled_before_dispatch'))"),{'id':row['id']}).scalar_one()
+        state='applied' if complete else 'rejected' if body.get('last_rejected_step','').endswith('.report') and not pending else 'reporting'
+        s.save(current,row,'report_confirmed',body=body,state=state)
     elif step=='bm.atk':
         documents=result['document'][0];actual=result['registry']
         parents={r.get('parent') for r in actual.values()};atk=next(iter(parents)) if len(parents)==1 else None
