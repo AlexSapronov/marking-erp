@@ -208,6 +208,8 @@ def install_documents(app,actor):
         doc['marking_id']=process['id'] if process else None
         doc['marking_revision']=process['revision'] if process else None
         doc['warehouse_composition']=process['composition'] if process else None
+        from .business.bm_workflow import facts
+        doc['workflow']=facts(current,doc)
         return {'document':{k:v for k,v in doc.items() if k!='request_sha256'},'external_dispatch_available':False,
                 'notice':'Проверка состава локальная. Для эмиссии и нанесения откройте раздел «Маркировка». Сведения каталога подтверждаются через Национальный каталог.'}
 

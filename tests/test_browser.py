@@ -960,3 +960,22 @@ def test_nk_cross_page_selection_saved_status_and_sidebar(page,live_app,engine):
     expect(page.get_by_text('Следующий шаг:',exact=False)).to_be_visible()
     capture(page,'nk-card-sidebar')
     with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_bm_invoice_chain_and_cross_page_selection(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.business.worker import background
+    from datetime import date
+    org=live_app['org'];owner=live_app['users']['bm']
+    with engine.begin() as c:
+        for n in range(27):
+            id=uuid4();c.execute(text("INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,lines,policy_snapshot,request_sha256,created_at) VALUES (:id,:org,:owner,:number,:date,'Supplier','[]','{}',:hash,now()+(:n * interval '1 second'))"),{'id':id,'org':org,'owner':owner,'number':f'BM-{n:03}','date':date.today(),'hash':str(n).zfill(64),'n':n})
+    login(page,'bm');page.locator('#documents-link').click()
+    page.get_by_label('Выбрать накладную BM-026',exact=True).check()
+    page.get_by_role('button',name='Далее',exact=True).click()
+    expect(page.locator('#bm-selection')).to_contain_text('1')
+    page.get_by_role('button',name='Открыть',exact=True).first.click()
+    expect(page.get_by_role('heading',name='Цепочка накладной',exact=True)).to_be_visible()
+    capture(page,'bm-invoice-workflow')
+    with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0

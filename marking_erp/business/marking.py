@@ -26,9 +26,16 @@ class Reallocate(Body):
     reason:str=Field(min_length=8,max_length=1000)
 
 class Start(Body):
+    confirmed:StrictBool=False
     source_id:UUID
     revision:StrictInt=Field(ge=1)
     request_id:UUID
+
+class Handoff(Body):
+    request_id:UUID
+    revision:StrictInt=Field(ge=1)
+    file_id:UUID
+    confirmed:StrictBool=False
 
 class Step(Body):
     revision:StrictInt=Field(ge=1)
@@ -72,19 +79,31 @@ def labels(current,row,settings):
     codes=rows(current.connection,row['id'])
     if not codes:raise HTTPException(409,'Коды ещё не получены')
     if any(c['state'] not in ('emitted','reserved','applied') for c in codes):raise HTTPException(409,'Есть неподтверждённые КМ')
-    out=BytesIO()
+    out=BytesIO();manifest=[]
     with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as archive:
-        for i,code in enumerate(codes,1):
-            data=render_label(bytes(code['payload']),code['pn'],code['quantity'])
-            registry_bridge.label(current,row,code,settings,data)
-            archive.writestr(f'{i:05d}.pdf',data)
-    s.artifact(current,row,'labels_pdf','labels-58x40.pdf',render_labels([{'raw':bytes(c['payload']),'pn':c['pn'],'quantity':c['quantity']} for c in codes]),'application/pdf',{'codes':[c['cis'] for c in codes]})
-    return s.artifact(current,row,'labels','labels-58x40.zip',out.getvalue(),'application/zip',{'codes':[{'cis':c['cis'],'pn':c['pn'],'quantity':c['quantity'],'sha256':sha256(bytes(c['payload'])).hexdigest()} for c in codes]})
+        for offset in range(0,len(codes),500):
+            part=codes[offset:offset+500]
+            pdf=render_labels([{'raw':bytes(v['payload']),'pn':v['pn'],'quantity':v['quantity']} for v in part])
+            filename='labels-58x40.pdf' if len(codes)<=500 else f'labels-{offset+1:05d}-{offset+len(part):05d}.pdf'
+            file=s.artifact(current,row,'labels_pdf',filename,pdf,'application/pdf',{'codes':[v['cis'] for v in part]})
+            manifest.append({'file':filename,'artifact_id':str(file),'sha256':sha256(pdf).hexdigest(),'count':len(part)})
+            if len(codes)>500:archive.writestr(filename,pdf)
+            for i,code in enumerate(part,offset+1):
+                data=render_label(bytes(code['payload']),code['pn'],code['quantity']);registry_bridge.label(current,row,code,settings,data)
+                if len(codes)<=500:archive.writestr(f'{i:05d}.pdf',data)
+        archive.writestr('manifest.json',json.dumps({'count':len(codes),'parts':manifest},ensure_ascii=False))
+    return s.artifact(current,row,'labels','labels-58x40.zip',out.getvalue(),'application/zip',{'parts':manifest,'codes':[{'cis':v['cis'],'pn':v['pn'],'quantity':v['quantity'],'sha256':sha256(bytes(v['payload'])).hexdigest()} for v in codes]})
 
 def validate_source(current,row):
     if row['source_id'] and row['kind']=='marking':
         source=current.connection.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()
         if source['state']=='archived' or source['revision']!=row['body']['source_revision']:raise HTTPException(409,'Исходная накладная остановлена или изменена')
+
+def validate_atk_sources(c,row):
+    if row['kind']!='atk':return
+    ids=row['body']['documents']
+    values=c.execute(text('SELECT i.state,i.body,d.state AS source_state,d.revision FROM business_items i JOIN bm_documents d ON d.id=i.source_id WHERE i.id=ANY(CAST(:ids AS uuid[]))'),{'ids':ids}).mappings().all()
+    if len(values)!=len(ids) or any(v['state']=='archived' or v['source_state']=='archived' or v['body']['source_revision']!=v['revision'] for v in values):raise HTTPException(409,'Исходная накладная АТК остановлена или изменена')
 
 def apply(current,row,op,link,payload,result,live,settings):
     c=current.connection;step=op['kind'];body=dict(row['body'])
@@ -120,13 +139,14 @@ def apply(current,row,op,link,payload,result,live,settings):
         if len(rows(c,row['id']))==expected_total:
             file=labels(current,row,settings);s.save(current,row,'codes_received',body={**body,'label_file_id':str(file)},state='labels_ready')
     elif step.endswith('.report'):
-        c.execute(text("UPDATE business_codes SET state='applied' WHERE item_id=:id"),{'id':row['id']})
+        confirmed=[gs1.parse(raw.split('\x1e')[0].encode()).cis for raw in payload['sntins']]
+        c.execute(text("UPDATE business_codes SET state='applied' WHERE item_id=:id AND cis=ANY(CAST(:cises AS text[]))"),{'id':row['id'],'cises':confirmed})
         if row['kind']=='split':
             fresh=live.info([body['source_cis']])[body['source_cis']]
             actual=fresh.get('quantityInPack')
             if not isinstance(actual,(int,float,str)) or int(actual)!=body['baseline']-body['quantity']:raise ValueError('Отчёт принят; остаток исходного КМ ещё не подтверждён')
             body['remaining']=int(actual)
-        s.save(current,row,'report_confirmed',body=body,state='applied')
+        s.save(current,row,'report_confirmed',body=body,state='applied' if all(v['state']=='applied' for v in rows(c,row['id'])) else 'reporting')
     elif step=='bm.atk':
         documents=result['document'][0];actual=result['registry']
         parents={r.get('parent') for r in actual.values()};atk=next(iter(parents)) if len(parents)==1 else None
@@ -158,6 +178,8 @@ def advance(worker):
     return
 
 def install_marking(app,actor,settings):
+    from .bm_bulk import install
+    install(app,actor)
     dep=Depends(actor,scope='function')
     def label_context(current,row):
         assigned=current.connection.execute(text('''SELECT EXISTS(SELECT 1 FROM warehouse_tasks w JOIN operation_assignments a ON a.target_id=w.id
@@ -191,12 +213,15 @@ def install_marking(app,actor,settings):
             AND (CAST(:before AS uuid) IS NULL OR (i.created_at,i.id)<(SELECT created_at,id FROM business_items WHERE id=CAST(:before AS uuid) AND organization_id=:org)) AND title ILIKE :q ESCAPE '!' ORDER BY i.created_at DESC,i.id DESC LIMIT 26'''),{'org':organization_id,'kind':kind,'archived':archived,'grant':grant,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
         return {'items':[{**r,'body':{k:v for k,v in r['body'].items() if k not in ('source_raw','source_base')}} for r in values[:25]],'next_cursor':str(values[24]['id']) if len(values)>25 else None}
     @app.get('/api/business/{id}')
-    def detail(id:UUID,current=dep):
-        row=s.get(current,id);codes=current.connection.execute(text('SELECT id,cis,gtin,pn,quantity,tnved,state,line_index FROM business_codes WHERE item_id=:id ORDER BY line_index,id LIMIT 1000'),{'id':id}).mappings().all()
+    def detail(id:UUID,code_after:UUID|None=None,current=dep):
+        row=s.get(current,id);codes=current.connection.execute(text('SELECT id,cis,gtin,pn,quantity,tnved,state,line_index FROM business_codes WHERE item_id=:id AND (CAST(:after AS uuid) IS NULL OR id>CAST(:after AS uuid)) ORDER BY id LIMIT 1001'),{'id':id,'after':code_after}).mappings().all()
         ops=current.connection.execute(text('SELECT o.id,o.kind,o.state,o.reason,o.external_id FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id ORDER BY o.created_at DESC LIMIT 100'),{'id':id}).mappings().all()
-        files=current.connection.execute(text('SELECT id,kind,version,filename,created_at FROM business_artifacts WHERE item_id=:id ORDER BY created_at DESC'),{'id':id}).mappings().all()
+        files=current.connection.execute(text('SELECT id,kind,version,filename,created_at,snapshot FROM business_artifacts WHERE item_id=:id ORDER BY created_at DESC'),{'id':id}).mappings().all()
+        active=next((f for f in files if str(f['id'])==row['body'].get('label_file_id')),None)
+        current_parts={v['artifact_id'] for v in active['snapshot'].get('parts',[])} if active else set()
+        files=[{**f,'current':str(f['id'])==row['body'].get('label_file_id') or str(f['id']) in current_parts} if f['kind'].startswith('labels') else dict(f) for f in files]
         public={**row,'body':{k:v for k,v in row['body'].items() if k not in ('source_raw','source_base')}}
-        return {'item':public,'codes':[dict(r) for r in codes],'operations':[dict(r) for r in ops],'files':[dict(r) for r in files]}
+        return {'item':public,'codes':[dict(r) for r in codes[:1000]],'code_next':str(codes[999]['id']) if len(codes)>1000 else None,'code_count':current.connection.execute(text('SELECT count(*) FROM business_codes WHERE item_id=:id'),{'id':id}).scalar_one(),'operations':[dict(r) for r in ops],'files':[dict(r) for r in files]}
     @app.put('/api/business/{id}/reallocate')
     def reallocate(id:UUID,body:Reallocate,current=dep):
         from collections import Counter
@@ -204,6 +229,7 @@ def install_marking(app,actor,settings):
         from pydantic import ValidationError
         row=s.get(current,id,'marking',True,'marking.documents.edit');s.version(row,body.revision);s.idle(current.connection,id);validate_source(current,row)
         if any(v.get('marked',True) is False for v in body.lines):raise HTTPException(409,'Немаркируемые строки добавляются после возврата логистом через полный Excel')
+        if row['body'].get('bm_policy',{}).get('values',{}).get('bm.quantity.edit_until')=='before_emission':raise HTTPException(409,'Правила организации запрещают изменение количества после начала эмиссии')
         if row['state'] not in ('labels_ready','application_confirmed') or not body.confirmed:raise HTTPException(409,'Перераспределение разрешено до отчёта с подтверждением замены этикеток')
         try:lines,_=normalize_lines([Line(**v).model_dump() for v in body.lines])
         except ValidationError:raise HTTPException(422,'Проверьте строки распределения') from None
@@ -238,7 +264,8 @@ def install_marking(app,actor,settings):
         if source['revision']!=body.revision or source['state']!='prepared':raise HTTPException(409,'Нужен актуальный проверенный состав')
         existing=c.execute(text("SELECT * FROM business_items WHERE source_id=:source AND kind='marking' AND state<>'archived'"),{'source':body.source_id}).mappings().first()
         if existing:s.require(current,existing);return dict(existing)
-        if sum(r['labels'] for r in source['lines'])>1000:raise HTTPException(422,'Для этого выпуска разделите накладную на документы до 1000 КМ')
+        if source['policy_snapshot']['values'].get('bm.issue.extra_confirmation',True) and not body.confirmed:raise HTTPException(422,'Подтвердите заказ недостающих КМ')
+        if sum(r['labels'] for r in source['lines'])>10000:raise HTTPException(422,'В одной накладной допускается до 10000 КМ; создайте следующую накладную для превышения')
         marked=[line for line in source['lines'] if line.get('marked',True)]
         if not marked:raise HTTPException(409,'В исходной накладной нет маркируемых строк')
         config=load(c,settings,source['organization_id'])
@@ -249,7 +276,7 @@ def install_marking(app,actor,settings):
             if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND p.pn=:pn AND r.gtin=:gtin AND p.tnved=:tnved LIMIT 1'),{'org':source['organization_id'],'pn':line['pn'],'gtin':line['gtin'],'tnved':line['tnved']}).scalar():raise HTTPException(409,'Сначала подтвердите PN/GTIN/ТН ВЭД в НК: '+line['pn'])
         pool=[dict(r) for r in c.execute(text("SELECT * FROM business_codes WHERE organization_id=:org AND state='free' AND gtin=ANY(CAST(:gtins AS text[])) ORDER BY created_at,id FOR UPDATE"),{'org':source['organization_id'],'gtins':list({r['gtin'] for r in marked})}).mappings()]
         if pool:Live(config,organization(c,source['organization_id'])).verify(pool,'EMITTED')
-        row=s.create(current,'marking',source['number'],{'source_revision':source['revision'],'supplier':source['supplier'],'lines':source['lines']},source['organization_id'],source['id'],body.request_id,state='ordering',owner=source['owner_id'])
+        row=s.create(current,'marking',source['number'],{'bm_policy':source['policy_snapshot'],'labels_handoff_required':True,'source_revision':source['revision'],'supplier':source['supplier'],'lines':source['lines']},source['organization_id'],source['id'],body.request_id,state='ordering',owner=source['owner_id'])
         totals={}
         for line in marked:totals[line['gtin']]=totals.get(line['gtin'],0)+line['labels']
         for index,line in enumerate(source['lines']):
@@ -261,7 +288,7 @@ def install_marking(app,actor,settings):
                 registry_bridge.capture(current,row,{**code,'payload':payload},settings,quantity_change=True)
                 pool.remove(code);totals[line['gtin']]-=1
         for gtin,count in totals.items():
-            if count:s.queue(current,row,'bm.order',order_payload(gtin,count,config,uuid4()))
+            for offset in range(0,count,1000):s.queue(current,row,'bm.order',order_payload(gtin,min(1000,count-offset),config,uuid4()))
         if not any(totals.values()):
             file=labels(current,row,settings);return s.save(current,row,'pool_reserved',body={**row['body'],'label_file_id':str(file)},state='labels_ready')
         return row
@@ -297,6 +324,23 @@ def install_marking(app,actor,settings):
         eligibility=check_split_eligibility(Client(config),code.gtin)
         row=s.create(current,'split',body.pn,{'catalog_eligibility':eligibility,'source_raw':code.normalized.decode(),'source_base':code.base.decode(),'source_cis':code.cis,'gtin':code.gtin,'baseline':int(baseline),'quantity':body.quantity,'pn':body.pn,'tnved':body.tnved},body.organization_id,id=body.request_id,state='ordering')
         s.queue(current,row,'split.order',order_payload(code.gtin,1,config,row['id'],True));return {'id':row['id'],'state':row['state']}
+    @app.post('/api/business/{id}/labels-handoff')
+    def handoff(id:UUID,body:Handoff,current=dep):
+        row=s.get(current,id,'marking',True,'marking.labels.download')
+        fingerprint=sha256(json.dumps(body.model_dump(mode='json'),sort_keys=True).encode()).hexdigest()
+        old=current.connection.execute(text("SELECT body FROM business_events WHERE item_id=:id AND action='labels_handoff_confirmed' AND body->>'request_id'=:request"),{'id':id,'request':str(body.request_id)}).scalar_one_or_none()
+        if old:
+            if old['sha256']!=fingerprint:raise HTTPException(409,'Повтор подтверждения отличается')
+            return {'confirmed':True,'replayed':True}
+        s.version(row,body.revision);s.idle(current.connection,id);validate_source(current,row)
+        if row['state']!='labels_ready' or not body.confirmed:raise HTTPException(409,'Нужны готовые этикетки и подтверждение фактической передачи')
+        if str(body.file_id)!=row['body'].get('label_file_id'):raise HTTPException(409,'Версия этикеток изменилась')
+        file=current.connection.execute(text("SELECT sha256,version FROM business_artifacts WHERE id=:file AND item_id=:id AND kind IN ('labels','labels_pdf')"),{'id':id,'file':body.file_id}).mappings().first()
+        if not file:raise HTTPException(409,'Не найден актуальный PDF этикеток')
+        evidence={'request_id':str(body.request_id),'sha256':fingerprint,'file_id':str(body.file_id),'file_sha256':file['sha256'],'version':file['version']}
+        s.record(current,row,'labels_handoff_confirmed',evidence)
+        s.save(current,row,'supplier_labels_transferred',body={**row['body'],'labels_handoff':evidence})
+        return {'confirmed':True,'replayed':False}
     @app.post('/api/business/{id}/{action}')
     def action(id:UUID,action:str,body:Step,current=dep):
         row=s.get(current,id,lock=True);c=current.connection
@@ -331,14 +375,18 @@ def install_marking(app,actor,settings):
         s.idle(c,id)
         if action=='labels':
             if row['state'] not in ('labels_ready','application_confirmed','reporting','applied'):raise HTTPException(409,'Дождитесь получения всех КМ')
-            file=labels(current,row,settings);return {'file_id':file}
+            file=row['body'].get('label_file_id')
+            if not file:
+                file=labels(current,row,settings);s.save(current,row,'labels_generated',body={**row['body'],'label_file_id':str(file)})
+            return {'file_id':file}
         if action=='applied':
+            if row['kind']=='marking' and row['body'].get('labels_handoff_required') and (not row['body'].get('label_file_id') or row['body'].get('labels_handoff',{}).get('file_id')!=row['body'].get('label_file_id')):raise HTTPException(409,'Сначала подтвердите передачу актуальных этикеток поставщику')
             if row['state']!='labels_ready' or not body.confirmed:raise HTTPException(422,'Подтвердите нанесение актуальных этикеток')
             return s.save(current,row,'application_confirmed',state='application_confirmed')
         if action in ('report','retry-report'):
             if row['state'] not in ('application_confirmed','rejected'):raise HTTPException(409,'Сначала подтвердите нанесение')
             if row['state']=='rejected' and not str(row['body'].get('last_rejected_step','')).endswith('.report'):raise HTTPException(409,'Отклонена другая операция. Требуется разбор квитанции.')
-            codes=rows(c,id)
+            codes=[code for code in rows(c,id) if code['state']!='applied']
             if not codes or any(code['state']!='emitted' for code in codes):raise HTTPException(409,'Все КМ должны быть получены и ещё не нанесены по данным ЧЗ')
             config=load(c,settings,row['organization_id']);inn=organization(c,row['organization_id'])
             Live(config,inn).verify(codes,'EMITTED')
@@ -352,7 +400,8 @@ def install_marking(app,actor,settings):
                 if config.get('kpp'):attributes['kpp']=config['kpp']
                 if config.get('fias_id'):attributes['fiasId']=config['fias_id']
                 payload={'productGroup':'radio','sntins':[bytes(code['payload']).decode() for code in codes],'attributes':attributes}
-            s.queue(current,row,'split.report' if row['kind']=='split' else 'bm.report',payload);return s.save(current,row,'report_queued',state='reporting')
+            for offset in range(0,len(payload['sntins']),1000):s.queue(current,row,'split.report' if row['kind']=='split' else 'bm.report',{**payload,'sntins':payload['sntins'][offset:offset+1000]})
+            return s.save(current,row,'report_queued',state='reporting')
         if action=='transferred':
             if row['kind']!='atk' or row['state']!='ready' or not body.confirmed:raise HTTPException(409,'Подтвердите передачу готового АТК')
             return s.save(current,row,'supplier_transfer_confirmed',state='transferred')
@@ -377,10 +426,23 @@ def install_marking(app,actor,settings):
         sources=require_ready(c,body.organization_id,supplier,set(body.ids))
         numbers=[v['number'] for v in sources]
         created=[]
-        for tnved,codes in buckets.items():
-            row=s.create(current,'atk',('АТК-'+supplier+'-'+','.join(numbers))[:280]+'-'+tnved,{'supplier':supplier,'numbers':numbers,'tnved':tnved,'documents':sorted(documents),'request_id':str(body.request_id),'codes':[str(v['id']) for v in codes]},body.organization_id,state='aggregating')
-            s.queue(current,row,'bm.atk',{'trade_participant_inn':organization(c,body.organization_id),'products_list':[{'ki':v['cis']} for v in codes]});created.append(row['id'])
+        parts=[(tnved,codes[offset:offset+1000]) for tnved,codes in buckets.items() for offset in range(0,len(codes),1000)]
+        for tnved,codes in parts:
+            from ..policy import snapshot
+            policy=snapshot(c,body.organization_id)
+            row=s.create(current,'atk',('АТК-'+supplier+'-'+','.join(numbers))[:280]+'-'+tnved,{'policy':policy,'supplier':supplier,'numbers':numbers,'tnved':tnved,'documents':sorted(documents),'request_id':str(body.request_id),'codes':[str(v['id']) for v in codes]},body.organization_id,state='awaiting_approval' if policy['values']['bm.atk.approval_required'] else 'aggregating')
+            if not policy['values']['bm.atk.approval_required']:s.queue(current,row,'bm.atk',{'trade_participant_inn':organization(c,body.organization_id),'products_list':[{'ki':v['cis']} for v in codes]})
+            created.append(row['id'])
         return {'ids':created}
+    @app.post('/api/atks/{id}/approve')
+    def approve_atk(id:UUID,body:Step,current=dep):
+        row=s.get(current,id,'atk',True,'marking.atk.create');s.version(row,body.revision);s.idle(current.connection,id)
+        if row['state']!='awaiting_approval' or not body.confirmed:raise HTTPException(409,'Подтвердите актуальный состав АТК')
+        validate_atk_sources(current.connection,row)
+        codes=current.connection.execute(text('SELECT cis,state FROM business_codes WHERE id=ANY(CAST(:ids AS uuid[]))'),{'ids':row['body']['codes']}).mappings().all()
+        if len(codes)!=len(row['body']['codes']) or any(v['state']!='applied' for v in codes):raise HTTPException(409,'Состав АТК изменился')
+        s.queue(current,row,'bm.atk',{'trade_participant_inn':organization(current.connection,row['organization_id']),'products_list':[{'ki':v['cis']} for v in codes]})
+        return s.save(current,row,'atk_approved',state='aggregating')
     @app.get('/api/atks/{id}/candidates')
     def candidates(id:UUID,kind:str=Query(pattern='^(ADDING|REMOVING)$'),current=dep):
         row=s.get(current,id,'atk',permission='marking.atk.transform.prepare');body=row['body']

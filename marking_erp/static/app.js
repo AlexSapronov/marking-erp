@@ -15,7 +15,7 @@ const incidents=createIncidents({state,$,api,node,button,heading,notice,report,o
 const admin=createAdmin({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
 const registry=createRegistry({state,$,api,node,button,heading,notice,report,openDialog});
 const operations=createOperations({incidents,state,$,api,node,button,heading,report,openDialog});
-const documents=createDocuments({state,$,api,node,button,heading,notice,report,openDialog,closeDialog});
+const documents=createDocuments({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask,openMarking:async id=>{navigate('/marking');await business.show();await business.open(id);}});
 const warehouse=createWarehouse({incidents,state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
 const business=createBusiness({state,$,api,node,button,heading,notice,report,openDialog,closeDialog,ask});
 const sessions=createSessions({state,$,api,node,button,notice,report,ask});

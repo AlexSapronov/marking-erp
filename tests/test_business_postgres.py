@@ -66,7 +66,7 @@ def test_emission_prepares_signature_job_without_claiming_codes_or_success(env,e
     with client(env) as c:
         login(c);created=c.post('/api/documents',json=invoice(env));assert created.status_code==200
         id=created.json()['id'];assert c.post('/api/documents/'+id+'/prepare',json={'revision':1}).status_code==200
-        body={'source_id':id,'revision':2,'request_id':str(uuid4())};response=c.post('/api/marking/start',json=body);assert response.status_code==200,response.text
+        body={'confirmed':True,'source_id':id,'revision':2,'request_id':str(uuid4())};response=c.post('/api/marking/start',json=body);assert response.status_code==200,response.text
         data=c.get('/api/business/'+response.json()['id']).json();assert not data['codes'] and not data['files']
         assert data['operations'][0]['state']=='awaiting_signature'
         assert c.post('/api/marking/start',json=body).json()['id']==response.json()['id']

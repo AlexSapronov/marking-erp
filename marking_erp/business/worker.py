@@ -119,6 +119,10 @@ class BusinessWorker:
                 from fastapi import HTTPException
                 if not isinstance(error,HTTPException):raise
                 raise operations.DispatchBlocked('Локальный карантин запрещает эту отправку; сначала разберите инцидент') from None
+            if row['kind']=='atk':
+                from .marking import validate_atk_sources
+                try:validate_atk_sources(c,row)
+                except Exception:raise operations.DispatchBlocked('Исходные накладные АТК изменены или остановлены') from None
             if not config.get('writes_enabled') or row['state']=='archived':raise operations.DispatchBlocked('Отправка отключена')
             if row['source_id'] and row['kind']=='marking':
                 source=c.execute(text('SELECT state,revision FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()
