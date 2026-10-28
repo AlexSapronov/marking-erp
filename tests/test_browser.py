@@ -1257,7 +1257,7 @@ def test_workflow_navigation_catalog_to_warehouse_and_read_retry(page,live_app,e
     page.context.set_offline(False);panel.get_by_role('button',name='Повторить загрузку цепочки',exact=True).click()
     expect(panel).to_contain_text('Текущий этап: В работе')
     expect(scanner).to_have_value(raw('a'))
-    page.locator('#warehouse-dialog').evaluate('(el)=>el.scrollTop=0')
+    panel.get_by_role('heading',name='Цепочка работы',exact=True).scroll_into_view_if_needed()
     capture(page,'workflow-chain-desktop')
     page.set_viewport_size({'width':390,'height':844})
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
