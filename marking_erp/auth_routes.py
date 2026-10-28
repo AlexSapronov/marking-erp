@@ -60,18 +60,8 @@ def install_auth(app, engine, settings):
         token = request.cookies.get(settings.cookie_name, "")
         with engine.begin() as connection:
             if request.method not in ("GET", "HEAD", "OPTIONS"):
-                # The bounded Excel preview is read-only; do not hold the global
-                # mutation lock while a client streams its file. CSRF still applies.
-                if request.url.path != "/api/documents/import-preview" and not (request.url.path.startswith("/api/documents/") and request.url.path.endswith("/warehouse-composition/preview")):
-                    # Independent scan transactions may proceed concurrently.
-                    # RBAC/session edits, archive, close and dispatch retain the
-                    # exclusive fence and wait for all active scans to finish.
-                    path=request.url.path
-                    warehouse_scan=(path.startswith('/api/warehouse/tasks/') and
-                                    ((request.method=='POST' and (path.endswith('/scans') or path.endswith('/check'))) or
-                                     (request.method=='DELETE' and '/scans/' in path)))
-                    lock='pg_advisory_xact_lock_shared' if warehouse_scan else 'pg_advisory_xact_lock'
-                    connection.execute(text('SELECT '+lock+'(683273529)'))
+                from .write_locks import authorization_fence
+                authorization_fence(connection, request.method, request.url.path)
             current = auth.load_actor(connection, token)
             if request.method not in ("GET", "HEAD", "OPTIONS") and not hmac.compare_digest(
                     request.headers.get("X-CSRF-Token", ""), auth.csrf_token(token)):

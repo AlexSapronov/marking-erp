@@ -8,6 +8,7 @@ from pydantic import Field, StrictInt,StrictBool
 from sqlalchemy import text
 from starlette.concurrency import run_in_threadpool
 from .auth_routes import Body
+from .write_locks import resources
 from . import auth, invoice_excel as excel
 from .policy import snapshot
 from .operations import cancel_before_dispatch
@@ -102,9 +103,9 @@ def install_documents(app,actor):
             raise HTTPException(409,'У документа есть внешние операции. Требуется разбор фактического состояния.')
 
     def check_tnved(c,org,lines,id):
-        c.execute(text("SELECT pg_advisory_xact_lock(hashtextextended('bm-documents:'||CAST(:org AS text),0))"),{'org':org})
         known={r['gtin']:r['tnved'] for r in lines if r['gtin'] and r['tnved']}
         if not known:return
+        resources(c, 'bm-gtin:'+str(org), known, rows=True)
         rows=c.execute(text('''SELECT l->>'gtin' AS gtin,l->>'tnved' AS tnved FROM bm_documents d,
             jsonb_array_elements(d.lines) l WHERE d.organization_id=:org AND d.id<>:id
             AND l->>'gtin'=ANY(CAST(:gtins AS text[])) AND l->>'tnved'<>''
@@ -134,6 +135,7 @@ def install_documents(app,actor):
         policy=snapshot(current.connection,body.organization_id)
         lines,warnings=normalize_lines([r.model_dump() for r in body.lines],policy['values']['bm.lines.merge']!='never')
         check_tnved(current.connection,body.organization_id,lines,id)
+        resources(current.connection, 'bm-header', [json.dumps([str(body.organization_id), str(owner or current.id), canonical(current.connection,body.organization_id,body.supplier.strip()), body.number.strip(), str(body.document_date)], ensure_ascii=False)])
         duplicate=current.connection.execute(text(f'''SELECT EXISTS(SELECT 1 FROM bm_documents d WHERE organization_id=:org AND owner_id=:owner
             AND {expression('d.supplier','d.organization_id')}=:supplier AND number=:number AND document_date=:date AND id<>:id)'''),{'org':body.organization_id,'owner':owner or current.id,'supplier':canonical(current.connection,body.organization_id,body.supplier.strip()),'number':body.number.strip(),'date':body.document_date,'id':id}).scalar_one()
         if duplicate:raise HTTPException(409,'У вас уже есть накладная с этим номером, датой и поставщиком')
@@ -183,6 +185,7 @@ def install_documents(app,actor):
         current.require('marking.documents.create',organization_id=body.organization_id,owner_id=current.id)
         if body.imported:current.require('marking.import.commit',organization_id=body.organization_id,owner_id=current.id)
         c=current.connection;hash=sha256(json.dumps(body.model_dump(mode='json'),sort_keys=True).encode()).hexdigest()
+        resources(c, 'target-request', [body.request_id])
         existing=c.execute(text('SELECT * FROM bm_documents WHERE id=:id'),{'id':body.request_id}).mappings().first()
         if existing:
             require(current,'marking.documents.view',existing)

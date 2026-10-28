@@ -24,7 +24,7 @@ def tick(engine, settings):
     from .worker import background
     with engine.begin() as c:
         # Same transaction fence as manual starts; multiple workers cannot create two jobs.
-        c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
+        if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273529)')).scalar_one():return
         configs = c.execute(text("SELECT organization_id,public FROM integration_settings WHERE public->>'nk_auto_sync'='true'")).mappings().all()
         for config in configs:
             org = config['organization_id']

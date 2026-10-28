@@ -90,7 +90,7 @@ def recover_expired(c,allowed_kinds=None):
 def claim(c,worker_id,*,lease_seconds=60,allowed_kinds=None):
     if not worker_id or len(worker_id)>100 or not 5<=lease_seconds<=300:raise ValueError('Invalid lease')
     # Same authorization fence as identity/configuration edits; never held during IO.
-    c.execute(text('SELECT pg_advisory_xact_lock(683273529)'))
+    if not c.execute(text('SELECT pg_try_advisory_xact_lock(683273529)')).scalar_one():return None
     recover_expired(c,allowed_kinds)
     op=c.execute(text("SELECT * FROM external_operations WHERE state='queued' AND available_at<=clock_timestamp() AND (CAST(:kinds AS text[]) IS NULL OR kind=ANY(CAST(:kinds AS text[]))) ORDER BY available_at,created_at,id FOR UPDATE SKIP LOCKED LIMIT 1"),{'kinds':allowed_kinds}).mappings().first()
     if not op:return None
