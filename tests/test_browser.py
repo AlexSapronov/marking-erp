@@ -1181,3 +1181,29 @@ def test_workflow_rules_apply_to_transfer_and_frozen_warehouse_task(page,browser
     page.get_by_role('button',name='Закрыть задание после сверки',exact=True).click()
     expect(page.locator('#warehouse-content')).to_contain_text('Закрыто')
     capture(page,'workflow-policy-warehouse-closed')
+
+
+def test_worker_health_shows_delayed_stage_without_leaking_or_retrying_work(page,live_app,engine):
+    from playwright.sync_api import expect
+    from marking_erp.business import store
+    from marking_erp.business.worker import background
+    worker=uuid4();org=live_app['org']
+    with engine.begin() as c:
+        c.execute(text("INSERT INTO worker_runs(id,heartbeat_at,thread_alive,state,stage,stage_started_at,last_success_at,cycles) VALUES (:id,now(),true,'running','dispatch',now()-interval '4 minutes',now()-interval '5 minutes',10)"),{'id':worker})
+        actor=background(c,live_app['users']['specialist'],org)
+        store.create(actor,'sync','PRIVATE_WORKER_SYNC_TITLE',{},org,state='blocked')
+    login(page);page.locator('#system-link').click()
+    expect(page.get_by_role('heading',name='Фоновые обработчики и задержки',exact=True)).to_be_visible()
+    expect(page.locator('[data-worker-alert="worker_delayed"]')).to_contain_text('Задержка этапа')
+    expect(page.locator('[data-worker-alert="catalog_blocked"]')).to_contain_text('НК остановлена')
+    expect(page.locator('#worker-health')).to_contain_text('Последний завершённый цикл')
+    expect(page.locator('#worker-health')).not_to_contain_text('PRIVATE_WORKER_SYNC_TITLE')
+    page.locator('#worker-health').scroll_into_view_if_needed();capture(page,'worker-health-delayed-desktop')
+    with engine.begin() as c:c.execute(text("UPDATE worker_runs SET state='stopped',stage='stopped',thread_alive=false,stopped_at=now() WHERE id=:id"),{'id':worker})
+    page.get_by_role('button',name='Обновить проверки',exact=True).click()
+    expect(page.locator('[data-worker-alert="worker_delayed"]')).to_have_count(0)
+    page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    page.locator('#worker-health').scroll_into_view_if_needed();capture(page,'worker-health-mobile-390')
+    with engine.connect() as c:
+        assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+        assert c.execute(text("SELECT state FROM business_items WHERE title='PRIVATE_WORKER_SYNC_TITLE'")).scalar_one()=='blocked'
