@@ -1020,6 +1020,7 @@ def test_admin_warehouse_archive_and_restore(page,live_app):
 
 
 def test_auto_print_opt_in_and_queued_kit_ui(page,live_app,engine):
+    import re
     from playwright.sync_api import expect
     from marking_erp.business import store
     from marking_erp.business.marking import apply
@@ -1039,7 +1040,7 @@ def test_auto_print_opt_in_and_queued_kit_ui(page,live_app,engine):
     page.get_by_role('button',name='Открыть',exact=True).click()
     page.get_by_label('Разрешаю автоматически напечатать один комплект после готовности',exact=True).check()
     page.get_by_role('button',name='Включить автопечать',exact=True).click()
-    expect(page.locator('#business-content')).to_contain_text('Ожидает готовности этикеток')
+    expect(page.locator('#business-content')).to_contain_text(re.compile('Ожидает готовности этикеток|Комплект передан в очередь'))
     tick(engine)
     page.get_by_role('button',name='Обновить состояние автопечати',exact=True).click()
     expect(page.locator('#business-content')).to_contain_text('Комплект передан в очередь')

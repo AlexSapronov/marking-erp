@@ -16,6 +16,13 @@ from marking_erp.business.marking import labels
 pytestmark=[pytest.mark.postgres,pytest.mark.usefixtures('fresh_schema')]
 
 
+@pytest.fixture(autouse=True)
+def explicit_worker_ticks(monkeypatch):
+    # These tests control each transition around a real tick and PostgreSQL.
+    # The browser scenario exercises the app with its normal background worker.
+    monkeypatch.setattr('marking_erp.business.worker.BusinessWorker.start',lambda self:None)
+
+
 def enable(c,item,device):
     revision=c.get('/api/business/'+str(item)).json()['item']['revision']
     body={'request_id':str(uuid4()),'revision':revision,'printer_id':str(device),'confirmed':True}
