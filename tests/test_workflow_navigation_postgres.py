@@ -173,3 +173,25 @@ def test_standalone_excel_warehouse_has_no_artificial_upstream_documents(env,eng
     with engine.connect() as db:
         assert db.execute(text('SELECT count(*) FROM bm_documents')).scalar_one()==0
         assert db.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def test_large_atk_filters_access_before_public_document_limit(allocated,engine):
+    from test_documents_postgres import body as invoice
+    env,item,source,_=allocated;processes=[str(item)]
+    with client(env) as c:
+        login(c)
+        for n in range(26):
+            value=invoice(env,request_id=str(UUID(int=n+1)),number='PRIVATE-SOURCE-'+str(n))
+            response=c.post('/api/documents',json=value);assert response.status_code==200,response.text
+            with engine.begin() as db:
+                db.execute(text('UPDATE bm_documents SET owner_id=:owner WHERE id=:id'),{'owner':env[3]['logistics'],'id':value['request_id']})
+                actor=background(db,env[3]['bm'],env[1])
+                hidden=store.create(actor,'marking','PRIVATE-PROCESS',{'lines':value['lines'],'supplier':value['supplier'],'source_revision':1},env[1],UUID(value['request_id']),owner=env[3]['logistics'])
+                processes.append(str(hidden['id']))
+        with engine.begin() as db:
+            actor=background(db,env[3]['bm'],env[1])
+            atk=store.create(actor,'atk','Visible ATK',{'documents':processes,'codes':[]},env[1],state='awaiting_approval')
+            db.execute(text("UPDATE group_grants SET scope='own' WHERE group_slug='bm' AND permission_id='marking.documents.view'"))
+        data=chain(c,'business',atk['id']);serialized=json.dumps(data)
+        assert str(source) in serialized and str(item) in serialized
+        assert 'PRIVATE-SOURCE' not in serialized and 'PRIVATE-PROCESS' not in serialized

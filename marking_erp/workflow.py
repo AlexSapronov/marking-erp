@@ -100,7 +100,7 @@ def target(row,type='business',route=None):
 
 
 def overview(current,kind,id):
-    c=current.connection
+    c=current.connection;explicit_atks=[]
     if kind=='document':
         root=c.execute(text('SELECT * FROM bm_documents WHERE id=:id'),{'id':id}).mappings().first()
         if not root:raise HTTPException(404,'Документ не найден')
@@ -115,10 +115,11 @@ def overview(current,kind,id):
         if root['kind'] in ('atk','fts','transform'):
             # References establish a relationship, but grant no target visibility.
             atks=[str(id)] if root['kind']=='atk' else root['body'].get('atks',[]) if root['kind']=='fts' else [root['body'].get('atk_item')]
+            explicit_atks=[v for v in atks if v]
             sources=list(c.execute(text('''SELECT DISTINCT m.source_id FROM business_items m
                 JOIN business_items a ON a.organization_id=m.organization_id AND a.kind='atk'
                 AND a.body->'documents' ? m.id::text WHERE m.organization_id=:org AND m.kind='marking'
-                AND a.id=ANY(CAST(:ids AS uuid[])) ORDER BY m.source_id LIMIT 25'''),{'org':root['organization_id'],'ids':[v for v in atks if v]}).scalars())
+                AND a.id=ANY(CAST(:ids AS uuid[])) ORDER BY m.source_id'''),{'org':root['organization_id'],'ids':[v for v in atks if v]}).scalars())
     elif kind=='warehouse':
         root=c.execute(text('SELECT * FROM warehouse_tasks WHERE id=:id'),{'id':id}).mappings().first()
         if not root:raise HTTPException(404,'Задание не найдено')
@@ -141,6 +142,7 @@ def overview(current,kind,id):
     processes=list(c.execute(text("SELECT id FROM business_items WHERE organization_id=:org AND kind='marking' AND source_id=ANY(CAST(:sources AS uuid[]))"),params).scalars())
     params['processes']=processes
     atk_ids=list(c.execute(text("SELECT id FROM business_items WHERE organization_id=:org AND kind='atk' AND body->'documents' ?| CAST(:processes AS text[])"),{**params,'processes':list(map(str,processes))}).scalars())
+    atk_ids=list(dict.fromkeys([*map(str,atk_ids),*map(str,explicit_atks)]))
     params['atks']=list(map(str,atk_ids));params['processes']=list(map(str,processes))
     groups=[];truncated=False;related={}
     def group(name,rows,type,route=None):
