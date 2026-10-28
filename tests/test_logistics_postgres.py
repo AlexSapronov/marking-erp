@@ -29,7 +29,7 @@ def evidence(env,engine,item,code,*,fts=True):
 def receipt(env,source):
     with client(env) as c:
         login(c,'logistics');id=uuid4()
-        r=c.post('/api/logistics/warehouse-transfer',json={'request_id':str(id),'source_id':str(source),'source_revision':2,'kind':'receipt','assignees':[str(env[3]['warehouse'])]});assert r.status_code==200,r.text
+        r=c.post('/api/logistics/warehouse-transfer',json={'request_id':str(id),'source_id':str(source),'source_revision':2,'confirmed':True,'kind':'receipt','assignees':[str(env[3]['warehouse'])]});assert r.status_code==200,r.text
         return id
 
 

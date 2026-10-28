@@ -54,7 +54,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
   }
   function deviation(){const banner=$('group-deviation');if(!banner)return;const p=model.catalog;const diffs=p.filter(x=>grants[x.id]!== (x.defaults[group]==='-'?'none':x.defaults[group]));banner.hidden=!diffs.length;banner.textContent=(group==='tsd'?'Отклонение от базового профиля ТСД. ':'Отклонение от базового профиля. ')+diffs.length+' действий. Изменения требуют причины и предпросмотра.';}
   function renderRules(){
-    scope=model.scope;const host=tools('Бизнес-правила','Внутренняя политика для будущих команд. Уже подготовленные документы сохраняют свою версию. Бизнес-модули ещё не подключены.','rules',scope);
+    scope=model.scope;const host=tools('Бизнес-правила','Правила действующих бизнес-процессов. У каждого правила указан момент применения; подготовленные документы сохраняют свой снимок.','rules',scope);
     const controls=node('div',undefined,'filters configuration-filters');controls.append(select('Область настроек',[['system','Системные значения'],...state.session.organizations.map(o=>[o.id,o.name])],scope,value=>{if(canLeave()){scope=value;show('/rules');}else controls.querySelector('select').value=scope;}));
     const search=node('label','Поиск правил'),i=node('input');i.setAttribute('aria-label','Поиск правил');i.addEventListener('input',()=>ruleRows(i.value));search.append(i);controls.append(search);host.append(controls);
     const list=node('div');list.id='rule-list';host.append(list);ruleRows('');
@@ -64,7 +64,7 @@ export function createAdmin({state,$,api,node,button,heading,notice,report,openD
     const host=$('rule-list');host.replaceChildren();const groups=new Map();
     for(const r of model.rules.filter(r=>(r.id+' '+r.label).toLocaleLowerCase('ru').includes(q.toLocaleLowerCase('ru')))){
       if(!groups.has(r.category)){const section=node('section',undefined,'panel section-gap');section.append(node('h2',categories[r.category]||r.category));host.append(section);groups.set(r.category,section);}
-      const row=node('div',undefined,'rule-row');row.append(node('h3',r.label),node('code',r.id),node('p',r.description,'muted'));const l=node('label','Значение');let input;
+      const row=node('div',undefined,'rule-row');row.append(node('h3',r.label),node('code',r.id),node('p',r.description,'muted'),node('p',r.application||r.risk,'field-help'));const l=node('label','Значение');let input;
       const value=Object.hasOwn(changes,r.id)?changes[r.id]===null?r.inherited_value:changes[r.id]:r.value;
       if(r.type==='bool'){input=node('select');input.append(new Option('Да','true'),new Option('Нет','false'));input.value=String(value);}
       else if(r.choices&&r.type!=='set'){input=node('select');for(const v of r.choices)input.append(new Option(choiceNames[v]||v,v));input.value=value;}

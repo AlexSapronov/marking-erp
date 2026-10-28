@@ -26,7 +26,8 @@ def public_policy(c,task,config,inn):
     rules={k:snapshot['values'][k] for k in ('warehouse.check.timeout_seconds','warehouse.external_fact_max_age_seconds')}
     return {'version':'warehouse-batch-v1','live_checks':config is not None,
         'environment':config.get('environment') if config else None,
-        'ignore_legal_entity':bool(config.get('ignore_legal_entity')) if config else False,
+        'owner_policy':snapshot['values']['warehouse.owner.policy'],'status_profile':snapshot['values']['warehouse.status_profile'],
+        'legacy_ignore_legal_entity':bool(config.get('ignore_legal_entity')) if config else False,
         'inn':inn,'rules':rules}
 
 

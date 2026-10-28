@@ -151,7 +151,11 @@ def test_migration_backfills_existing_bm_sources_without_changing_tasks(env,engi
         config=migration_config();config.attributes['connection']=db
         command.downgrade(config,'0016_warehouse_overlap');command.upgrade(config,'head')
         after=dict(db.execute(text('SELECT * FROM warehouse_tasks WHERE id=:id'),{'id':id}).mappings().one())
-        assert before==after
+        # Downgrading before 0021 intentionally removes the newly added snapshot.
+        # The historical-source migration must still preserve every old task field.
+        assert {k:v for k,v in before.items() if k!='policy_snapshot'}=={k:v for k,v in after.items() if k!='policy_snapshot'}
+        assert after['policy_snapshot']['legacy_defaults']
+        for key,value in after['policy_snapshot']['values'].items():assert before['policy_snapshot']['values'][key]==value
         assert str(db.execute(text('SELECT bm_document_id FROM warehouse_sources WHERE id=:id'),{'id':source_id}).scalar_one())==source_id
     with client(env) as c:
         login(c,'tsd');assert c.get('/api/warehouse/tasks/'+id).status_code==200

@@ -72,5 +72,7 @@ def archive(current,row,reason):
         c.execute(text('UPDATE operation_targets SET stopped=true WHERE id=:id'),{'id':op['target_id']})
         if op['state'] in ('queued','blocked','awaiting_signature'):operations.cancel_before_dispatch(c,op['id'])
     c.execute(text('UPDATE operation_targets SET stopped=true WHERE id=:id'),{'id':row['id']})
+    from ..workflow_policy import retention
+    retention(current,row['id'],row['organization_id'])
     record(current,row,'archive_reason',{'reason':reason})
     return save(current,row,'archived',body={**row['body'],'archived_from':row['state']},state='archived')

@@ -210,7 +210,8 @@ def install_documents(app,actor):
         doc['warehouse_composition']=process['composition'] if process else None
         from .business.bm_workflow import facts
         doc['workflow']=facts(current,doc)
-        return {'document':{k:v for k,v in doc.items() if k!='request_sha256'},'external_dispatch_available':False,
+        from .workflow_policy import retain_until
+        return {'archive_retain_until':retain_until(current.connection,id,doc['organization_id']),'document':{k:v for k,v in doc.items() if k!='request_sha256'},'external_dispatch_available':False,
                 'notice':'Проверка состава локальная. Для эмиссии и нанесения откройте раздел «Маркировка». Сведения каталога подтверждаются через Национальный каталог.'}
 
     @app.put('/api/documents/{id}')
@@ -250,7 +251,12 @@ def install_documents(app,actor):
                     for operation in current.connection.execute(text('SELECT o.* FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id ORDER BY o.id FOR UPDATE'),{'id':process['id']}).mappings().all():
                         current.connection.execute(text('UPDATE operation_targets SET stopped=true WHERE id=:id'),{'id':operation['target_id']})
                         if operation['state'] in ('queued','awaiting_signature','blocked'):cancel_before_dispatch(current.connection,operation['id'])
+                    if process['state']!='archived':
+                        from .workflow_policy import retention
+                        retention(current,process['id'],doc['organization_id'])
                     current.connection.execute(text("UPDATE business_items SET state='archived',body=jsonb_set(body,'{archived_from}',to_jsonb(state)),revision=revision+1 WHERE id=:id AND state<>'archived'"),{'id':process['id']})
+                from .workflow_policy import retention
+                retention(current,id,doc['organization_id'])
                 doc['state']='archived'
             else:
                 if doc['state']!='archived':raise HTTPException(409,'Накладная не в архиве')

@@ -19,6 +19,10 @@ def facts(c,row):
     """Return local evidence blockers. Reading this does not call an external API."""
     source=c.execute(text('SELECT * FROM bm_documents WHERE id=:id'),{'id':row['source_id']}).mappings().one()
     blockers=[]
+    required_fields=source['policy_snapshot']['values']['logistics.close.required_fields']
+    fields={'supplier':source['supplier'],'number':source['number'],'date':source['document_date']}
+    for field in required_fields:
+        if not str(fields.get(field) or '').strip():blockers.append('Не заполнен обязательный реквизит закрытия: '+field)
     if row['body'].get('warehouse_composition',{}).get('state')!='ready':blockers.append('Нужен полный Excel поставки: верните накладную в БМ для дополнения немаркируемых строк')
     if source['state']=='archived' or source['revision']!=row['body']['source_revision']:blockers.append('Исходная накладная остановлена или изменена')
     marked=any(r.get('marked',True) for r in row['body']['lines'])
@@ -50,7 +54,7 @@ def facts(c,row):
         if marked and task['verified_at'] is None:blockers.append('Склад выполнил физическую сверку без подтверждения ЧЗ');break
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_items WHERE kind='transform' AND body->>'atk_item'=ANY(CAST(:ids AS text[])) AND state NOT IN ('done','archived','rejected'))"),{'ids':[str(a['id']) for a in atks]}).scalar_one():blockers.append('Есть незавершённая трансформация АТК')
     if c.execute(text("SELECT EXISTS(SELECT 1 FROM external_operations o JOIN business_links l ON l.operation_id=o.id WHERE l.item_id=:id AND (o.state NOT IN ('confirmed','rejected','cancelled_before_dispatch') OR (o.state='confirmed' AND NOT l.applied)))"),{'id':row['id']}).scalar_one():blockers.append('Есть неразобранная внешняя операция')
-    return {'blockers':blockers,'can_complete':not blockers,'composition_request_available':bool(wanted) and wanted<=covered and row['state'] in ('applied','warehouse_ready') and not tasks,'receipt_required':required,
+    return {'required_fields':required_fields,'blockers':blockers,'can_complete':not blockers,'composition_request_available':bool(wanted) and wanted<=covered and row['state'] in ('applied','warehouse_ready') and not tasks,'receipt_required':required,
         'atks':[{'id':a['id'],'revision':a['revision'],'state':a['state']} for a in atks],
         'fts':[f['id'] for f in fts if any(v['id'] in wanted for v in f['body']['codes'])],
         'tasks':[dict(t) for t in tasks]}

@@ -59,7 +59,7 @@ def test_logistics_returns_to_bm_full_excel_adds_only_information_and_keeps_km(a
     with client(env) as c:
         login(c,'logistics');task=uuid4()
         assert c.get('/api/business-files/'+doc['warehouse_composition']['file_id']).content==data
-        result=c.post('/api/logistics/warehouse-transfer',json={'request_id':str(task),'source_id':str(source),'source_revision':3,'kind':'shipment','assignees':[str(env[3]['warehouse'])]});assert result.status_code==200,result.text
+        result=c.post('/api/logistics/warehouse-transfer',json={'request_id':str(task),'source_id':str(source),'source_revision':3,'confirmed':True,'kind':'shipment','assignees':[str(env[3]['warehouse'])]});assert result.status_code==200,result.text
     with client(env) as c:
         login(c,'warehouse');detail=c.get('/api/warehouse/tasks/'+str(task)).json();assert len(detail['lines'])==3
         result=c.post('/api/warehouse/tasks/'+str(task)+'/scans',json={'request_id':str(uuid4()),'raw':bytes(code['payload']).decode()});assert result.status_code==200,result.text
@@ -74,7 +74,7 @@ def test_full_invoice_rejects_marked_changes_and_wrong_role_and_file(allocated,e
     with engine.begin() as db:db.execute(text("UPDATE business_items SET body=body-'warehouse_composition' WHERE id=:id"),{'id':item})
     with client(env) as c:
         login(c,'logistics')
-        assert c.post('/api/logistics/warehouse-transfer',json={'request_id':str(uuid4()),'source_id':str(source),'source_revision':2,'kind':'receipt','assignees':[str(env[3]['warehouse'])]}).status_code==409
+        assert c.post('/api/logistics/warehouse-transfer',json={'request_id':str(uuid4()),'source_id':str(source),'source_revision':2,'confirmed':True,'kind':'receipt','assignees':[str(env[3]['warehouse'])]}).status_code==409
     request_full(env,engine,item,code)
     with client(env) as c:
         login(c);doc=c.get('/api/documents/'+str(source)).json()['document'];params={'revision':doc['marking_revision'],'source_revision':doc['revision']}

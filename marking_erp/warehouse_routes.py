@@ -5,14 +5,17 @@ from datetime import datetime,timezone
 from hashlib import sha256
 from uuid import UUID, uuid4
 from fastapi import Depends, HTTPException, Query, Response
-from pydantic import Field, StrictInt
+from pydantic import Field, StrictInt, StrictBool
 from sqlalchemy import text
 import xlsxwriter
 from . import auth, gs1, warehouse_check as checks
 from .auth_routes import Body
+from . import workflow_policy as workflow
+from .policy import snapshot
 
 
 class Transfer(Body):
+    confirmed:StrictBool=False
     request_id: UUID
     source_id: UUID
     source_revision: StrictInt = Field(ge=1)
@@ -29,7 +32,7 @@ class Scan(Body):
 
 class Transition(Body):
     revision: StrictInt = Field(ge=1)
-    confirmation: str = Field(min_length=1, max_length=120)
+    confirmation: str = Field(default='', max_length=120)
     reason: str = Field(default='', max_length=1000)
 
 
@@ -140,7 +143,7 @@ def install_warehouse(app, actor, settings=None):
         for code in codes:
             info=records[code['cis']];statuses=('INTRODUCED',) if task['kind']=='shipment' else ('APPLIED','INTRODUCED')
             if info.get('status') not in statuses:raise HTTPException(422,'Недопустимый статус КМ в ЧЗ: '+str(info.get('status','не установлен')))
-            if not info.get('ownerInn') or (not config.get('ignore_legal_entity') and info['ownerInn']!=inn):raise HTTPException(422,'КМ принадлежит другому юридическому лицу или владелец не установлен')
+            if not info.get('ownerInn') or info['ownerInn']!=inn:raise HTTPException(422,'КМ принадлежит другому юридическому лицу или владелец не установлен')
             if str(info.get('gtin',''))!=code['gtin']:raise HTTPException(422,'GTIN в ответе ЧЗ не совпадает с КМ')
             if str(info.get('quantityInPack',''))!=str(code['quantity']):raise HTTPException(422,'Количество в ЧЗ не совпадает с количеством в КМ')
             verified[code['cis']]={'checked_at':datetime.now(timezone.utc).isoformat(),'status':info['status'],'owner_inn':info['ownerInn'],'quantity':code['quantity']}
@@ -221,6 +224,9 @@ def install_warehouse(app, actor, settings=None):
                 if error.status_code!=403: raise
                 continue
             visible.append({k:v for k,v in r.items() if k!='owner_id'})
+        for source in visible:
+            policy=current.connection.execute(text('SELECT policy_snapshot FROM bm_documents WHERE id=:id'),{'id':source['id']}).scalar_one()
+            source['confirmation_required']=policy['values']['logistics.transfer.confirm']
         return {'sources':visible, 'assignees':[dict(r) for r in people]}
 
     @app.post('/api/logistics/warehouse-transfer')
@@ -232,13 +238,14 @@ def install_warehouse(app, actor, settings=None):
         current.require('logistics.warehouse.transfer', organization_id=source['organization_id'], owner_id=source['owner_id'],assigned=assigned)
         existing=c.execute(text('SELECT * FROM warehouse_tasks WHERE id=:id'), {'id':body.request_id}).mappings().first()
         assignees=sorted(set(map(str,body.assignees)))
-        transfer_hash=checks.digest({**body.model_dump(mode='json'),'assignees':assignees,'expected_codes':sorted(body.expected_codes)})
+        transfer_hash=checks.digest({**body.model_dump(mode='json',exclude={'confirmed'}),'assignees':assignees,'expected_codes':sorted(body.expected_codes)})
         if existing:
             if existing['transfer_request_sha256'] and existing['transfer_request_sha256']!=transfer_hash:raise HTTPException(409,'Повтор запроса отличается от сохранённого')
             assigned=sorted(map(str,c.execute(text('SELECT user_id FROM operation_assignments WHERE target_id=:id'), {'id':body.request_id}).scalars()))
             if existing['source_id']!=body.source_id or existing['kind']!=body.kind or existing['owner_id']!=current.id or existing['source_revision']!=body.source_revision or assigned!=assignees:
                 raise HTTPException(409, 'Повтор запроса отличается от сохранённого')
             return {'id':existing['id'], 'replayed':True}
+        if source['policy_snapshot']['values']['logistics.transfer.confirm'] and not body.confirmed:raise HTTPException(422,'Подтвердите передачу проверенного состава на склад')
         if c.execute(text('SELECT EXISTS(SELECT 1 FROM operation_targets WHERE id=:id)'),{'id':body.request_id}).scalar_one(): raise HTTPException(409,'Идентификатор задания уже занят')
         process=c.execute(text("SELECT body FROM business_items WHERE source_id=:id AND kind='marking' AND state<>'archived'"),{'id':source['id']}).scalar_one_or_none()
         if process is not None and process.get('warehouse_composition',{}).get('state')!='ready':raise HTTPException(409,'Сначала верните документ в БМ и получите полный Excel поставки')
@@ -294,17 +301,20 @@ def install_warehouse(app, actor, settings=None):
         c.execute(text('''INSERT INTO warehouse_tasks(id,organization_id,owner_id,source_id,source_revision,kind,number,supplier,document_date,lines)
             VALUES (:id,:org,:user,:source,:revision,:kind,:number,:supplier,:date,CAST(:lines AS jsonb))'''), {'id':body.request_id,'org':source['organization_id'],'user':current.id,'source':source['id'],'revision':source['revision'],'kind':body.kind,'number':source['number'],'supplier':source['supplier'],'date':source['document_date'],'lines':json.dumps(source['lines'])})
         c.execute(text('UPDATE warehouse_tasks SET expected_codes=CAST(:codes AS jsonb),expected_payloads=CAST(:evidence AS jsonb),transfer_request_sha256=:hash WHERE id=:id'),{'id':body.request_id,'codes':json.dumps(expected),'evidence':json.dumps(evidence),'hash':transfer_hash})
+        c.execute(text('UPDATE warehouse_tasks SET policy_snapshot=CAST(:policy AS jsonb) WHERE id=:id'),{'id':body.request_id,'policy':json.dumps(snapshot(c,source['organization_id']))})
         for person in people: c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES (:id,:user)'), {'id':body.request_id,'user':person['id']})
         task=get(current,body.request_id);event(current,task,'transferred',{'assignees':assignees})
         return {'id':body.request_id}
 
     @app.get('/api/warehouse/tasks')
-    def listing(organization_id:UUID, kind:str=Query('receipt',pattern='^(receipt|shipment)$'), logistics:bool=False, closed:bool=False, archived:bool=False, q:str=Query('',max_length=120), before_id:UUID|None=None, current=dep):
+    def listing(organization_id:UUID, kind:str=Query('receipt',pattern='^(receipt|shipment)$'), logistics:bool=False, closed:bool|None=None, archived:bool=False, q:str=Query('',max_length=120), before_id:UUID|None=None, current=dep):
         if organization_id not in current.organizations(): raise HTTPException(403, 'Нет доступа к организации')
         permission='logistics.warehouse.result.view' if logistics else 'warehouse.'+kind+'.view'
         grant=current.grants().get(permission)
         if not grant: raise HTTPException(403, 'Нет доступа к заданиям')
         if archived:archive_admin(current,'documents.archive.view',organization_id=organization_id,owner_id=current.id)
+        preferences=workflow.display(current.connection,organization_id)
+        if closed is None:closed=not preferences['warehouse.hide_completed']
         rows=current.connection.execute(text('''SELECT t.id,t.organization_id,t.owner_id,t.kind,t.source_type,t.number,t.supplier,t.document_date,t.state,t.revision,t.archived_at,
             jsonb_array_length(t.lines) AS line_count,
             (SELECT count(*) FROM warehouse_scans s WHERE s.task_id=t.id AND s.removed_at IS NULL) AS scanned,
@@ -313,7 +323,7 @@ def install_warehouse(app, actor, settings=None):
             AND (t.archived_at IS NOT NULL)=:archived AND (:closed OR :archived OR t.state='open') AND (CAST(:before AS uuid) IS NULL OR (t.created_at,t.id)<(SELECT created_at,id FROM warehouse_tasks WHERE id=CAST(:before AS uuid) AND organization_id=:org))
             AND (:grant='all' OR (:grant='own' AND t.owner_id=:user) OR (:grant='assigned' AND EXISTS(SELECT 1 FROM operation_assignments a WHERE a.target_id=t.id AND a.user_id=:user)))
             AND (t.number ILIKE :q ESCAPE '!' OR t.supplier ILIKE :q ESCAPE '!') ORDER BY t.created_at DESC,t.id DESC LIMIT 26'''), {'org':organization_id,'kind':kind,'closed':closed,'archived':archived,'grant':grant,'user':current.id,'before':str(before_id) if before_id else None,'q':'%'+q.replace('!','!!').replace('%','!%').replace('_','!_')+'%'}).mappings().all()
-        return {'tasks':[{k:v for k,v in r.items() if k not in ('organization_id','owner_id','kind')} for r in rows[:25] if permitted(current,r,logistics=logistics)], 'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
+        return {'preferences':preferences,'closed':closed,'tasks':[{k:v for k,v in r.items() if k not in ('organization_id','owner_id','kind')} for r in rows[:25] if permitted(current,r,logistics=logistics)], 'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
 
     @app.get('/api/warehouse/tasks/{id}')
     def detail(id:UUID, logistics:bool=False, sync_token:str=Query('',max_length=64,pattern='^[a-f0-9]*$'), current=dep):
@@ -332,10 +342,12 @@ def install_warehouse(app, actor, settings=None):
                 if error.status_code!=403:raise
             else:permissions[permission]=grants[permission]
         administrative=current.user['group_slug']=='administrator' or auth.group_has_admin(current.connection,current.user['group_slug'])
+        preferences=workflow.display(current.connection,task['organization_id'])
+        rules=workflow.saved(task)
         result=task['check_result']
         expired=bool(result and (datetime.now(timezone.utc)-datetime.fromisoformat(result['checked_at'])).total_seconds()>public['rules']['warehouse.external_fact_max_age_seconds'])
         token=checks.digest({'revision':task['revision'],'archive':task['archived_at'],'source':dict(source),'policy':public,
-            'expired':expired,'permissions':permissions,'grants':grants,'administrative':administrative,'assignees':[dict(a) for a in assignees]})
+            'preferences':preferences,'expired':expired,'permissions':permissions,'grants':grants,'administrative':administrative,'assignees':[dict(a) for a in assignees]})
         if sync_token==token:return {'unchanged':True,'sync_token':token}
         scans=current.connection.execute(text('''SELECT s.id,s.line_index,s.gtin,s.quantity,substr(s.cis,19,20) AS serial,u.display_name,s.created_at
             FROM warehouse_scans s JOIN users u ON u.id=s.actor_id WHERE s.task_id=:id AND s.removed_at IS NULL ORDER BY s.created_at DESC,s.id DESC LIMIT 100'''), {'id':id}).mappings().all()
@@ -348,7 +360,9 @@ def install_warehouse(app, actor, settings=None):
             except HTTPException as error:
                 if error.status_code!=403:raise
         is_fresh=source['state']!='archived' and source['revision']==task['source_revision'] and fresh(task,active_scans(current,task),public)
-        return {'sync_token':token,'permissions':permissions,'administrative_access':administrative,'source_download':source_download,'import_source':dict(import_source) if import_source else None,'task':{k:v for k,v in task.items() if k not in ('expected_payloads','transfer_request_sha256','check_digest','check_policy_sha256')}, 'assignees':[a['display_name'] for a in assignees], 'lines':summary(current,task),'scans':[dict(r) for r in scans],'events':[dict(r) for r in events], 'paused':source['state']=='archived' or source['revision']!=task['source_revision'], 'external_verified':bool(task['verified_at']),'live_checks':config is not None,'check_fresh':is_fresh,'expectation_level':checks.level(task),'expected_codes_count':len(task['expected_codes'])}
+        counts=summary(current,task);missing=sum(max(0,r['labels']-r['scanned']) for r in counts if r.get('marked',True))
+        shortage={'missing':missing,'threshold':rules['warehouse.missing.warning_threshold'],'warning':missing>0 and missing>=rules['warehouse.missing.warning_threshold']}
+        return {'preferences':preferences,'rules':{k:v for k,v in rules.items() if k.startswith('warehouse.')},'shortage':shortage,'archive_retain_until':workflow.retain_until(current.connection,id,task['organization_id']),'sync_token':token,'permissions':permissions,'administrative_access':administrative,'source_download':source_download,'import_source':dict(import_source) if import_source else None,'task':{k:v for k,v in task.items() if k not in ('policy_snapshot','expected_payloads','transfer_request_sha256','check_digest','check_policy_sha256')}, 'assignees':[a['display_name'] for a in assignees], 'lines':counts,'scans':[dict(r) for r in scans],'events':[dict(r) for r in events], 'paused':source['state']=='archived' or source['revision']!=task['source_revision'], 'external_verified':bool(task['verified_at']),'live_checks':config is not None,'check_fresh':is_fresh,'expectation_level':checks.level(task),'expected_codes_count':len(task['expected_codes'])}
 
     @app.post('/api/warehouse/tasks/{id}/scans')
     def scan(id:UUID, body:Scan, current=dep):
@@ -365,7 +379,11 @@ def install_warehouse(app, actor, settings=None):
             from .incidents import enforce
             enforce(c,task['organization_id'],'shipment',cises=[parsed.cis],targets=[task['id'],task['source_id']])
         duplicate=c.execute(text('SELECT id FROM warehouse_scans WHERE task_id=:id AND cis=:cis AND removed_at IS NULL'), {'id':id,'cis':parsed.cis}).scalar_one_or_none()
-        if duplicate: raise HTTPException(409, {'code':'duplicate_scan','message':'Этот КМ уже отсканирован. При ошибке удалите ранее принятый скан.','scan_id':str(duplicate)})
+        if duplicate:
+            allow_delete=workflow.saved(task)['warehouse.duplicate.behavior']=='error_with_delete_action'
+            detail={'code':'duplicate_scan','message':'Этот КМ уже отсканирован.'}
+            if allow_delete:detail.update(message='Этот КМ уже отсканирован. При ошибке удалите ранее принятый скан.',scan_id=str(duplicate))
+            raise HTTPException(409,detail)
         candidates=[i for i,r in enumerate(task['lines']) if r.get('marked',True) and r['gtin']==parsed.gtin and r['quantity']==quantity]
         if not any(r['gtin']==parsed.gtin for r in task['lines']): raise HTTPException(422, 'GTIN отсутствует в задании. Отложите товар и проверьте накладную.')
         if not candidates: raise HTTPException(422, 'Количество в КМ не соответствует упаковкам в задании')
@@ -410,6 +428,7 @@ def install_warehouse(app, actor, settings=None):
         accepted=[v['cis'] for v in active_scans(current,task)]
         enforce(current.connection,task['organization_id'],task['kind'],cises=accepted+task['expected_codes'],targets=[task['id'],task['source_id']])
         current.connection.execute(text('UPDATE warehouse_tasks SET archived_at=now(),archived_by=:user WHERE id=:id'),{'id':id,'user':current.id})
+        workflow.retention(current,id,task['organization_id'])
         event(current,task,'archived',{'reason':body.reason.strip()})
         return {'archived':True}
 
@@ -437,7 +456,8 @@ def install_warehouse(app, actor, settings=None):
             current.require('warehouse.documents.reopen',**context(current,task))
         else: require(current,task,'complete')
         if body.revision!=task['revision']: raise HTTPException(409, 'Задание изменено. Обновите данные.')
-        if body.confirmation!=task['number']: raise HTTPException(422, 'Введите точный номер накладной')
+        confirm_required=action!='close' or workflow.saved(task)['warehouse.complete.confirm']
+        if (confirm_required or body.confirmation) and body.confirmation!=task['number']: raise HTTPException(422, 'Введите точный номер накладной')
         from .business.logistics import is_completed
         if is_completed(current.connection,task['source_id']):raise HTTPException(409,'Накладная завершена логистом. Сначала верните её в работу.')
         if action=='close':

@@ -15,7 +15,7 @@ def setup(env,labels=2,kind='receipt'):
         doc=bm.post('/api/documents',json=value);assert doc.status_code==200,doc.text
         id=doc.json()['id'];assert bm.post('/api/documents/'+id+'/prepare',json={'revision':1}).status_code==200
     with client(env) as log:
-        login(log,'logistics');body={'request_id':str(uuid4()),'source_id':id,'source_revision':2,'kind':kind,'assignees':[str(env[3]['tsd'])]}
+        login(log,'logistics');body={'request_id':str(uuid4()),'source_id':id,'source_revision':2,'confirmed':True,'kind':kind,'assignees':[str(env[3]['tsd'])]}
         task=log.post('/api/logistics/warehouse-transfer',json=body);assert task.status_code==200,task.text
         assert log.post('/api/logistics/warehouse-transfer',json=body).json()['replayed']
     return task.json()['id'],value['number'],id

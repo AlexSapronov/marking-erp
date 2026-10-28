@@ -19,7 +19,7 @@ def source(env):
 
 
 def request(env,id,*,kind='receipt',codes=None):
-    return {'request_id':str(uuid4()),'source_id':id,'source_revision':2,'kind':kind,'assignees':[str(env[3]['tsd'])],'expected_codes':codes if codes is not None else [raw()]}
+    return {'request_id':str(uuid4()),'source_id':id,'source_revision':2,'confirmed':True,'kind':kind,'assignees':[str(env[3]['tsd'])],'expected_codes':codes if codes is not None else [raw()]}
 
 
 def transfer(c,body):return c.post('/api/logistics/warehouse-transfer',json=body)

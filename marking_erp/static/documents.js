@@ -40,7 +40,7 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
   }
   async function open(id,editing=false){
     const seq=++editSeq;openDialog('document-dialog');$('document-title').textContent='Накладная';$('document-content').replaceChildren(node('p','Загружаем накладную…'));
-    try{const data=await api('/api/documents/'+id);if(seq!==editSeq||state.route!=='/documents')return;editing?renderEditor(data.document):renderDetail(data.document,data.notice);}
+    try{const data=await api('/api/documents/'+id);if(seq!==editSeq||state.route!=='/documents')return;editing?renderEditor(data.document):renderDetail({...data.document,archive_retain_until:data.archive_retain_until},data.notice);}
     catch(error){if(seq===editSeq)fail(error);}
   }
   function renderDetail(doc,message){
@@ -48,6 +48,7 @@ export function createDocuments({state,$,api,node,button,heading,notice,report,o
     if(doc.warehouse_composition?.state==='requested')message='Логист вернул накладную для дополнения состава поставки. Загрузите полный Excel ниже.';
     if(doc.warehouse_composition?.state==='ready')message='Полный состав поставки сохранён и возвращён в рабочее место логиста.';
     content.append(node('p',`${doc.document_date} · ${doc.canonical_supplier||doc.supplier} · ${doc.logistics_completed?"Завершена логистом":doc.warehouse_composition?.state==="requested"?"Дополнить состав для склада":doc.warehouse_composition?.state==="ready"?"Полный состав готов":states[doc.state]} · Версия ${doc.revision}`),node('p',message,'notice warning'));
+    if(doc.state==='archived'&&doc.archive_retain_until)content.append(node('p','Хранить не менее чем до '+new Date(doc.archive_retain_until).toLocaleDateString('ru-RU'),'muted'));
     if(doc.workflow){const chain=node('section',undefined,'panel');chain.append(node('h3','Цепочка накладной'),node('p',doc.workflow.stage),node('p','Следующее действие: '+doc.workflow.next_action));for(const op of doc.workflow.operations||[])chain.append(node('p',op.kind+': '+op.state+(op.reason?' · '+op.reason:'')));for(const a of doc.workflow.atks)chain.append(node('p','АТК: '+a.title+' · '+a.state));for(const t of doc.workflow.tasks)chain.append(node('p',(t.kind==='receipt'?'Приёмка':'Отгрузка')+': '+t.state));content.append(chain);}
     const actions=node('div',undefined,'actions');
     if(doc.marking_id)actions.append(button('Открыть процесс маркировки',()=>{closeDialog('document-dialog',true);openMarking(doc.marking_id);},'primary'));

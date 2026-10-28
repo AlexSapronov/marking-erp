@@ -38,6 +38,7 @@ class Handoff(Body):
     confirmed:StrictBool=False
 
 class Step(Body):
+    extra_confirmed:StrictBool=False
     revision:StrictInt=Field(ge=1)
     confirmed:StrictBool=False
     production_date:date|None=None
@@ -224,7 +225,8 @@ def install_marking(app,actor,settings):
         current_parts={v['artifact_id'] for v in active['snapshot'].get('parts',[])} if active else set()
         files=[{**f,'current':str(f['id'])==row['body'].get('label_file_id') or str(f['id']) in current_parts} if f['kind'].startswith('labels') else dict(f) for f in files]
         public={**row,'body':{k:v for k,v in row['body'].items() if k not in ('source_raw','source_base')}}
-        return {'item':public,'codes':[dict(r) for r in codes[:1000]],'code_next':str(codes[999]['id']) if len(codes)>1000 else None,'code_count':current.connection.execute(text('SELECT count(*) FROM business_codes WHERE item_id=:id'),{'id':id}).scalar_one(),'operations':[dict(r) for r in ops],'files':[dict(r) for r in files]}
+        from ..workflow_policy import retain_until
+        return {'archive_retain_until':retain_until(current.connection,id,row['organization_id']),'item':public,'codes':[dict(r) for r in codes[:1000]],'code_next':str(codes[999]['id']) if len(codes)>1000 else None,'code_count':current.connection.execute(text('SELECT count(*) FROM business_codes WHERE item_id=:id'),{'id':id}).scalar_one(),'operations':[dict(r) for r in ops],'files':[dict(r) for r in files]}
     @app.put('/api/business/{id}/reallocate')
     def reallocate(id:UUID,body:Reallocate,current=dep):
         from collections import Counter
@@ -325,7 +327,8 @@ def install_marking(app,actor,settings):
         if body.quantity>=int(baseline):raise HTTPException(422,'Отделяемое количество должно быть меньше остатка исходного КМ')
         if not c.execute(text('SELECT 1 FROM product_pns p JOIN products r ON r.id=p.product_id WHERE p.organization_id=:org AND r.gtin=:gtin AND p.pn=:pn AND p.tnved=:tnved LIMIT 1'),{'org':body.organization_id,'gtin':code.gtin,'pn':body.pn,'tnved':body.tnved}).scalar():raise HTTPException(409,'PN/GTIN/ТН ВЭД не подтверждены в каталоге')
         eligibility=check_split_eligibility(Client(config),code.gtin)
-        row=s.create(current,'split',body.pn,{'catalog_eligibility':eligibility,'source_raw':code.normalized.decode(),'source_base':code.base.decode(),'source_cis':code.cis,'gtin':code.gtin,'baseline':int(baseline),'quantity':body.quantity,'pn':body.pn,'tnved':body.tnved},body.organization_id,id=body.request_id,state='ordering')
+        from ..policy import snapshot
+        row=s.create(current,'split',body.pn,{'policy':snapshot(c,body.organization_id),'catalog_eligibility':eligibility,'source_raw':code.normalized.decode(),'source_base':code.base.decode(),'source_cis':code.cis,'gtin':code.gtin,'baseline':int(baseline),'quantity':body.quantity,'pn':body.pn,'tnved':body.tnved},body.organization_id,id=body.request_id,state='ordering')
         s.queue(current,row,'split.order',order_payload(code.gtin,1,config,row['id'],True));return {'id':row['id'],'state':row['state']}
     @app.post('/api/business/{id}/labels-handoff')
     def handoff(id:UUID,body:Handoff,current=dep):
@@ -385,6 +388,7 @@ def install_marking(app,actor,settings):
         if action=='applied':
             if row['kind']=='marking' and row['body'].get('labels_handoff_required') and (not row['body'].get('label_file_id') or row['body'].get('labels_handoff',{}).get('file_id')!=row['body'].get('label_file_id')):raise HTTPException(409,'Сначала подтвердите передачу актуальных этикеток поставщику')
             if row['state']!='labels_ready' or not body.confirmed:raise HTTPException(422,'Подтвердите нанесение актуальных этикеток')
+            if row['kind']=='split' and row['body'].get('policy',{}).get('values',{}).get('split.application.extra_confirm',False) and not body.extra_confirmed:raise HTTPException(422,'Подтвердите дополнительную проверку нанесения при разделении')
             return s.save(current,row,'application_confirmed',state='application_confirmed')
         if action in ('report','retry-report'):
             if row['state'] not in ('application_confirmed','rejected'):raise HTTPException(409,'Сначала подтвердите нанесение')
