@@ -151,7 +151,7 @@ def overview(current,kind,id):
         entries=[]
         for r in rows[:25]:
             r=dict(r);r.setdefault('kind','document');r.setdefault('title',r.get('number',''))
-            label=KINDS.get(r['kind'],'Документ')
+            label=KINDS.get('completion' if type=='completion' else r['kind'],'Документ')
             entries.append({'title':r['title'],'label':label,'state':STATES.get('archived' if r.get('archived_at') else r['state'],'Требуется просмотр документа'),
                 'target':target(r,type,route or ('/logistics' if type=='warehouse' and not allowed(current,'warehouse.'+r['kind']+'.view',r) else '/'+r['kind'] if type=='warehouse' else None))})
         if entries:groups.append({'name':name,'items':entries})

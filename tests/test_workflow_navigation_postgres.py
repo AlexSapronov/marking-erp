@@ -111,7 +111,7 @@ def test_atk_fts_transform_chain_and_logistics_blockers(allocated,engine):
             assert str(source) in ids and str(item) in ids and str(atk['id']) in ids and str(fts['id']) in ids
         data=chain(c,'logistics',item)
         assert data['blockers'] and any('приёмку' in v for v in data['blockers'])
-        assert any(v['target']['type']=='completion' for v in links(data))
+        assert any(v['target']['type']=='completion' and v['label']=='Завершение логистики' for v in links(data))
     with engine.connect() as db:assert db.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
 
 
