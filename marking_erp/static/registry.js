@@ -37,7 +37,7 @@ export function createRegistry({state,$,api,node,button,heading,notice,report,op
     const seq=++dialogSequence,org=organization,generation=sequence,host=$('code-content');
     $('code-title').textContent='Карточка КМ';host.replaceChildren(node('p','Загружаем карточку…','empty'));openDialog('code-dialog');
     const active=()=>seq===dialogSequence&&generation===sequence&&state.route==='/codes';
-    try{const data=await api('/api/codes/'+code.id+'/card?organization_id='+org);if(!active())return;const value=data.code;
+    try{const data=await api('/api/codes/'+code.id+'/card?organization_id='+org);if(!active())return;const value=data.code;code={...code,...value,conflicts:value.conflict?1:0};
       host.replaceChildren(node('p',value.cis,'cis-cell'),node('p','GTIN: '+value.gtin),node('p',value.products.map(p=>p.pn+' · ТН ВЭД '+p.tnved).join('; ')||'PN не подтверждён'),node('p','Версия '+value.version+' · Шаблон '+value.template+' · AI30 этикетки: '+(value.label_quantity??'не указан')));
       host.append(node('p','SHA256 текущего полного КМ: '+value.normalized_sha256,'hash-text'));
       if(value.conflict)host.append(node('p','Есть конфликт полного КМ. Автоматическая замена запрещена.','notice error'));
