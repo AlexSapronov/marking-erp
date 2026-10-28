@@ -970,7 +970,7 @@ def test_bm_invoice_chain_and_cross_page_selection(page,live_app,engine):
     org=live_app['org'];owner=live_app['users']['bm']
     with engine.begin() as c:
         for n in range(27):
-            id=uuid4();c.execute(text("INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256,created_at) VALUES (:id,:org,:owner,:number,:date,'Supplier',1,'draft','[]','{}',:hash,now()+(:n * interval '1 second'))"),{'id':id,'org':org,'owner':owner,'number':f'BM-{n:03}','date':date.today(),'hash':str(n).zfill(64),'n':n})
+            id=uuid4();c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,1)'),{'id':id,'org':org,'owner':owner});c.execute(text("INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256,created_at) VALUES (:id,:org,:owner,:number,:date,'Supplier',1,'draft',:lines,'{}',:hash,now()+(:n * interval '1 second'))"),{'id':id,'org':org,'owner':owner,'number':f'BM-{n:03}','date':date.today(),'hash':str(n).zfill(64),'n':n,'lines':json.dumps([{'pn':'Fixture','gtin':'','tnved':'','quantity':1,'labels':0,'marked':False}])})
     login(page,'bm');page.locator('#documents-link').click()
     page.get_by_label('Выбрать накладную BM-026',exact=True).check()
     page.get_by_role('button',name='Далее',exact=True).click()
