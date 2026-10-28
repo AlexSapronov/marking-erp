@@ -1050,3 +1050,95 @@ def test_auto_print_opt_in_and_queued_kit_ui(page,live_app,engine):
     with engine.connect() as c:
         assert c.execute(text('SELECT count(*) FROM print_jobs')).scalar_one()==1
         assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+
+
+def refresh_task(engine,live_app,number):
+    from marking_erp.policy import snapshot
+    from test_warehouse_postgres import GTIN
+    source=uuid4();task=uuid4();org=live_app['org']
+    with engine.begin() as c:
+        lines=[{'pn':'REFRESH-PN','gtin':GTIN,'tnved':'8542399000','quantity':10,'labels':2}]
+        for id,owner in ((source,live_app['users']['bm']),(task,live_app['users']['logistics'])):
+            c.execute(text('INSERT INTO operation_targets(id,organization_id,owner_id,revision) VALUES (:id,:org,:owner,2)'),{'id':id,'org':org,'owner':owner})
+        c.execute(text('''INSERT INTO bm_documents(id,organization_id,owner_id,number,document_date,supplier,revision,state,lines,policy_snapshot,request_sha256)
+            VALUES (:id,:org,:owner,:number,'2026-10-28','Поставщик UI',2,'prepared',CAST(:lines AS jsonb),CAST(:policy AS jsonb),:sha)'''),{'id':source,'org':org,'owner':live_app['users']['bm'],'number':number,'lines':json.dumps(lines),'policy':json.dumps(snapshot(c,org),default=str),'sha':'1'*64})
+        c.execute(text('''INSERT INTO warehouse_tasks(id,organization_id,owner_id,source_id,source_revision,kind,number,supplier,document_date,lines)
+            VALUES (:id,:org,:owner,:source,2,'receipt',:number,'Поставщик UI','2026-10-28',CAST(:lines AS jsonb))'''),{'id':task,'org':org,'owner':live_app['users']['logistics'],'source':source,'number':number,'lines':json.dumps(lines)})
+        for group in ('tsd','warehouse'):c.execute(text('INSERT INTO operation_assignments(target_id,user_id) VALUES (:id,:user)'),{'id':task,'user':live_app['users'][group]})
+    return str(task)
+
+
+def warehouse_peer(browser,live_app):
+    context=browser.new_context(base_url=live_app['base'])
+    headers={'Origin':live_app['base'],'X-Requested-With':'marking-erp'}
+    response=context.request.post('/api/session',data={'username':'warehouse-user','password':PASSWORD,'otp':''},headers=headers)
+    assert response.status==200,response.text()
+    return context,{**headers,'X-CSRF-Token':response.json()['csrf']}
+
+
+def test_tsd_auto_refresh_preserves_scan_focus_line_confirmation_and_remote_close(page,browser,live_app,engine):
+    from playwright.sync_api import expect
+    from test_warehouse_postgres import raw
+    login(page,'tsd');page.locator('#receipt-link').click()
+    task=refresh_task(engine,live_app,'AUTO-REFRESH-01')
+    expect(page.locator('.warehouse-task')).to_contain_text('AUTO-REFRESH-01',timeout=15000)
+    page.get_by_role('button',name='Открыть задание',exact=True).click()
+    scan_input=page.get_by_label('Сканируйте Data Matrix',exact=True)
+    page.get_by_label('Строка товара / PN',exact=True).select_option('0')
+    page.get_by_label('Введите номер накладной для подтверждения',exact=True).fill('AUTO-')
+    scan_input.fill('unfinished-scan');scan_input.focus()
+    page.evaluate("window.savedScanner=document.activeElement;window.savedScanner.setSelectionRange(3,6)")
+    peer,headers=warehouse_peer(browser,live_app)
+    try:
+        response=peer.request.post('/api/warehouse/tasks/'+task+'/scans',data={'request_id':str(uuid4()),'raw':raw('a')},headers=headers)
+        assert response.status==200,response.text()
+        expect(page.locator('.warehouse-metrics strong')).to_have_text('1 / 2 КМ',timeout=15000)
+        expect(scan_input).to_have_value('unfinished-scan');expect(scan_input).to_be_focused()
+        expect(page.get_by_label('Строка товара / PN',exact=True)).to_have_value('0')
+        expect(page.get_by_label('Введите номер накладной для подтверждения',exact=True)).to_have_value('AUTO-')
+        assert page.evaluate('document.activeElement===window.savedScanner && window.savedScanner.selectionStart===3 && window.savedScanner.selectionEnd===6')
+        scan_input.fill(raw('b'));page.get_by_role('button',name='Принять скан',exact=True).click()
+        expect(page.locator('.warehouse-metrics strong')).to_have_text('2 / 2 КМ')
+        scan_input.fill('draft-before-close')
+        current=peer.request.get('/api/warehouse/tasks/'+task).json()
+        closed=peer.request.post('/api/warehouse/tasks/'+task+'/close',data={'revision':current['task']['revision'],'confirmation':'AUTO-REFRESH-01'},headers=headers)
+        assert closed.status==200,closed.text()
+        expect(scan_input).to_be_disabled(timeout=15000);expect(scan_input).to_have_value('draft-before-close')
+        expect(page.locator('#warehouse-content')).to_contain_text('Сканирование недоступно')
+        page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');capture(page,'tsd-auto-refresh-closed-390')
+    finally:peer.close()
+
+
+def test_tsd_network_retry_retains_request_after_refresh_and_revocation_clears_data(page,browser,live_app,engine):
+    from playwright.sync_api import expect
+    from test_warehouse_postgres import raw
+    task=refresh_task(engine,live_app,'AUTO-REFRESH-NETWORK')
+    login(page,'tsd');page.locator('#receipt-link').click();page.get_by_role('button',name='Открыть задание',exact=True).click()
+    requests=[]
+    def observe(request):
+        if request.method=='POST' and request.url.endswith('/api/warehouse/tasks/'+task+'/scans'):requests.append(request.post_data_json['request_id'])
+    page.on('request',observe)
+    raw_input=page.get_by_label('Сканируйте Data Matrix',exact=True);raw_input.fill(raw('a'))
+    page.context.set_offline(True)
+    expect(page.locator('#warehouse-auto-status')).to_contain_text('Нет связи')
+    page.get_by_role('button',name='Принять скан',exact=True).click()
+    expect(page.locator('.warehouse-scan .error-message')).to_be_visible()
+    peer,headers=warehouse_peer(browser,live_app)
+    try:
+        result=peer.request.post('/api/warehouse/tasks/'+task+'/scans',data={'request_id':str(uuid4()),'raw':raw('b')},headers=headers)
+        assert result.status==200,result.text()
+        page.context.set_offline(False)
+        expect(page.locator('.warehouse-metrics strong')).to_have_text('1 / 2 КМ',timeout=15000)
+        expect(raw_input).to_have_value(raw('a'))
+        with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM warehouse_scans WHERE task_id=:id'),{'id':task}).scalar_one()==1
+        page.get_by_role('button',name='Принять скан',exact=True).click()
+        expect(page.locator('.warehouse-metrics strong')).to_have_text('2 / 2 КМ')
+        assert len(requests)==2 and requests[0]==requests[1]
+        with engine.begin() as c:c.execute(text('DELETE FROM operation_assignments WHERE target_id=:id AND user_id=:user'),{'id':task,'user':live_app['users']['tsd']})
+        expect(page.locator('#warehouse-content')).to_contain_text('Доступ к заданию изменён',timeout=15000)
+        expect(page.locator('.warehouse-scan')).to_have_count(0);expect(page.locator('.warehouse-metrics')).to_have_count(0)
+        expect(page.locator('#warehouse-title')).to_have_text('Задание недоступно')
+        expect(page.locator('#warehouse-list')).not_to_contain_text('AUTO-REFRESH-NETWORK')
+        with engine.connect() as c:assert c.execute(text('SELECT count(*) FROM external_operations')).scalar_one()==0
+        capture(page,'tsd-auto-refresh-access-revoked')
+    finally:peer.close()

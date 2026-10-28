@@ -316,13 +316,30 @@ def install_warehouse(app, actor, settings=None):
         return {'tasks':[{k:v for k,v in r.items() if k not in ('organization_id','owner_id','kind')} for r in rows[:25] if permitted(current,r,logistics=logistics)], 'next_cursor':str(rows[24]['id']) if len(rows)>25 else None}
 
     @app.get('/api/warehouse/tasks/{id}')
-    def detail(id:UUID, logistics:bool=False, current=dep):
+    def detail(id:UUID, logistics:bool=False, sync_token:str=Query('',max_length=64,pattern='^[a-f0-9]*$'), current=dep):
         task=get(current,id);require(current,task,logistics=logistics)
         source=source_status(current,task)
+        # Conditional reads still authorize every request. The token covers more
+        # than scans: source/assignment/permission/policy changes and check expiry.
+        config,public=check_context(current,task)
+        assignees=current.connection.execute(text('SELECT u.id,u.display_name FROM operation_assignments a JOIN users u ON u.id=a.user_id WHERE a.target_id=:id ORDER BY u.display_name,u.id'),{'id':id}).mappings().all()
+        grants=current.grants();permissions={};ctx=context(current,task)
+        actions=[f'warehouse.{task["kind"]}.{action}' for action in ('scan','scan.delete','check','complete','export')]
+        actions+=['warehouse.documents.reopen','incidents.create','documents.archive','documents.restore','logistics.warehouse.refresh']
+        for permission in actions:
+            try:current.require(permission,**ctx)
+            except HTTPException as error:
+                if error.status_code!=403:raise
+            else:permissions[permission]=grants[permission]
+        administrative=current.user['group_slug']=='administrator' or auth.group_has_admin(current.connection,current.user['group_slug'])
+        result=task['check_result']
+        expired=bool(result and (datetime.now(timezone.utc)-datetime.fromisoformat(result['checked_at'])).total_seconds()>public['rules']['warehouse.external_fact_max_age_seconds'])
+        token=checks.digest({'revision':task['revision'],'archive':task['archived_at'],'source':dict(source),'policy':public,
+            'expired':expired,'permissions':permissions,'grants':grants,'administrative':administrative,'assignees':[dict(a) for a in assignees]})
+        if sync_token==token:return {'unchanged':True,'sync_token':token}
         scans=current.connection.execute(text('''SELECT s.id,s.line_index,s.gtin,s.quantity,substr(s.cis,19,20) AS serial,u.display_name,s.created_at
             FROM warehouse_scans s JOIN users u ON u.id=s.actor_id WHERE s.task_id=:id AND s.removed_at IS NULL ORDER BY s.created_at DESC,s.id DESC LIMIT 100'''), {'id':id}).mappings().all()
         events=current.connection.execute(text('''SELECT e.action,e.created_at,e.detail->>'reason' AS reason,u.display_name FROM warehouse_events e JOIN users u ON u.id=e.actor_id WHERE e.task_id=:id ORDER BY e.id DESC LIMIT 30'''), {'id':id}).mappings().all()
-        assignees=current.connection.execute(text('SELECT u.display_name FROM operation_assignments a JOIN users u ON u.id=a.user_id WHERE a.target_id=:id ORDER BY u.display_name'),{'id':id}).scalars().all()
         import_source=current.connection.execute(text('SELECT filename,sha256,created_at FROM warehouse_imports WHERE id=:id'),{'id':task['source_id']}).mappings().first() if task['source_type']=='excel' else None
         source_download=False
         if import_source:
@@ -330,8 +347,8 @@ def install_warehouse(app, actor, settings=None):
                 current.require('warehouse.import.preview',**context(current,task));source_download=True
             except HTTPException as error:
                 if error.status_code!=403:raise
-        config,public=check_context(current,task);is_fresh=source['state']!='archived' and source['revision']==task['source_revision'] and fresh(task,active_scans(current,task),public)
-        return {'source_download':source_download,'import_source':dict(import_source) if import_source else None,'task':{k:v for k,v in task.items() if k not in ('expected_payloads','transfer_request_sha256','check_digest','check_policy_sha256')}, 'assignees':assignees, 'lines':summary(current,task),'scans':[dict(r) for r in scans],'events':[dict(r) for r in events], 'paused':source['state']=='archived' or source['revision']!=task['source_revision'], 'external_verified':bool(task['verified_at']),'live_checks':config is not None,'check_fresh':is_fresh,'expectation_level':checks.level(task),'expected_codes_count':len(task['expected_codes'])}
+        is_fresh=source['state']!='archived' and source['revision']==task['source_revision'] and fresh(task,active_scans(current,task),public)
+        return {'sync_token':token,'permissions':permissions,'administrative_access':administrative,'source_download':source_download,'import_source':dict(import_source) if import_source else None,'task':{k:v for k,v in task.items() if k not in ('expected_payloads','transfer_request_sha256','check_digest','check_policy_sha256')}, 'assignees':[a['display_name'] for a in assignees], 'lines':summary(current,task),'scans':[dict(r) for r in scans],'events':[dict(r) for r in events], 'paused':source['state']=='archived' or source['revision']!=task['source_revision'], 'external_verified':bool(task['verified_at']),'live_checks':config is not None,'check_fresh':is_fresh,'expectation_level':checks.level(task),'expected_codes_count':len(task['expected_codes'])}
 
     @app.post('/api/warehouse/tasks/{id}/scans')
     def scan(id:UUID, body:Scan, current=dep):
