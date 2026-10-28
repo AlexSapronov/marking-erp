@@ -33,5 +33,5 @@ def test_packaged_rbac_matches_reviewed_matrix():
 
 
 def test_packaged_migrations_have_one_head():
-    assert schema_head() == "0017_warehouse_import"
+    assert schema_head() == "0018_bm_bulk"
 
