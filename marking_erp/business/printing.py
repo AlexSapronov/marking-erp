@@ -56,14 +56,54 @@ def code_access(current,id,permission='labels.reprint'):
 def usable(code,row):
     if row['state']=='archived' or row['body'].get('codes_released') or code['state'] not in ('reserved','emitted','applied'):raise HTTPException(409,'КМ остановлен или больше не принадлежит документу')
 
-def exact_pdf(c,code,row):
+def exact_pdf(c,code,row,settings=None):
     saved=c.execute(text("SELECT * FROM business_artifacts WHERE item_id=:id AND kind='labels' ORDER BY version DESC LIMIT 1"),{'id':row['id']}).mappings().first()
     if not saved:raise HTTPException(409,'Нет сохранённой версии этикетки')
     payload_sha=sha256(bytes(code['payload'])).hexdigest()
     index=next((i for i,v in enumerate(saved['snapshot']['codes']) if v['cis']==code['cis'] and v['sha256']==payload_sha and v['quantity']==code['quantity'] and v['pn']==code['pn']),None)
     if index is None:raise HTTPException(409,'Сохранённая этикетка не соответствует текущему КМ')
     if sha256(bytes(saved['body'])).hexdigest()!=saved['sha256']:raise HTTPException(503,'Архив этикеток повреждён')
-    with zipfile.ZipFile(BytesIO(bytes(saved['body']))) as archive:return archive.read(f'{index+1:05d}.pdf')
+    if settings and code['registry_payload_id']:
+        from ..file_store import FileStore,StorageError
+        file=c.execute(text("SELECT * FROM files WHERE payload_id=:payload AND organization_id=:org AND kind='label_pdf' AND snapshot->>'pn'=:pn ORDER BY created_at,id LIMIT 1"),
+            {'payload':code['registry_payload_id'],'org':row['organization_id'],'pn':code['pn']}).mappings().first()
+        if file:
+            if file['snapshot'].get('payload_sha256')!=payload_sha or file['snapshot'].get('quantity')!=code['quantity']:raise HTTPException(409,'Сохранённый PDF не соответствует текущему полному КМ')
+            try:return FileStore(settings.file_storage_path).read(file)
+            except StorageError:raise HTTPException(503,'Сохранённая этикетка недоступна или повреждена') from None
+    try:
+        with zipfile.ZipFile(BytesIO(bytes(saved['body']))) as archive:return archive.read(f'{index+1:05d}.pdf')
+    except (KeyError,zipfile.BadZipFile):raise HTTPException(503,'Точный сохранённый PDF недоступен. Требуется восстановить файлы реестра.') from None
+
+
+def current_parts(c,item):
+    """Validate the active bundle against current allocations and saved PDF parts."""
+    bundle=c.execute(text("SELECT * FROM business_artifacts WHERE id=CAST(:id AS uuid) AND item_id=:item AND kind='labels'"),
+        {'id':item['body'].get('label_file_id'),'item':item['id']}).mappings().first()
+    if not bundle:raise HTTPException(409,'Нет актуального сохранённого комплекта этикеток')
+    if sha256(bytes(bundle['body'])).hexdigest()!=bundle['sha256']:raise HTTPException(503,'Комплект этикеток повреждён')
+    codes=c.execute(text('SELECT cis,pn,quantity,payload,state FROM business_codes WHERE item_id=:id AND organization_id=:org'),
+        {'id':item['id'],'org':item['organization_id']}).mappings().all()
+    actual={v['cis']:{'cis':v['cis'],'pn':v['pn'],'quantity':v['quantity'],'sha256':sha256(bytes(v['payload'])).hexdigest()} for v in codes}
+    saved=bundle['snapshot'].get('codes',[])
+    if not actual or len(saved)!=len(actual) or any(v['state'] not in ('reserved','emitted','applied') for v in codes) or any(actual.get(v.get('cis'))!=v for v in saved):
+        raise HTTPException(409,'Состав этикеток изменён или КМ возвращены в пул')
+    manifest=bundle['snapshot'].get('parts')
+    if not manifest:
+        # Legacy bundles contained one combined PDF. Never infer multiple parts.
+        file=c.execute(text("SELECT * FROM business_artifacts WHERE item_id=:id AND kind='labels_pdf' ORDER BY version DESC LIMIT 1"),{'id':item['id']}).mappings().first()
+        if not file or file['snapshot'].get('codes')!=[v['cis'] for v in saved]:raise HTTPException(409,'Состав прежнего PDF не подтверждён')
+        manifest=[{'artifact_id':str(file['id']),'sha256':file['sha256'],'count':len(saved)}]
+    parts=[];seen=[]
+    for entry in manifest:
+        file=c.execute(text("SELECT * FROM business_artifacts WHERE id=CAST(:id AS uuid) AND item_id=:item AND kind='labels_pdf' AND media_type='application/pdf'"),
+            {'id':entry['artifact_id'],'item':item['id']}).mappings().first()
+        if not file or file['sha256']!=entry['sha256'] or sha256(bytes(file['body'])).hexdigest()!=file['sha256']:raise HTTPException(503,'Часть PDF отсутствует или повреждена')
+        values=file['snapshot'].get('codes',[])
+        if len(values)!=entry['count']:raise HTTPException(409,'Неверный состав части PDF')
+        seen.extend(values);parts.append(dict(file))
+    if seen!=[v['cis'] for v in saved] or len({v['id'] for v in parts})!=len(parts):raise HTTPException(409,'Части PDF не составляют актуальный комплект')
+    return bundle,parts
 
 def reprint_access(current,id):
     row=current.connection.execute(text('SELECT * FROM reprint_requests WHERE id=:id FOR UPDATE'),{'id':id}).mappings().first()
@@ -107,9 +147,10 @@ def authorize_job(c,job):
     else:
         current.require('labels.print.confirm',**context(current,item));current.require('labels.remarking.create' if item['kind']=='remark' else 'marking.labels.download' if item['kind']=='marking' else 'split.operations.view',**s.context(current,item))
         if item['state']=='archived' or item['body'].get('codes_released'):raise HTTPException(409,'Документ остановлен')
-        latest=c.execute(text("SELECT id FROM business_artifacts WHERE item_id=:item AND kind='labels_pdf' ORDER BY version DESC LIMIT 1"),{'item':item['id']}).scalar_one_or_none()
-        if c.execute(text("SELECT EXISTS(SELECT 1 FROM business_codes WHERE item_id=:id AND state='withdrawn')"),{'id':item['id']}).scalar_one():raise HTTPException(409,'В комплекте есть заменённые КМ')
-        if latest!=file['id']:raise HTTPException(409,'Версия этикеток изменилась')
+        from .marking import validate_source
+        validate_source(current,item)
+        _,parts=current_parts(c,item)
+        if file['id'] not in {p['id'] for p in parts}:raise HTTPException(409,'Версия этикеток изменилась')
     from ..incidents import enforce
     cises=[code['cis']] if job['reprint_id'] else c.execute(text('SELECT cis FROM business_codes WHERE item_id=:id'),{'id':item['id']}).scalars().all()
     enforce(c,item['organization_id'],'reprint',cises=cises,targets=[item['id'],item['source_id']])
@@ -117,7 +158,7 @@ def authorize_job(c,job):
     return file
 
 
-def install_printing(app,actor,engine):
+def install_printing(app,actor,engine,settings=None):
     dep=Depends(actor,scope='function')
     @app.post('/api/business-codes/{id}/reprint')
     def prepare(id:UUID,body:Reprint,current=dep):
@@ -134,7 +175,7 @@ def install_printing(app,actor,engine):
         if rules['labels.reprint.reason_required'] and len(body.reason.strip())<8:raise HTTPException(422,'Укажите содержательную причину перепечати (от 8 символов)')
         if body.copies>rules['labels.reprint.max_copies']:raise HTTPException(422,'Превышен разрешённый максимум копий')
         if c.execute(text("SELECT EXISTS(SELECT 1 FROM reprint_requests WHERE code_id=:code AND state IN ('prepared','printed'))"),{'code':id}).scalar_one():raise HTTPException(409,'Сначала завершите или отмените предыдущую перепечать этого КМ')
-        pdf=exact_pdf(c,code,item);hash=sha256(bytes(code['payload'])).hexdigest()
+        pdf=exact_pdf(c,code,item,settings);hash=sha256(bytes(code['payload'])).hexdigest()
         file=s.artifact(current,item,'reprint','label-58x40.pdf',pdf,'application/pdf',{'code_id':str(id),'payload_sha256':hash,'pn':code['pn'],'quantity':code['quantity'],'request_id':str(body.request_id),'copies':body.copies})
         c.execute(text('''INSERT INTO reprint_requests(id,organization_id,actor_id,code_id,artifact_id,reason,copies,payload_sha256,policy,request_sha256)
             VALUES (:id,:org,:actor,:code,:file,:reason,:copies,:sha,CAST(:policy AS jsonb),:request)'''),{'id':body.request_id,'org':code['organization_id'],'actor':current.id,'code':id,'file':file,'reason':body.reason.strip(),'copies':body.copies,'sha':hash,'policy':json.dumps(policy),'request':fingerprint})
@@ -214,6 +255,7 @@ def install_printing(app,actor,engine):
             if c.execute(text('SELECT 1 FROM print_jobs WHERE reprint_id=:id'),{'id':body.reprint_id}).scalar():raise HTTPException(409,'Задание уже передано агенту; проверьте его результат')
             copies=request['copies']
         elif file['kind']!='labels_pdf':raise HTTPException(422,'Для повторной этикетки сначала создайте задание перепечати')
+        if not body.reprint_id and c.execute(text("SELECT EXISTS(SELECT 1 FROM auto_print_requests WHERE item_id=:id AND state IN ('waiting','blocked'))"),{'id':item['id']}).scalar_one():raise HTTPException(409,'Сначала отмените ожидающее задание автопечати')
         if not body.reprint_id and c.execute(text("SELECT EXISTS(SELECT 1 FROM print_jobs WHERE artifact_id=:id AND state<>'cancelled')"),{'id':id}).scalar_one():raise HTTPException(409,'Комплект уже отправлен на печать. Для замены отдельных этикеток используйте перепечать.')
         device=c.execute(text('SELECT * FROM printer_devices WHERE id=:id AND enabled'),{'id':body.printer_id}).mappings().first()
         if not device or device['organization_id']!=item['organization_id']:raise HTTPException(403,'Принтер другой организации или отключён')
@@ -271,7 +313,7 @@ def install_printing(app,actor,engine):
             # A claim is never reissued, even after process crash or timeout.
             c.execute(text("UPDATE print_jobs SET state='unknown' WHERE device_id=:id AND state='claimed' AND claimed_at<now()-interval '5 minutes'"),{'id':device['id']})
             if c.execute(text("SELECT 1 FROM print_jobs WHERE device_id=:id AND state IN ('claimed','unknown') LIMIT 1"),{'id':device['id']}).scalar():return {'job':None,'blocked':True}
-            row=c.execute(text("SELECT * FROM print_jobs WHERE device_id=:id AND state='queued' ORDER BY created_at,id FOR UPDATE SKIP LOCKED LIMIT 1"),{'id':device['id']}).mappings().first()
+            row=c.execute(text("SELECT * FROM print_jobs WHERE device_id=:id AND state='queued' ORDER BY created_at,part_index NULLS LAST,id FOR UPDATE SKIP LOCKED LIMIT 1"),{'id':device['id']}).mappings().first()
             if not row:return {'job':None}
             try:file=authorize_job(c,row)
             except HTTPException as error:
